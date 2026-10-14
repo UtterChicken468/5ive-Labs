@@ -1,0 +1,40 @@
+name: Update NFL data
+
+on:
+  schedule:
+    # Every day at 9:17am and 5:17pm Eastern (13:17 and 21:17 UTC during daylight time):
+    # picks up new box scores after games and line moves during the week.
+    - cron: '17 13,21 * * *'
+  workflow_dispatch: {}   # lets you run it by hand from the Actions tab
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Pull latest stats, scores and lines
+        run: python scripts/update_data.py
+
+      - name: Save changes
+        run: |
+          if git diff --quiet -- data.json; then
+            echo "Nothing new."
+            exit 0
+          fi
+          git config user.name "model-lab-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data.json
+          git commit -m "Update NFL data"
+          git push
