@@ -25,6 +25,7 @@
   --display: "Saira Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
   --body: "Barlow", "Segoe UI", system-ui, sans-serif;
   --r: 10px;
+  --brand-ground: #0d1b15; --brand-ink: #b9c7c0;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #0e1412; --surface: #161e1b; --surface-2: #1c2622; --ink: #e4ebe7; --muted: #95a49d; --line: #2b3732;
@@ -56,10 +57,13 @@ button { cursor: pointer }
 .small { font-size: 13px }
 
 /* masthead with yard-line hash strip */
-header.mast { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 8px 24px; padding-bottom: 14px }
-header.mast h1 { font-size: clamp(30px, 5vw, 44px); font-weight: 700; line-height: 1; text-transform: uppercase }
-header.mast h1 span { color: var(--accent) }
-.stamp { font-size: 13px; color: var(--muted); max-width: 52ch }
+/* masthead: the logo artwork is dark-ground, so the band keeps its own brand color in both themes */
+header.mast { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px;
+  background: var(--brand-ground); border-radius: var(--r); padding: 14px 20px; margin-bottom: 12px }
+header.mast h1 { margin: 0; line-height: 0; min-width: 0 }
+header.mast h1 img { display: block; height: clamp(54px, 9vw, 86px); width: auto; max-width: 100% }
+.stamp { font-size: 13px; color: var(--brand-ink); max-width: 46ch }
+.stamp b { color: #fff }
 .hash { height: 10px; margin-bottom: 18px; border-top: 2px solid var(--ink);
   background: repeating-linear-gradient(90deg, var(--ink) 0 2px, transparent 2px 10%), repeating-linear-gradient(90deg, var(--line) 0 1px, transparent 1px 2%);
   background-size: 100% 10px, 100% 5px; background-repeat: no-repeat; opacity: .55 }
@@ -70,6 +74,9 @@ header.mast h1 span { color: var(--accent) }
 /* builder rail */
 aside.builder { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px;
   position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); display: grid; gap: 18px; max-height: calc(100vh - 24px); overflow: auto }
+aside.builder { grid-template-columns: minmax(0, 1fr) }
+aside.builder > *, .sliders > *, .sl > *, .group > *, .saverow > * { min-width: 0 }
+.group { grid-template-columns: minmax(0, 1fr) }
 @media (max-width: 920px) { aside.builder { position: static; max-height: none } }
 aside h2 { font-size: 22px; text-transform: uppercase }
 .presets { display: flex; flex-wrap: wrap; gap: 6px }
@@ -179,7 +186,7 @@ td input { width: 70px }
 
 <div class="wrap">
   <header class="mast">
-    <h1>Gridiron <span>Model</span> Lab</h1>
+    <h1><img src="logo.png" width="1020" height="272" alt="Gridiron Model Lab"></h1>
     <div class="stamp" id="stamp"></div>
   </header>
   <div class="hash" aria-hidden="true"></div>
