@@ -29,7 +29,7 @@ def load_csv(url, env_name):
     if local:
         with open(local, newline='', encoding='utf-8') as f:
             return list(csv.DictReader(f))
-    req = urllib.request.Request(url, headers={'User-Agent': 'gridiron-model-lab'})
+    req = urllib.request.Request(url, headers={'User-Agent': '5ive-lab'})
     with urllib.request.urlopen(req, timeout=120) as r:
         return list(csv.DictReader(io.StringIO(r.read().decode('utf-8'))))
 

@@ -1,6 +1,6 @@
-# Gridiron Model Lab
+# 5ive Lab
 
-A personal NFL prediction model. Weight the factors you believe in and get game picks,
+Personal sports prediction models (NFL now; college football, college basketball, MLB and NHL coming). Weight the factors you believe in and get game picks,
 predicted scores, win probabilities, edges against the Vegas lines, player prop projections,
 a walk-forward backtest, and a pick log that grades itself.
 

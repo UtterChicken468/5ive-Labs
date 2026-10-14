@@ -1,12 +1,12 @@
 {
-  "name": "Gridiron Model Lab",
-  "short_name": "Model Lab",
-  "description": "Personal NFL prediction model: picks, edges, player props and a pick log.",
+  "name": "5ive Lab",
+  "short_name": "5ive Lab",
+  "description": "Personal sports prediction models: picks, edges, player props and a pick log.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#14201b",
-  "theme_color": "#14201b",
+  "background_color": "#101a16",
+  "theme_color": "#101a16",
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
