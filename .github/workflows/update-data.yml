@@ -1,4 +1,4 @@
-name: Update NFL data
+name: Update sports data
 
 on:
   schedule:
@@ -6,6 +6,11 @@ on:
     # picks up new box scores after games and line moves during the week.
     - cron: '17 13,21 * * *'
   workflow_dispatch: {}   # lets you run it by hand from the Actions tab
+  push:
+    branches: [main]
+    paths:                # also run right after the data scripts change
+      - 'scripts/**'
+      - '.github/workflows/update-data.yml'
 
 permissions:
   contents: write
@@ -25,16 +30,20 @@ jobs:
           python-version: '3.12'
 
       - name: Pull latest stats, scores and lines
+        env:
+          CFBD_API_KEY: ${{ secrets.CFBD_API_KEY }}
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         run: python scripts/update_data.py
 
       - name: Save changes
         run: |
-          if git diff --quiet -- data.json; then
+          git add data/
+          if git diff --cached --quiet; then
             echo "Nothing new."
             exit 0
           fi
-          git config user.name "model-lab-bot"
+          git config user.name "5ive-lab-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data.json
-          git commit -m "Update NFL data"
+          git commit -m "Update sports data"
+          git pull --rebase origin main
           git push

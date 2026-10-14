@@ -1,7 +1,14 @@
 // Gridiron Model Lab engine: pure functions over the embedded data.
 (function (root) {
-  const SIGMA = 13.5;   // sd of NFL final margin around a good prediction
-  const SIGMA_TOT = 13; // sd of game total
+  // Per-sport constants; set with configure() once the sport's data loads.
+  let SIGMA = 13.5;     // sd of final margin around a good prediction (NFL)
+  let SIGMA_TOT = 13;   // sd of game total
+  let BT_SKIP = 1;      // weeks of data before the backtest starts predicting
+  function configure(cfg) {
+    if (cfg.sigma) SIGMA = cfg.sigma;
+    if (cfg.sigmaTot) SIGMA_TOT = cfg.sigmaTot;
+    if (cfg.btSkip != null) BT_SKIP = cfg.btSkip;
+  }
 
   const FACTORS = [
     { key: 'margin', label: 'Scoring margin', hint: 'Points scored minus allowed, per game' },
@@ -141,7 +148,7 @@
   function backtest(data, weights, settings, edgeMin) {
     const weeks = [...new Set(data.games.filter((g) => g.hs != null).map((g) => g.w))].sort((a, b) => a - b);
     const per = []; let su = 0, n = 0, vegasSu = 0, vegasN = 0, ats = [0, 0, 0], mae = 0, vegasMae = 0, ou = [0, 0, 0];
-    weeks.filter((w) => w >= 2).forEach((w) => {
+    weeks.slice(BT_SKIP).forEach((w) => {
       const P = teamProfiles(data, w); const R = ratings(P, weights, settings);
       const wk = { w, su: 0, n: 0, atsW: 0, atsL: 0 };
       data.games.filter((g) => g.w === w && g.hs != null).forEach((g) => {
@@ -235,6 +242,6 @@
     return 1 - phi((line - pj.proj) / pj.spread);
   }
 
-  root.Engine = { FACTORS, PRESETS, DEFAULT_SETTINGS, PROPS, teamProfiles, ratings, predict, backtest,
+  root.Engine = { configure, FACTORS, PRESETS, DEFAULT_SETTINGS, PROPS, teamProfiles, ratings, predict, backtest,
     defenseAllowed, projectProp, overProb, impliedProb, evPerUnit, profitPerUnit, phi, statOf };
 })(typeof window !== 'undefined' ? window : globalThis);

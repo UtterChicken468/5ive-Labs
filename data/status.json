@@ -1,0 +1,22 @@
+{
+ "cfb": {
+  "error": "RuntimeError: CFBD_API_KEY is not set (add it as a GitHub repository secret).",
+  "ok": false,
+  "trace": [
+   "    data = SPORTS[sport](args.season)",
+   "  File \"/home/claude/gridiron-site/scripts/update_data.py\", line 203, in build_cfb",
+   "    games_raw = cfbd('/games', year=season, seasonType='regular', classification='fbs')",
+   "  File \"/home/claude/gridiron-site/scripts/update_data.py\", line 165, in cfbd",
+   "    raise RuntimeError('CFBD_API_KEY is not set (add it as a GitHub repository secret).')",
+   "RuntimeError: CFBD_API_KEY is not set (add it as a GitHub repository secret)."
+  ]
+ },
+ "nfl": {
+  "finals": 79,
+  "ok": true,
+  "rows": 158,
+  "season": 2026,
+  "through": 5,
+  "upcoming": 193
+ }
+}

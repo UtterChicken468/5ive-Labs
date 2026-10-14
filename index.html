@@ -71,6 +71,14 @@ header.mast h1 img { display: block; height: clamp(54px, 9vw, 86px); width: auto
 .layout { display: grid; grid-template-columns: 330px minmax(0, 1fr); gap: 22px; align-items: start }
 @media (max-width: 920px) { .layout { grid-template-columns: minmax(0, 1fr) } }
 
+/* sport switcher */
+.sports { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px }
+.sport { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 6px 14px;
+  font-family: var(--display); font-size: 17px; font-weight: 600; text-transform: uppercase; color: var(--ink) }
+.sport[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink) }
+.sport.soon { color: var(--muted); border-style: dashed; display: inline-flex; gap: 6px; align-items: baseline; cursor: default }
+.sport.soon small { font-family: var(--body); font-size: 11px; text-transform: none; letter-spacing: 0; font-weight: 500 }
+
 /* builder rail */
 aside.builder { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px;
   position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); display: grid; gap: 18px; max-height: calc(100vh - 24px); overflow: auto }
@@ -114,7 +122,9 @@ nav.tabs button[aria-selected="true"] { background: var(--ink); color: var(--bg)
 .game { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; display: grid; gap: 12px; min-width: 0 }
 .game.hot { border-color: var(--accent) }
 .gh { display: flex; justify-content: space-between; align-items: baseline; gap: 10px }
-.matchup { font-family: var(--display); font-size: 24px; font-weight: 700; line-height: 1 }
+.matchup { font-family: var(--display); font-size: 24px; font-weight: 700; line-height: 1.05; min-width: 0; overflow-wrap: anywhere }
+.sport-cfb .matchup { font-size: 21px }
+.wp div { overflow: hidden; text-overflow: ellipsis }
 .matchup .at { color: var(--muted); font-weight: 500; font-size: 18px; margin: 0 4px }
 .kick { font-size: 12.5px; color: var(--muted); text-align: right }
 .score { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap }
@@ -152,8 +162,10 @@ td input { width: 70px }
 
 /* rankings */
 .rank { display: grid; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px }
-.rr { display: grid; grid-template-columns: 26px 46px minmax(0,1fr) 54px; gap: 10px; align-items: center; font-size: 14px; padding: 3px 0 }
-.rr .t { font-family: var(--display); font-weight: 700; font-size: 17px }
+.rr { display: grid; grid-template-columns: 26px var(--teamcol, 46px) minmax(0,1fr) 54px; gap: 10px; align-items: center; font-size: 14px; padding: 3px 0 }
+.rr .t { font-family: var(--display); font-weight: 700; font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.sport-cfb { --teamcol: 150px }
+@media (max-width: 520px) { .sport-cfb { --teamcol: 104px } }
 .bar { position: relative; height: 16px }
 .bar::before { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--line) }
 .bar span { position: absolute; top: 0; height: 100%; border-radius: 4px }
@@ -189,6 +201,7 @@ td input { width: 70px }
     <h1><img src="logo.png" width="950" height="306" alt="5ive Lab"></h1>
     <div class="stamp" id="stamp"></div>
   </header>
+  <nav class="sports" id="sports" aria-label="Sport"></nav>
   <div class="hash" aria-hidden="true"></div>
 
   <div class="layout">
@@ -224,30 +237,35 @@ function boot(DATA) {
 const E = window.Engine;
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const META = DATA.meta || { sport: 'nfl', label: 'NFL', period: 'Week', props: true, hfa: 1.5, trust: 60, bye: 1, source: 'nflverse' };
+E.configure(META);
+const pre = META.sport === 'nfl' ? 'gml:' : 'gml:' + META.sport + ':';
 const store = {
-  get(k, d) { try { const v = localStorage.getItem('gml:' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
-  set(k, v) { try { localStorage.setItem('gml:' + k, JSON.stringify(v)); } catch (e) {} },
+  get(k, d) { try { const v = localStorage.getItem(pre + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(pre + k, JSON.stringify(v)); } catch (e) {} },
 };
+const SPORT_DEFAULTS = { hfa: META.hfa ?? 1.5, trust: META.trust ?? 60, bye: META.bye ?? 1 };
 
 const completed = DATA.games.filter((g) => g.hs != null);
-const lastDone = Math.max(...completed.map((g) => g.w));
+const lastDone = completed.length ? Math.max(...completed.map((g) => g.w)) : 0;
 let upcomingWeeks = [...new Set(DATA.games.filter((g) => g.hs == null).map((g) => g.w))].sort((a, b) => a - b);
 if (!upcomingWeeks.length) upcomingWeeks = [lastDone]; // season over: show the final week
 
 const S = {
   weights: store.get('weights', { ...E.PRESETS.Balanced }),
-  settings: store.get('settings', { ...E.DEFAULT_SETTINGS }),
+  settings: store.get('settings', { ...SPORT_DEFAULTS }),
   saved: store.get('saved', []),
   lines: store.get('lines', {}),        // gameId -> {sp, tot, hml, aml} user overrides
   props: store.get('props', {}),        // playerId|key -> {line, odds}
   picks: store.get('picks', []),
   tab: store.get('tab', 'games'),
   week: upcomingWeeks[0],
-  sort: 'time', edgeMin: 1.5, onlyEdges: false,
+  sort: 'time', edgeMin: 1.5, onlyEdges: false, teamQ: '',
   propKey: 'py', propPos: 'all', propQ: '', recent: 40, matchup: 60,
   btEdge: 0, confirmClear: false,
 };
 if (location.hash && ['games', 'props', 'rankings', 'accuracy', 'log'].includes(location.hash.slice(1))) S.tab = location.hash.slice(1);
+if (S.tab === 'props' && !META.props) S.tab = 'games';
 
 const fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : v.toFixed(d);
 const sgn = (v, d = 1) => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(d);
@@ -262,7 +280,7 @@ function updatedText(iso) {
   const d = new Date(iso);
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' at ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
-$('#stamp').innerHTML = `${DATA.season} regular season · stats through <b>Week ${lastDone}</b> (${completed.length} games) · Vegas lines and schedule from nflverse, updated ${updatedText(DATA.updated)}. Lines move, so check your book before you trust an edge.`;
+$('#stamp').innerHTML = `${META.label} · ${DATA.season} regular season · stats through <b>Week ${lastDone}</b> (${completed.length} games) · stats, schedule and lines from ${esc(META.source)}, updated ${updatedText(DATA.updated)}. Lines move, so check your book before you trust an edge.`;
 
 // ---------- builder ----------
 function renderBuilder() {
@@ -315,7 +333,7 @@ document.querySelector('aside').addEventListener('click', (e) => {
 });
 
 // ---------- tabs ----------
-const TABS = [['games', 'Game picks'], ['props', 'Player props'], ['rankings', 'Power ratings'], ['accuracy', 'Accuracy'], ['log', 'Pick log']];
+const TABS = [['games', 'Game picks'], ['props', 'Player props'], ['rankings', 'Power ratings'], ['accuracy', 'Accuracy'], ['log', 'Pick log']].filter(([k]) => k !== 'props' || META.props);
 function renderTabs() {
   $('#tabs').innerHTML = TABS.map(([k, n]) => `<button role="tab" data-tab="${k}" aria-selected="${S.tab === k}">${n}${k === 'log' && S.picks.length ? ' · ' + S.picks.length : ''}</button>`).join('');
 }
@@ -356,6 +374,7 @@ function gamesView() {
   const maxEdge = (x) => Math.max(Math.abs(x.pr?.spEdge || 0), Math.abs(x.pr?.totEdge || 0));
   let list = items.filter((x) => x.pr);
   if (S.onlyEdges) list = list.filter((x) => maxEdge(x) >= S.edgeMin);
+  if (S.teamQ) { const q = S.teamQ.toLowerCase(); list = list.filter((x) => x.g.h.toLowerCase().includes(q) || x.g.a.toLowerCase().includes(q) || (x.g.hc || '').toLowerCase().includes(q) || (x.g.ac || '').toLowerCase().includes(q)); }
   if (S.sort === 'edge') list.sort((a, b) => maxEdge(b) - maxEdge(a));
   const teamsPlaying = new Set(weekGames.flatMap((g) => [g.h, g.a]));
   const byes = Object.keys(P).filter((t) => !teamsPlaying.has(t)).sort();
@@ -364,10 +383,11 @@ function gamesView() {
     <div class="f"><label class="label" for="weekSel">Week</label><select id="weekSel">${upcomingWeeks.map((w) => `<option value="${w}" ${w === S.week ? 'selected' : ''}>Week ${w}</option>`).join('')}</select></div>
     <div class="f"><label class="label" for="sortSel">Sort</label><select id="sortSel"><option value="time" ${S.sort === 'time' ? 'selected' : ''}>Kickoff</option><option value="edge" ${S.sort === 'edge' ? 'selected' : ''}>Biggest edge</option></select></div>
     <div class="f"><label class="label" for="edgeMin">Flag edges of</label><select id="edgeMin">${[1, 1.5, 2, 3, 4].map((v) => `<option value="${v}" ${v === S.edgeMin ? 'selected' : ''}>${v}+ pts</option>`).join('')}</select></div>
+    <div class="f"><label class="label" for="teamQ">Team${META.sport === 'cfb' ? ' or conference' : ''}</label><input type="text" id="teamQ" placeholder="Search" value="${esc(S.teamQ)}" style="width:150px"></div>
     <label class="small" style="display:flex;gap:6px;align-items:center;padding-bottom:6px"><input type="checkbox" id="onlyEdges" ${S.onlyEdges ? 'checked' : ''}> Only games with an edge</label>
   </div>
   <p class="note" style="margin:0 0 14px">Lines are editable: type in what your book shows and the edge updates. Spreads use book style (favorite is negative). ${byes.length ? 'On bye: ' + byes.join(', ') + '.' : ''}</p>
-  <div class="games">${list.map(gameCard).join('') || `<div class="empty">No games pass the edge filter at ${S.edgeMin}+ points.</div>`}</div>`;
+  <div class="games">${list.map(gameCard).join('') || `<div class="empty">No games match${S.teamQ ? ' "' + esc(S.teamQ) + '"' : ''}${S.onlyEdges ? ' with an edge of ' + S.edgeMin + '+ points' : ''}.</div>`}</div>`;
 }
 function gameCard({ g, L, pr }) {
   const homeLine = L.sp != null ? -L.sp : '';
@@ -619,6 +639,7 @@ $('#view').addEventListener('change', (e) => {
 $('#view').addEventListener('input', (e) => {
   const t = e.target;
   if (t.id === 'propQ') { S.propQ = t.value; renderView(); }
+  if (t.id === 'teamQ') { S.teamQ = t.value; renderView(); }
   if (t.id === 'recent' || t.id === 'matchupW') { // update label live; recompute when released
     const lab = document.querySelector('label[for="' + t.id + '"]');
     if (lab) lab.textContent = (t.id === 'recent' ? 'Recent games weight · ' : 'Matchup weight · ') + t.value + '%';
@@ -639,11 +660,35 @@ $('#view').addEventListener('click', (e) => {
   if (b.id === 'clearYes') { S.picks = []; S.confirmClear = false; store.set('picks', S.picks); renderTabs(); renderView(); toast('Log cleared'); }
 });
 
+document.body.classList.add('sport-' + META.sport);
 renderBuilder(); renderTabs(); renderView();
 }
 
+const SPORTS = [
+  { key: 'nfl', label: 'NFL' },
+  { key: 'cfb', label: 'College football' },
+  { key: 'nhl', label: 'NHL', soon: true },
+  { key: 'cbb', label: 'College basketball', soon: true },
+  { key: 'mlb', label: 'MLB', soon: true },
+];
+function chosenSport() {
+  const h = location.hash.slice(1);
+  if (SPORTS.some((s) => s.key === h && !s.soon)) return h;
+  try { const v = localStorage.getItem('gml:sport'); if (SPORTS.some((s) => s.key === v && !s.soon)) return v; } catch (e) {}
+  return 'nfl';
+}
+const SPORT = chosenSport();
+document.getElementById('sports').innerHTML = SPORTS.map((s) => s.soon
+  ? `<span class="sport soon" title="Coming soon">${s.label}<small>soon</small></span>`
+  : `<button class="sport" data-sport="${s.key}" aria-pressed="${s.key === SPORT}">${s.label}</button>`).join('');
+document.getElementById('sports').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-sport]'); if (!b || b.dataset.sport === SPORT) return;
+  try { localStorage.setItem('gml:sport', b.dataset.sport); } catch (err) {}
+  location.hash = b.dataset.sport; location.reload();
+});
+
 document.getElementById('view').innerHTML = '<div class="empty">Loading this week\'s data…</div>';
-fetch('data.json', { cache: 'no-cache' })
+fetch('data/' + SPORT + '.json', { cache: 'no-cache' })
   .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
   .then(boot)
   .catch((err) => {
