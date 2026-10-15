@@ -1,0 +1,201 @@
+{
+ "url": "https://api.the-odds-api.com/v4/sports/icehockey_nhl/odds?apiKey=<key>&regions=us&markets=h2h,spreads,totals&oddsFormat=american&bookmakers=draftkings",
+ "status": 200,
+ "headers": {
+  "x-requests-remaining": "497",
+  "x-requests-last": "3",
+  "x-requests-used": "3"
+ },
+ "sample": [
+  {
+   "id": "11b474310b2b60cbae546d9c517444c6",
+   "sport_key": "icehockey_nhl",
+   "sport_title": "NHL",
+   "commence_time": "2026-10-14T23:45:23Z",
+   "home_team": "Washington Capitals",
+   "away_team": "Montr\u00e9al Canadiens",
+   "bookmakers": [
+    {
+     "key": "draftkings",
+     "title": "DraftKings",
+     "last_update": "2026-10-15T00:02:10Z",
+     "markets": [
+      {
+       "key": "h2h",
+       "last_update": "2026-10-15T00:02:10Z",
+       "outcomes": [
+        {
+         "name": "Montr\u00e9al Canadiens",
+         "price": -110
+        },
+        {
+         "name": "Washington Capitals",
+         "price": -120
+        }
+       ]
+      },
+      {
+       "key": "spreads",
+       "last_update": "2026-10-15T00:02:10Z",
+       "outcomes": [
+        {
+         "name": "Montr\u00e9al Canadiens",
+         "price": -260,
+         "point": 1.5
+        },
+        {
+         "name": "Washington Capitals",
+         "price": 195,
+         "point": -1.5
+        }
+       ]
+      },
+      {
+       "key": "totals",
+       "last_update": "2026-10-15T00:02:10Z",
+       "outcomes": [
+        {
+         "name": "Over",
+         "price": -115,
+         "point": 7.5
+        },
+        {
+         "name": "Under",
+         "price": -115,
+         "point": 7.5
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "9604eeafec33b8980e6565c617f04fc6",
+   "sport_key": "icehockey_nhl",
+   "sport_title": "NHL",
+   "commence_time": "2026-10-15T00:40:00Z",
+   "home_team": "Colorado Avalanche",
+   "away_team": "Dallas Stars",
+   "bookmakers": [
+    {
+     "key": "draftkings",
+     "title": "DraftKings",
+     "last_update": "2026-10-15T00:02:10Z",
+     "markets": [
+      {
+       "key": "h2h",
+       "last_update": "2026-10-15T00:02:10Z",
+       "outcomes": [
+        {
+         "name": "Colorado Avalanche",
+         "price": -162
+        },
+        {
+         "name": "Dallas Stars",
+         "price": 136
+        }
+       ]
+      },
+      {
+       "key": "spreads",
+       "last_update": "2026-10-15T00:02:10Z",
+       "outcomes": [
+        {
+         "name": "Colorado Avalanche",
+         "price": 164,
+         "point": -1.5
+        },
+        {
+         "name": "Dallas Stars",
+         "price": -198,
+         "point": 1.5
+        }
+       ]
+      },
+      {
+       "key": "totals",
+       "last_update": "2026-10-15T00:02:10Z",
+       "outcomes": [
+        {
+         "name": "Over",
+         "price": 114,
+         "point": 6.5
+        },
+        {
+         "name": "Under",
+         "price": -135,
+         "point": 6.5
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "30482712c8704ae61ad9ea6b033efccf",
+   "sport_key": "icehockey_nhl",
+   "sport_title": "NHL",
+   "commence_time": "2026-10-15T23:10:00Z",
+   "home_team": "Toronto Maple Leafs",
+   "away_team": "Buffalo Sabres",
+   "bookmakers": [
+    {
+     "key": "draftkings",
+     "title": "DraftKings",
+     "last_update": "2026-10-15T00:02:10Z",
+     "markets": [
+      {
+       "key": "h2h",
+       "last_update": "2026-10-15T00:02:10Z",
+       "outcomes": [
+        {
+         "name": "Buffalo Sabres",
+         "price": -102
+        },
+        {
+         "name": "Toronto Maple Leafs",
+         "price": -118
+        }
+       ]
+      },
+      {
+       "key": "spreads",
+       "last_update": "2026-10-15T00:02:10Z",
+       "outcomes": [
+        {
+         "name": "Buffalo Sabres",
+         "price": -245,
+         "point": 1.5
+        },
+        {
+         "name": "Toronto Maple Leafs",
+         "price": 200,
+         "point": -1.5
+        }
+       ]
+      },
+      {
+       "key": "totals",
+       "last_update": "2026-10-15T00:02:10Z",
+       "outcomes": [
+        {
+         "name": "Over",
+         "price": -122,
+         "point": 6.5
+        },
+        {
+         "name": "Under",
+         "price": 102,
+         "point": 6.5
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "... 10 more"
+ ]
+}

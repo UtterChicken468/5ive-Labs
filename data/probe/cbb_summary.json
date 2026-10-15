@@ -1,0 +1,999 @@
+{
+ "url": "https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/summary?event=401827679",
+ "status": 200,
+ "headers": {},
+ "sample": {
+  "boxscore": {
+   "teams": [
+    {
+     "team": {
+      "id": "2641",
+      "uid": "s:40~l:41~t:2641",
+      "slug": "texas-tech-red-raiders",
+      "location": "Texas Tech",
+      "name": "Red Raiders",
+      "abbreviation": "TTU",
+      "displayName": "Texas Tech Red Raiders",
+      "shortDisplayName": "Texas Tech",
+      "color": "da291c",
+      "alternateColor": "000000",
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2641.png"
+     },
+     "statistics": [
+      {
+       "name": "fieldGoalsMade-fieldGoalsAttempted",
+       "displayValue": "27-66",
+       "label": "FG"
+      },
+      {
+       "name": "fieldGoalPct",
+       "displayValue": "41",
+       "abbreviation": "FG%",
+       "label": "Field Goal %"
+      },
+      {
+       "name": "threePointFieldGoalsMade-threePointFieldGoalsAttempted",
+       "displayValue": "11-33",
+       "label": "3PT"
+      },
+      "... 22 more"
+     ],
+     "displayOrder": 1,
+     "homeAway": "away"
+    },
+    {
+     "team": {
+      "id": "12",
+      "uid": "s:40~l:41~t:12",
+      "slug": "arizona-wildcats",
+      "location": "Arizona",
+      "name": "Wildcats",
+      "abbreviation": "ARIZ",
+      "displayName": "Arizona Wildcats",
+      "shortDisplayName": "Arizona",
+      "color": "cc0033",
+      "alternateColor": "003366",
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/12.png"
+     },
+     "statistics": [
+      {
+       "name": "fieldGoalsMade-fieldGoalsAttempted",
+       "displayValue": "24-61",
+       "label": "FG"
+      },
+      {
+       "name": "fieldGoalPct",
+       "displayValue": "39",
+       "abbreviation": "FG%",
+       "label": "Field Goal %"
+      },
+      {
+       "name": "threePointFieldGoalsMade-threePointFieldGoalsAttempted",
+       "displayValue": "4-16",
+       "label": "3PT"
+      },
+      "... 22 more"
+     ],
+     "displayOrder": 2,
+     "homeAway": "home"
+    }
+   ],
+   "players": [
+    {
+     "team": {
+      "id": "2641",
+      "uid": "s:40~l:41~t:2641",
+      "slug": "texas-tech-red-raiders",
+      "location": "Texas Tech",
+      "name": "Red Raiders",
+      "abbreviation": "TTU",
+      "displayName": "Texas Tech Red Raiders",
+      "shortDisplayName": "Texas Tech",
+      "color": "da291c",
+      "alternateColor": "000000",
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2641.png"
+     },
+     "statistics": [
+      {
+       "names": [
+        "MIN",
+        "PTS",
+        "FG",
+        "... 10 more"
+       ],
+       "keys": [
+        "minutes",
+        "points",
+        "fieldGoalsMade-fieldGoalsAttempted",
+        "... 10 more"
+       ],
+       "labels": [
+        "MIN",
+        "PTS",
+        "FG",
+        "... 10 more"
+       ],
+       "descriptions": [
+        "Minutes",
+        "Points",
+        "Field Goals Made/Attempted",
+        "... 10 more"
+       ],
+       "athletes": [
+        {
+         "active": true,
+         "athlete": {
+          "id": "5143604",
+          "uid": "s:40~l:41~a:5143604",
+          "guid": "8def1a4a-d782-386b-97f4-16cb11473f86",
+          "displayName": "JT Toppin",
+          "shortName": "JT Toppin",
+          "links": [
+           {
+            "rel": [
+             "playercard",
+             "desktop",
+             "athlete"
+            ],
+            "href": "https://www.espn.com/mens-college-basketball/player/_/id/5143604/jt-toppin",
+            "text": "Player Card"
+           }
+          ],
+          "headshot": {
+           "href": "https://a.espncdn.com/i/headshots/mens-college-basketball/players/full/5143604.png",
+           "alt": "JT Toppin"
+          },
+          "jersey": "15",
+          "position": {
+           "name": "Forward",
+           "displayName": "Forward",
+           "abbreviation": "F"
+          }
+         },
+         "starter": true,
+         "didNotPlay": false,
+         "ejected": false,
+         "stats": [
+          "44",
+          "31",
+          "13-22",
+          "... 10 more"
+         ]
+        },
+        {
+         "active": true,
+         "athlete": {
+          "id": "5107312",
+          "uid": "s:40~l:41~a:5107312",
+          "guid": "07f91e00-4912-3847-bb3a-147c01787510",
+          "displayName": "LeJuan Watts",
+          "shortName": "L. Watts",
+          "links": [
+           {
+            "rel": [
+             "playercard",
+             "desktop",
+             "athlete"
+            ],
+            "href": "https://www.espn.com/mens-college-basketball/player/_/id/5107312/lejuan-watts",
+            "text": "Player Card"
+           }
+          ],
+          "headshot": {
+           "href": "https://a.espncdn.com/i/headshots/mens-college-basketball/players/full/5107312.png",
+           "alt": "LeJuan Watts"
+          },
+          "jersey": "3",
+          "position": {
+           "name": "Guard",
+           "displayName": "Guard",
+           "abbreviation": "G"
+          }
+         },
+         "starter": true,
+         "didNotPlay": false,
+         "ejected": false,
+         "stats": [
+          "30",
+          "9",
+          "2-7",
+          "... 10 more"
+         ]
+        },
+        {
+         "active": false,
+         "athlete": {
+          "id": "5221321",
+          "uid": "s:40~l:41~a:5221321",
+          "guid": "d6f0bd30-5cd6-3878-a9ea-327a1e91e63b",
+          "displayName": "Jaylen Petty",
+          "shortName": "J. Petty",
+          "links": [
+           {
+            "rel": [
+             "playercard",
+             "desktop",
+             "athlete"
+            ],
+            "href": "https://www.espn.com/mens-college-basketball/player/_/id/5221321/jaylen-petty",
+            "text": "Player Card"
+           }
+          ],
+          "headshot": {
+           "href": "https://a.espncdn.com/i/headshots/mens-college-basketball/players/full/5221321.png",
+           "alt": "Jaylen Petty"
+          },
+          "jersey": "11",
+          "position": {
+           "name": "Guard",
+           "displayName": "Guard",
+           "abbreviation": "G"
+          }
+         },
+         "starter": true,
+         "didNotPlay": false,
+         "ejected": false,
+         "stats": [
+          "12",
+          "2",
+          "1-4",
+          "... 10 more"
+         ]
+        },
+        "... 11 more"
+       ],
+       "totals": [
+        "",
+        "78",
+        "27-66",
+        "... 10 more"
+       ]
+      }
+     ],
+     "displayOrder": 1
+    },
+    {
+     "team": {
+      "id": "12",
+      "uid": "s:40~l:41~t:12",
+      "slug": "arizona-wildcats",
+      "location": "Arizona",
+      "name": "Wildcats",
+      "abbreviation": "ARIZ",
+      "displayName": "Arizona Wildcats",
+      "shortDisplayName": "Arizona",
+      "color": "cc0033",
+      "alternateColor": "003366",
+      "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/12.png"
+     },
+     "statistics": [
+      {
+       "names": [
+        "MIN",
+        "PTS",
+        "FG",
+        "... 10 more"
+       ],
+       "keys": [
+        "minutes",
+        "points",
+        "fieldGoalsMade-fieldGoalsAttempted",
+        "... 10 more"
+       ],
+       "labels": [
+        "MIN",
+        "PTS",
+        "FG",
+        "... 10 more"
+       ],
+       "descriptions": [
+        "Minutes",
+        "Points",
+        "Field Goals Made/Attempted",
+        "... 10 more"
+       ],
+       "athletes": [
+        {
+         "active": true,
+         "athlete": {
+          "id": "5311896",
+          "uid": "s:40~l:41~a:5311896",
+          "guid": "040032e3-7da8-3e4e-b600-34554c85e447",
+          "displayName": "Ivan Kharchenkov",
+          "shortName": "I. Kharchenkov",
+          "links": [
+           {
+            "rel": [
+             "playercard",
+             "desktop",
+             "athlete"
+            ],
+            "href": "https://www.espn.com/mens-college-basketball/player/_/id/5311896/ivan-kharchenkov",
+            "text": "Player Card"
+           }
+          ],
+          "headshot": {
+           "href": "https://a.espncdn.com/i/headshots/mens-college-basketball/players/full/5311896.png",
+           "alt": "Ivan Kharchenkov"
+          },
+          "jersey": "8",
+          "position": {
+           "name": "Forward",
+           "displayName": "Forward",
+           "abbreviation": "F"
+          }
+         },
+         "starter": true,
+         "didNotPlay": false,
+         "ejected": false,
+         "stats": [
+          "38",
+          "13",
+          "4-14",
+          "... 10 more"
+         ]
+        },
+        {
+         "active": false,
+         "athlete": {
+          "id": "5041953",
+          "uid": "s:40~l:41~a:5041953",
+          "guid": "2bb1c38f-a810-397f-b99f-a7e37a3feaa8",
+          "displayName": "Koa Peat",
+          "shortName": "K. Peat",
+          "links": [
+           {
+            "rel": [
+             "playercard",
+             "desktop",
+             "athlete"
+            ],
+            "href": "https://www.espn.com/mens-college-basketball/player/_/id/5041953/koa-peat",
+            "text": "Player Card"
+           }
+          ],
+          "headshot": {
+           "href": "https://a.espncdn.com/i/headshots/mens-college-basketball/players/full/5041953.png",
+           "alt": "Koa Peat"
+          },
+          "jersey": "10",
+          "position": {
+           "name": "Forward",
+           "displayName": "Forward",
+           "abbreviation": "F"
+          }
+         },
+         "starter": true,
+         "didNotPlay": false,
+         "ejected": false,
+         "stats": [
+          "11",
+          "2",
+          "0-0",
+          "... 10 more"
+         ]
+        },
+        {
+         "active": true,
+         "athlete": {
+          "id": "5174954",
+          "uid": "s:40~l:41~a:5174954",
+          "guid": "46726a02-13f1-3edf-abb4-ab224d288f35",
+          "displayName": "Motiejus Krivas",
+          "shortName": "M. Krivas",
+          "links": [
+           {
+            "rel": [
+             "playercard",
+             "desktop",
+             "athlete"
+            ],
+            "href": "https://www.espn.com/mens-college-basketball/player/_/id/5174954/motiejus-krivas",
+            "text": "Player Card"
+           }
+          ],
+          "headshot": {
+           "href": "https://a.espncdn.com/i/headshots/mens-college-basketball/players/full/5174954.png",
+           "alt": "Motiejus Krivas"
+          },
+          "jersey": "13",
+          "position": {
+           "name": "Center",
+           "displayName": "Center",
+           "abbreviation": "C"
+          }
+         },
+         "starter": true,
+         "didNotPlay": false,
+         "ejected": false,
+         "stats": [
+          "38",
+          "10",
+          "4-8",
+          "... 10 more"
+         ]
+        },
+        "... 13 more"
+       ],
+       "totals": [
+        "",
+        "75",
+        "24-61",
+        "... 10 more"
+       ]
+      }
+     ],
+     "displayOrder": 2
+    }
+   ]
+  },
+  "header": {
+   "id": "401827679",
+   "uid": "s:40~l:41~e:401827679",
+   "season": {
+    "year": 2026,
+    "current": false,
+    "type": 2
+   },
+   "timeValid": true,
+   "competitions": [
+    {
+     "id": "401827679",
+     "uid": "s:40~l:41~e:401827679~c:401827679",
+     "date": "2026-02-14T23:30Z",
+     "neutralSite": false,
+     "conferenceCompetition": true,
+     "boxscoreAvailable": true,
+     "commentaryAvailable": false,
+     "liveAvailable": false,
+     "shotChartAvailable": true,
+     "timeoutsAvailable": false,
+     "possessionArrowAvailable": false,
+     "onWatchESPN": true,
+     "recent": false,
+     "wallclockAvailable": true,
+     "boxscoreSource": "full",
+     "playByPlaySource": "full",
+     "competitors": [
+      {
+       "id": "12",
+       "uid": "s:40~l:41~t:12",
+       "order": 0,
+       "homeAway": "home",
+       "winner": false,
+       "team": {
+        "id": "12",
+        "guid": "c845c06f-f087-b63d-1bcc-8013bd715b59",
+        "uid": "s:40~l:41~t:12",
+        "location": "Arizona",
+        "name": "Wildcats",
+        "nickname": "Arizona",
+        "abbreviation": "ARIZ",
+        "displayName": "Arizona Wildcats",
+        "color": "cc0033",
+        "alternateColor": "003366",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/12.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "default"
+          ],
+          "lastUpdated": "2025-12-23T01:44Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/ncaa/500-dark/12.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "dark"
+          ],
+          "lastUpdated": "2025-12-23T01:44Z"
+         },
+         {
+          "href": "https://a.espncdn.com/guid/c845c06f-f087-b63d-1bcc-8013bd715b59/logos/primary_logo_on_white_color.png",
+          "width": 4096,
+          "height": 4096,
+          "alt": "",
+          "rel": [
+           "full",
+           "primary_logo_on_white_color"
+          ],
+          "lastUpdated": "2026-07-23T17:18Z"
+         },
+         "... 11 more"
+        ],
+        "groups": {
+         "id": "8",
+         "parent": {
+          "id": "50",
+          "name": "NCAA Division I",
+          "slug": "ncaa-division-i"
+         },
+         "isConference": true,
+         "slug": "big-12-conference"
+        },
+        "links": [
+         {
+          "rel": [
+           "clubhouse",
+           "desktop",
+           "team"
+          ],
+          "href": "https://www.espn.com/mens-college-basketball/team/_/id/12/arizona-wildcats",
+          "text": "Clubhouse"
+         }
+        ]
+       },
+       "score": "75",
+       "linescores": [
+        {
+         "displayValue": "32"
+        },
+        {
+         "displayValue": "34"
+        },
+        {
+         "displayValue": "9"
+        }
+       ],
+       "record": [
+        {
+         "type": "total",
+         "summary": "23-2",
+         "displayValue": "23-2"
+        },
+        {
+         "type": "home",
+         "summary": "13-1",
+         "displayValue": "13-1"
+        },
+        {
+         "type": "vsconf",
+         "summary": "10-2",
+         "displayValue": "10-2"
+        }
+       ],
+       "possession": false,
+       "rank": 1
+      },
+      {
+       "id": "2641",
+       "uid": "s:40~l:41~t:2641",
+       "order": 1,
+       "homeAway": "away",
+       "winner": true,
+       "team": {
+        "id": "2641",
+        "guid": "290cd85f-b644-73a2-e448-ba75569d3222",
+        "uid": "s:40~l:41~t:2641",
+        "location": "Texas Tech",
+        "name": "Red Raiders",
+        "nickname": "Texas Tech",
+        "abbreviation": "TTU",
+        "displayName": "Texas Tech Red Raiders",
+        "color": "da291c",
+        "alternateColor": "000000",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/2641.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "default"
+          ],
+          "lastUpdated": "2026-07-01T04:35Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/ncaa/500-dark/2641.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "dark"
+          ],
+          "lastUpdated": "2026-07-01T04:34Z"
+         },
+         {
+          "href": "https://a.espncdn.com/guid/290cd85f-b644-73a2-e448-ba75569d3222/logos/primary_logo_on_white_color.png",
+          "width": 4096,
+          "height": 4096,
+          "alt": "",
+          "rel": [
+           "full",
+           "primary_logo_on_white_color"
+          ],
+          "lastUpdated": "2026-07-23T17:44Z"
+         },
+         "... 11 more"
+        ],
+        "groups": {
+         "id": "8",
+         "parent": {
+          "id": "50",
+          "name": "NCAA Division I",
+          "slug": "ncaa-division-i"
+         },
+         "isConference": true,
+         "slug": "big-12-conference"
+        },
+        "links": [
+         {
+          "rel": [
+           "clubhouse",
+           "desktop",
+           "team"
+          ],
+          "href": "https://www.espn.com/mens-college-basketball/team/_/id/2641/texas-tech-red-raiders",
+          "text": "Clubhouse"
+         }
+        ]
+       },
+       "score": "78",
+       "linescores": [
+        {
+         "displayValue": "32"
+        },
+        {
+         "displayValue": "34"
+        },
+        {
+         "displayValue": "12"
+        }
+       ],
+       "record": [
+        {
+         "type": "total",
+         "summary": "19-6",
+         "displayValue": "19-6"
+        },
+        {
+         "type": "road",
+         "summary": "4-3",
+         "displayValue": "4-3"
+        },
+        {
+         "type": "vsconf",
+         "summary": "9-3",
+         "displayValue": "9-3"
+        }
+       ],
+       "possession": false,
+       "rank": 16
+      }
+     ],
+     "status": {
+      "type": {
+       "id": "3",
+       "name": "STATUS_FINAL",
+       "state": "post",
+       "completed": true,
+       "description": "Final",
+       "detail": "Final/OT",
+       "shortDetail": "Final/OT",
+       "altDetail": "OT"
+      }
+     },
+     "broadcasts": [
+      {
+       "type": {
+        "id": "1",
+        "shortName": "TV"
+       },
+       "market": {
+        "id": "1",
+        "type": "National"
+       },
+       "media": {
+        "shortName": "ESPN"
+       },
+       "lang": "en",
+       "region": "us",
+       "isNational": true
+      }
+     ],
+     "groups": {
+      "id": "8",
+      "name": "Big 12 Conference",
+      "abbreviation": "big12",
+      "shortName": "Big 12",
+      "midsizeName": "Big 12"
+     },
+     "boxscoreMinutes": true
+    }
+   ],
+   "links": [
+    {
+     "rel": [
+      "summary",
+      "desktop",
+      "event"
+     ],
+     "href": "https://www.espn.com/mens-college-basketball/game/_/gameId/401827679/texas-tech-arizona",
+     "text": "Gamecast",
+     "shortText": "Summary",
+     "isExternal": false,
+     "isPremium": false
+    },
+    {
+     "rel": [
+      "boxscore",
+      "desktop",
+      "event"
+     ],
+     "href": "https://www.espn.com/mens-college-basketball/boxscore/_/gameId/401827679",
+     "text": "Box Score",
+     "shortText": "Box Score",
+     "isExternal": false,
+     "isPremium": false
+    },
+    {
+     "rel": [
+      "pbp",
+      "desktop",
+      "event"
+     ],
+     "href": "https://www.espn.com/mens-college-basketball/playbyplay/_/gameId/401827679",
+     "text": "Play-by-Play",
+     "shortText": "Play-by-Play",
+     "isExternal": false,
+     "isPremium": false
+    },
+    "... 2 more"
+   ],
+   "week": 15,
+   "league": {
+    "id": "41",
+    "uid": "s:40~l:41",
+    "name": "NCAA Men's Basketball",
+    "abbreviation": "NCAAM",
+    "shortName": "NCAAM",
+    "midsizeName": "NCAAM Basketball",
+    "slug": "mens-college-basketball",
+    "isTournament": false,
+    "links": [
+     {
+      "rel": [
+       "index",
+       "desktop",
+       "league"
+      ],
+      "href": "https://www.espn.com/mens-college-basketball/",
+      "text": "Index"
+     },
+     {
+      "rel": [
+       "index",
+       "sportscenter",
+       "app",
+       "... 1 more"
+      ],
+      "href": "sportscenter://x-callback-url/showClubhouse?uid=s:40~l:41",
+      "text": "Index"
+     },
+     {
+      "rel": [
+       "schedule",
+       "desktop",
+       "league"
+      ],
+      "href": "https://www.espn.com/mens-college-basketball/schedule",
+      "text": "Schedule"
+     },
+     "... 21 more"
+    ],
+    "logos": [
+     {
+      "href": "https://a.espncdn.com/redesign/assets/img/icons/ESPN-icon-basketball.png",
+      "rel": [
+       "full",
+       "default"
+      ]
+     },
+     {
+      "href": "https://a.espncdn.com/redesign/assets/img/icons/ESPN-icon-basketball.png",
+      "rel": [
+       "full",
+       "dark"
+      ]
+     }
+    ]
+   }
+  },
+  "pickcenter": [
+   {
+    "provider": {
+     "id": "100",
+     "name": "DraftKings",
+     "priority": 1,
+     "logos": [
+      {
+       "href": "https://a.espncdn.com/i/betting/Draftkings_Light.svg",
+       "rel": [
+        "light"
+       ]
+      },
+      {
+       "href": "https://a.espncdn.com/i/betting/Draftkings_Dark.svg",
+       "rel": [
+        "dark"
+       ]
+      }
+     ]
+    },
+    "details": "ARIZ -8.5",
+    "overUnder": 156.5,
+    "spread": -8.5,
+    "overOdds": -115.0,
+    "underOdds": -105.0,
+    "awayTeamOdds": {
+     "favorite": false,
+     "underdog": true,
+     "moneyLine": 360,
+     "spreadOdds": 100.0,
+     "team": {
+      "$ref": "http://sports.core.api.espn.pvt/v2/sports/basketball/leagues/mens-college-basketball/seasons/2026/teams/2641?lang=en&region=us"
+     },
+     "teamId": "2641",
+     "favoriteAtOpen": false
+    },
+    "homeTeamOdds": {
+     "favorite": true,
+     "underdog": false,
+     "moneyLine": -470,
+     "spreadOdds": -120.0,
+     "team": {
+      "$ref": "http://sports.core.api.espn.pvt/v2/sports/basketball/leagues/mens-college-basketball/seasons/2026/teams/12?lang=en&region=us"
+     },
+     "teamId": "12",
+     "favoriteAtOpen": true
+    },
+    "links": [
+     {
+      "language": "en-US",
+      "rel": [
+       "home",
+       "desktop",
+       "bets",
+       "... 1 more"
+      ],
+      "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fev...",
+      "text": "Home Bet",
+      "shortText": "Home Bet",
+      "isExternal": true,
+      "isPremium": false
+     },
+     {
+      "language": "en-US",
+      "rel": [
+       "away",
+       "desktop",
+       "bets",
+       "... 1 more"
+      ],
+      "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fev...",
+      "text": "Away Bet",
+      "shortText": "Away Bet",
+      "isExternal": true,
+      "isPremium": false
+     },
+     {
+      "language": "en-US",
+      "rel": [
+       "homeSpread",
+       "desktop",
+       "bets"
+      ],
+      "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fev...",
+      "text": "Home Point Spread",
+      "shortText": "Home Point Spread",
+      "isExternal": true,
+      "isPremium": false
+     },
+     "... 4 more"
+    ],
+    "moneyline": {
+     "displayName": "Moneyline",
+     "shortDisplayName": "ML",
+     "home": {
+      "close": {
+       "odds": "-470"
+      },
+      "open": {
+       "odds": "-600"
+      }
+     },
+     "away": {
+      "close": {
+       "odds": "+360"
+      },
+      "open": {
+       "odds": "+440"
+      }
+     }
+    },
+    "pointSpread": {
+     "displayName": "Spread",
+     "shortDisplayName": "Spread",
+     "home": {
+      "close": {
+       "line": "-8.5",
+       "odds": "-120"
+      },
+      "open": {
+       "line": "-10.5",
+       "odds": "-110"
+      }
+     },
+     "away": {
+      "close": {
+       "line": "+8.5",
+       "odds": "+100"
+      },
+      "open": {
+       "line": "+10.5",
+       "odds": "-110"
+      }
+     }
+    },
+    "total": {
+     "displayName": "Total",
+     "shortDisplayName": "Total",
+     "over": {
+      "close": {
+       "line": "o156.5",
+       "odds": "-115"
+      },
+      "open": {
+       "line": "o155.5",
+       "odds": "-110"
+      }
+     },
+     "under": {
+      "close": {
+       "line": "u156.5",
+       "odds": "-105"
+      },
+      "open": {
+       "line": "u155.5",
+       "odds": "-110"
+      }
+     }
+    },
+    "link": {
+     "text": "See More Odds",
+     "language": "en-US",
+     "rel": [
+      "main",
+      "desktop",
+      "bets"
+     ],
+     "href": "https://sportsbook.draftkings.com",
+     "isExternal": true,
+     "isPremium": false
+    },
+    "header": {
+     "logo": {
+      "dark": "https://a.espncdn.com/i/espnbet/dark/espn-bet-square-off.svg",
+      "light": "https://a.espncdn.com/i/espnbet/espn-bet-square-off.svg",
+      "exclusivesLogoDark": "https://a.espncdn.com/i/espnbet/espn-bet-square-mint.svg",
+      "exclusivesLogoLight": "https://a.espncdn.com/i/espnbet/espn-bet-square-mint.svg"
+     },
+     "text": "Game Odds"
+    },
+    "footer": {
+     "disclaimer": "GAMBLING PROBLEM? CALL 1-800-GAMBLER or 1-800-MY-RESET, (800) 327-5050 or visit gamblinghelplinema.org (MA). Call 877-8-HOPENY/text HOPENY (467369) (NY). Call 888-789-7777/visit ccpg.org (CT), or visi..."
+    }
+   }
+  ],
+  "odds": []
+ }
+}

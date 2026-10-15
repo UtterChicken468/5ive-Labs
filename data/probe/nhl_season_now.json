@@ -1,0 +1,10 @@
+{
+ "url": "https://api-web.nhle.com/v1/season",
+ "status": 200,
+ "headers": {},
+ "sample": [
+  20242025,
+  20252026,
+  20262027
+ ]
+}

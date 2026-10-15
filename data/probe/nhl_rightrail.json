@@ -1,0 +1,285 @@
+{
+ "url": "https://api-web.nhle.com/v1/gamecenter/2026020087/right-rail",
+ "status": 200,
+ "headers": {},
+ "sample": {
+  "seasonSeries": [
+   {
+    "id": 2026020087,
+    "season": 20262027,
+    "gameType": 2,
+    "gameDate": "2026-10-12",
+    "startTimeUTC": "2026-10-12T17:00:00Z",
+    "easternUTCOffset": "-04:00",
+    "venueUTCOffset": "-04:00",
+    "gameState": "OFF",
+    "gameScheduleState": "OK",
+    "awayTeam": {
+     "id": 13,
+     "abbrev": "FLA",
+     "logo": "https://assets.nhle.com/logos/nhl/svg/FLA_light.svg",
+     "score": 3
+    },
+    "homeTeam": {
+     "id": 7,
+     "abbrev": "BUF",
+     "logo": "https://assets.nhle.com/logos/nhl/svg/BUF_light.svg",
+     "score": 5
+    },
+    "periodDescriptor": {
+     "number": 3,
+     "periodType": "REG",
+     "maxRegulationPeriods": 3
+    },
+    "gameCenterLink": "/gamecenter/buf-vs-fla/2026/10/12/2026020087",
+    "gameOutcome": {
+     "lastPeriodType": "REG"
+    }
+   },
+   {
+    "id": 2026020361,
+    "season": 20262027,
+    "gameType": 2,
+    "gameDate": "2026-11-21",
+    "startTimeUTC": "2026-11-21T23:00:00Z",
+    "easternUTCOffset": "-05:00",
+    "venueUTCOffset": "-05:00",
+    "gameState": "FUT",
+    "gameScheduleState": "OK",
+    "awayTeam": {
+     "id": 7,
+     "abbrev": "BUF",
+     "logo": "https://assets.nhle.com/logos/nhl/svg/BUF_light.svg"
+    },
+    "homeTeam": {
+     "id": 13,
+     "abbrev": "FLA",
+     "logo": "https://assets.nhle.com/logos/nhl/svg/FLA_light.svg"
+    },
+    "gameCenterLink": "/gamecenter/fla-vs-buf/2026/11/21/2026020361",
+    "gameOutcome": {
+     "lastPeriodType": "REG"
+    }
+   },
+   {
+    "id": 2026020638,
+    "season": 20262027,
+    "gameType": 2,
+    "gameDate": "2026-12-30",
+    "startTimeUTC": "2026-12-31T00:00:00Z",
+    "easternUTCOffset": "-05:00",
+    "venueUTCOffset": "-05:00",
+    "gameState": "FUT",
+    "gameScheduleState": "OK",
+    "awayTeam": {
+     "id": 7,
+     "abbrev": "BUF",
+     "logo": "https://assets.nhle.com/logos/nhl/svg/BUF_light.svg"
+    },
+    "homeTeam": {
+     "id": 13,
+     "abbrev": "FLA",
+     "logo": "https://assets.nhle.com/logos/nhl/svg/FLA_light.svg"
+    },
+    "gameCenterLink": "/gamecenter/fla-vs-buf/2026/12/30/2026020638",
+    "gameOutcome": {
+     "lastPeriodType": "REG"
+    }
+   },
+   "... 1 more"
+  ],
+  "seasonSeriesWins": {
+   "awayTeamWins": 0,
+   "homeTeamWins": 1
+  },
+  "gameInfo": {
+   "referees": [
+    {
+     "fullName": {
+      "default": "Eric Furlatt"
+     },
+     "sweaterNumber": 27
+    },
+    {
+     "fullName": {
+      "default": "Carter Sandlak"
+     },
+     "sweaterNumber": 29
+    }
+   ],
+   "linesmen": [
+    {
+     "fullName": {
+      "default": "James Tobias"
+     },
+     "sweaterNumber": 61
+    },
+    {
+     "fullName": {
+      "default": "Joe Mahon"
+     },
+     "sweaterNumber": 89
+    }
+   ],
+   "awayTeam": {
+    "headCoach": {
+     "default": "Paul Maurice"
+    },
+    "scratches": [
+     {
+      "id": 8473419,
+      "firstName": {
+       "default": "Brad"
+      },
+      "lastName": {
+       "default": "Marchand"
+      }
+     },
+     {
+      "id": 8484304,
+      "firstName": {
+       "default": "Uvis"
+      },
+      "lastName": {
+       "default": "Balinskis"
+      }
+     }
+    ]
+   },
+   "homeTeam": {
+    "headCoach": {
+     "default": "Lindy Ruff"
+    },
+    "scratches": [
+     {
+      "id": 8475842,
+      "firstName": {
+       "default": "Sam"
+      },
+      "lastName": {
+       "default": "Carrick"
+      }
+     },
+     {
+      "id": 8476891,
+      "firstName": {
+       "default": "Matt"
+      },
+      "lastName": {
+       "default": "Grzelcyk"
+      }
+     },
+     {
+      "id": 8479941,
+      "firstName": {
+       "default": "Justin"
+      },
+      "lastName": {
+       "default": "Danforth"
+      }
+     }
+    ]
+   }
+  },
+  "gameVideo": {
+   "threeMinRecap": 6406713433112,
+   "threeMinRecapFr": 6406713534112,
+   "condensedGame": 6406711763112,
+   "condensedGameFr": 6406712388112
+  },
+  "linescore": {
+   "byPeriod": [
+    {
+     "periodDescriptor": {
+      "number": 1,
+      "periodType": "REG",
+      "maxRegulationPeriods": 3
+     },
+     "away": 1,
+     "home": 2
+    },
+    {
+     "periodDescriptor": {
+      "number": 2,
+      "periodType": "REG",
+      "maxRegulationPeriods": 3
+     },
+     "away": 2,
+     "home": 1
+    },
+    {
+     "periodDescriptor": {
+      "number": 3,
+      "periodType": "REG",
+      "maxRegulationPeriods": 3
+     },
+     "away": 0,
+     "home": 2
+    }
+   ],
+   "totals": {
+    "away": 3,
+    "home": 5
+   }
+  },
+  "shotsByPeriod": [
+   {
+    "periodDescriptor": {
+     "number": 1,
+     "periodType": "REG",
+     "maxRegulationPeriods": 3
+    },
+    "away": 7,
+    "home": 11
+   },
+   {
+    "periodDescriptor": {
+     "number": 2,
+     "periodType": "REG",
+     "maxRegulationPeriods": 3
+    },
+    "away": 7,
+    "home": 13
+   },
+   {
+    "periodDescriptor": {
+     "number": 3,
+     "periodType": "REG",
+     "maxRegulationPeriods": 3
+    },
+    "away": 9,
+    "home": 8
+   }
+  ],
+  "teamGameStats": [
+   {
+    "category": "sog",
+    "awayValue": 23,
+    "homeValue": 32
+   },
+   {
+    "category": "faceoffWinningPctg",
+    "awayValue": 0.526316,
+    "homeValue": 0.473684
+   },
+   {
+    "category": "faceoffWins",
+    "awayValue": "30/57",
+    "homeValue": "27/57"
+   },
+   "... 7 more"
+  ],
+  "gameReports": {
+   "gameSummary": "https://www.nhl.com/scores/htmlreports/20262027/GS020087.HTM",
+   "eventSummary": "https://www.nhl.com/scores/htmlreports/20262027/ES020087.HTM",
+   "playByPlay": "https://www.nhl.com/scores/htmlreports/20262027/PL020087.HTM",
+   "faceoffSummary": "https://www.nhl.com/scores/htmlreports/20262027/FS020087.HTM",
+   "faceoffComparison": "https://www.nhl.com/scores/htmlreports/20262027/FC020087.HTM",
+   "rosters": "https://www.nhl.com/scores/htmlreports/20262027/RO020087.HTM",
+   "shotSummary": "https://www.nhl.com/scores/htmlreports/20262027/SS020087.HTM",
+   "shiftChart": "https://www.nhl.com/stats/shiftcharts?id=2026020087",
+   "toiAway": "https://www.nhl.com/scores/htmlreports/20262027/TV020087.HTM",
+   "toiHome": "https://www.nhl.com/scores/htmlreports/20262027/TH020087.HTM"
+  }
+ }
+}
