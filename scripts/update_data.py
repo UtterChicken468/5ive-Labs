@@ -159,6 +159,92 @@ def day_index(sched):
     return first
 
 
+# ---------------------------------------------------------------- shared extras: weather, injuries, opening lines
+NFL_STADIUMS = {  # home team -> (lat, lon); roof comes from the schedule
+    'ARI': (33.528, -112.263), 'ATL': (33.755, -84.401), 'BAL': (39.278, -76.623), 'BUF': (42.774, -78.787),
+    'CAR': (35.226, -80.853), 'CHI': (41.862, -87.617), 'CIN': (39.095, -84.516), 'CLE': (41.506, -81.700),
+    'DAL': (32.748, -97.093), 'DEN': (39.744, -105.020), 'DET': (42.340, -83.046), 'GB': (44.501, -88.062),
+    'HOU': (29.685, -95.411), 'IND': (39.760, -86.164), 'JAX': (30.324, -81.637), 'KC': (39.049, -94.484),
+    'LA': (33.953, -118.339), 'LAC': (33.953, -118.339), 'LV': (36.091, -115.184), 'MIA': (25.958, -80.239),
+    'MIN': (44.974, -93.258), 'NE': (42.091, -71.264), 'NO': (29.951, -90.081), 'NYG': (40.813, -74.074),
+    'NYJ': (40.813, -74.074), 'PHI': (39.901, -75.168), 'PIT': (40.447, -80.016), 'SEA': (47.595, -122.332),
+    'SF': (37.403, -121.970), 'TB': (27.976, -82.503), 'TEN': (36.166, -86.771), 'WAS': (38.908, -76.864)}
+
+
+def add_weather(sched, where, days=6):
+    """Forecast at kickoff for upcoming outdoor games. where(g) -> (lat, lon) or None."""
+    today = datetime.datetime.now(ET).date()
+    todo = {}
+    for g in sched:
+        if g['hs'] is not None or not g.get('d') or not g.get('tm'):
+            continue
+        ahead = (datetime.date.fromisoformat(g['d']) - today).days
+        loc = where(g)
+        if 0 <= ahead <= days and loc:
+            todo.setdefault((round(loc[0], 3), round(loc[1], 3)), []).append(g)
+
+    def fetch(loc):
+        return get_json('https://api.open-meteo.com/v1/forecast?latitude=%s&longitude=%s&hourly=temperature_2m,'
+                        'wind_speed_10m,wind_gusts_10m,precipitation_probability,precipitation,snowfall'
+                        '&wind_speed_unit=mph&temperature_unit=fahrenheit&precipitation_unit=inch'
+                        '&timezone=America%%2FNew_York&forecast_days=8' % loc)
+    got = parallel(fetch, list(todo), workers=6)
+    for loc, games in todo.items():
+        f = got.get(loc) or {}
+        hr = f.get('hourly') or {}
+        times = hr.get('time') or []
+        for g in games:
+            key = f"{g['d']}T{g['tm'][:2]}:00"
+            if key not in times:
+                continue
+            i = times.index(key)
+            val = lambda k: (hr.get(k) or [None] * (i + 1))[i]
+            g['wx'] = dict(t=val('temperature_2m'), w=val('wind_speed_10m'), gu=val('wind_gusts_10m'),
+                           pp=val('precipitation_probability'), pr=val('precipitation'), sn=val('snowfall'))
+
+
+INJ_KEEP = {'Out', 'Doubtful', 'Questionable', 'Day-To-Day', 'Suspension'}
+
+
+def espn_injuries(path, team_key):
+    """ESPN injury report -> {our team code: [{n, pos, st}]}. team_key(espn_team) -> our code."""
+    try:
+        data = get_json(f'https://site.api.espn.com/apis/site/v2/sports/{path}/injuries')
+    except Exception:
+        return {}
+    out = {}
+    for t in data.get('injuries', []):
+        code = team_key(t)
+        if not code:
+            continue
+        for i in t.get('injuries', []):
+            st = i.get('status')
+            if st not in INJ_KEEP:
+                continue
+            a = i.get('athlete') or {}
+            out.setdefault(code, []).append(dict(n=a.get('displayName', ''), pos=(a.get('position') or {}).get('abbreviation', ''),
+                                                 st=st, note=(i.get('shortComment') or '')[:140]))
+    order = {'Out': 0, 'Suspension': 0, 'Doubtful': 1, 'Questionable': 2, 'Day-To-Day': 2}
+    for v in out.values():
+        v.sort(key=lambda x: order.get(x['st'], 3))
+    return out
+
+
+def track_open(sport, season, sched, true_open=None):
+    """Remember the first line seen for every game; attach it as g['o'] for line movement.
+    true_open(g) can supply the real opening number when the source has one (CFBD does)."""
+    name = f'open_{sport}_{season}.json'
+    cache = load_cache(name)
+    for g in sched:
+        k = str(g['id'])
+        if k not in cache and any(g.get(x) is not None for x in ('sp', 'tot', 'hml')):
+            cache[k] = {x: g.get(x) for x in ('sp', 'tot', 'hml', 'aml')}
+        o = (true_open(g) if true_open else None) or cache.get(k)
+        if o and any(o.get(x) is not None for x in ('sp', 'tot', 'hml')):
+            g['o'] = o
+    save_cache(name, cache)
+
+
 # ---------------------------------------------------------------- The Odds API (NHL and MLB lines)
 ODDS_PREF = ['draftkings', 'fanduel', 'betmgm', 'williamhill_us', 'betrivers']
 
@@ -235,6 +321,27 @@ def odds_lines(sport_key, sched, names, cache_name):
 
 
 # ---------------------------------------------------------------- NHL (NHL public API + The Odds API)
+def toi_min(s):
+    m, _, sec = str(s or '0:0').partition(':')
+    return round(num(m) + num(sec) / 60, 1)
+
+
+def nhl_box(gid):
+    b = get_json(f'https://api-web.nhle.com/v1/gamecenter/{gid}/boxscore')
+    pbg = b.get('playerByGameStats') or {}
+    out = {}
+    for side, key in (('home', 'homeTeam'), ('away', 'awayTeam')):
+        t = pbg.get(key) or {}
+        sk = []
+        for grp, pos in (('forwards', 'F'), ('defense', 'D')):
+            for x in t.get(grp, []):
+                sk.append([x['playerId'], (x.get('name') or {}).get('default', ''), pos, x.get('goals', 0), x.get('assists', 0),
+                           x.get('sog', 0), toi_min(x.get('toi'))])
+        gl = [[x['playerId'], (x.get('name') or {}).get('default', ''), bool(x.get('starter')), x.get('shotsAgainst', 0),
+               x.get('saves', 0), toi_min(x.get('toi'))] for x in t.get('goalies', [])]
+        out[side] = dict(sk=sk, gl=gl)
+    return out
+
 def build_nhl(_season):
     today = datetime.datetime.now(ET).date()
     y = today.year if today.month >= 9 else today.year - 1
@@ -299,13 +406,46 @@ def build_nhl(_season):
     finalize_games(team_games, sched)
     note, remaining = odds_lines('icehockey_nhl', sched, names, f'odds_nhl_{sid}.json')
     sched.sort(key=lambda g: (g['d'], g['tm']))
+    track_open('nhl', y, sched)
 
-    meta = dict(sport='nhl', label='NHL', family='hockey', period='Day', start=first.isoformat(),
+    # Box scores: starting goalies (for the goalie adjustment) and skater lines (for props).
+    box_name = f'nhl_box_{sid}.json'
+    box = load_cache(box_name)
+    need = [str(g['id']) for g in sched if g['hs'] is not None and (str(g['id']) not in box or '_error' in box[str(g['id'])])]
+    box.update(parallel(nhl_box, need, workers=8))
+    save_cache(box_name, box)
+    goalies, gnames, team_goalies, last_start, players = {}, {}, {}, {}, []
+    for g in sched:
+        b = box.get(str(g['id']))
+        if g['hs'] is None or not b or '_error' in b:
+            continue
+        for side, t, o in (('home', g['h'], g['a']), ('away', g['a'], g['h'])):
+            for pid, nm, starter, sa, sv, toi in b[side]['gl']:
+                pid = str(pid); gnames[pid] = nm
+                if starter:
+                    goalies.setdefault(pid, []).append([g['w'], sa, sv])
+                    g['hg' if side == 'home' else 'ag'] = pid
+                    team_goalies.setdefault(t, [])
+                    if pid not in team_goalies[t]:
+                        team_goalies[t].append(pid)
+                    last_start[t] = pid
+                    players.append(dict(id='G' + pid, n=nm, p='G', t=t, o=o, w=g['w'], sv=sv, sa=sa))
+            for pid, nm, pos, gl_, ast, sog, toi in b[side]['sk']:
+                if toi >= 8:
+                    players.append(dict(id=str(pid), n=nm, p=pos, t=t, o=o, w=g['w'], sog=sog, gl=gl_, ast=ast, pts=gl_ + ast, toi=toi))
+    for g in sched:  # projected starter: whoever started the team's last game (you can change it on the card)
+        if g['hs'] is None:
+            g['hg'], g['ag'] = last_start.get(g['h']), last_start.get(g['a'])
+    injuries = espn_injuries('hockey/nhl', lambda t: names.get(norm_name(t.get('displayName'))))
+
+    meta = dict(sport='nhl', label='NHL', family='hockey', period='Day', start=first.isoformat(), props=True,
                 seasonLabel=f'{y}-{str(y + 1)[2:]}', sigma=2.4, sigmaTot=2.3, btSkip=10, formN=5,
-                hfa=0.15, trust=55, bye=0.2, rest='b2b', props=False, unit='goals', spreadName='Puck line',
+                hfa=0.15, trust=55, bye=0.2, rest='b2b', unit='goals', spreadName='Puck line',
                 edgeSteps=[0.25, 0.5, 0.75, 1], edgeDefault=0.5, hfaMax=0.5, hfaStep=0.05, byeMax=0.5, byeStep=0.05,
-                source='NHL stats API · lines from The Odds API', oddsNote=note, oddsRemaining=remaining)
-    return dict(meta=meta, season=y, teamGames=team_games, games=sched, players=[])
+                goalie=True, lgSv=round(1 - sum(r['gf'] for r in team_games) / max(sum(r['sf'] for r in team_games), 1), 4),
+                source='NHL stats API · lines from The Odds API · injuries from ESPN', oddsNote=note, oddsRemaining=remaining)
+    return dict(meta=meta, season=y, teamGames=team_games, games=sched, players=players, goalies=goalies, gnames=gnames,
+                teamGoalies=team_goalies, injuries=injuries)
 
 
 # ---------------------------------------------------------------- MLB (MLB Stats API + The Odds API)
@@ -404,6 +544,7 @@ def build_mlb(_season):
     lg_era = round(sum(r['sp_er'] for r in team_games) * 9 / tip, 2)
     note_odds, remaining = odds_lines('baseball_mlb', sched, names, f'odds_mlb_{y}.json')
     sched.sort(key=lambda g: (g['d'], g['tm']))
+    track_open('mlb', y, sched)
     meta = dict(sport='mlb', label='MLB', family='baseball', period='Day', start=first.isoformat(), seasonLabel=str(y),
                 sigma=4.3, sigmaTot=4.5, btSkip=21, formN=10, hfa=0.15, trust=60, bye=0, rest='none', props=False,
                 unit='runs', spreadName='Run line', edgeSteps=[0.25, 0.5, 0.75, 1], edgeDefault=0.5,
@@ -554,6 +695,7 @@ def build_cbb(_season):
         g.pop('hid'); g.pop('aid')
     finalize_games_gk(team_games, sched)
     sched.sort(key=lambda g: (g['d'], g['tm']))
+    track_open('cbb', y, sched)
     meta = dict(sport='cbb', label='College basketball', family='basketball', period='Day', start=first.isoformat(),
                 seasonLabel=f'{y - 1}-{str(y)[2:]}', sigma=11, sigmaTot=16, btSkip=21, formN=5, hfa=3.0, trust=70,
                 bye=0, rest='none', props=False, unit='pts', spreadName='Spread', edgeSteps=[1, 2, 3, 4, 5],
@@ -598,8 +740,20 @@ def build_nfl(season):
         as_=opt_int(g['away_score']), hs=opt_int(g['home_score']),
         sp=opt_float(g['spread_line']), tot=opt_float(g['total_line']),
         aml=opt_int(g['away_moneyline']), hml=opt_int(g['home_moneyline']),
-        neu=g['location'] == 'Neutral', ar=num(g['away_rest']), hr=num(g['home_rest'])) for g in games]
+        neu=g['location'] == 'Neutral', ar=num(g['away_rest']), hr=num(g['home_rest']), roof=g.get('roof', '')) for g in games]
     finalize_games(team_games, sched)
+    add_weather(sched, lambda g: NFL_STADIUMS.get(g['h']) if not g['neu'] and g.get('roof') in ('outdoors', 'open') else None)
+    track_open('nfl', season, sched)
+    espn_abbr = {'WSH': 'WAS', 'LAR': 'LA'}
+    nfl_names = {'Arizona Cardinals': 'ARI', 'Atlanta Falcons': 'ATL', 'Baltimore Ravens': 'BAL', 'Buffalo Bills': 'BUF',
+                 'Carolina Panthers': 'CAR', 'Chicago Bears': 'CHI', 'Cincinnati Bengals': 'CIN', 'Cleveland Browns': 'CLE',
+                 'Dallas Cowboys': 'DAL', 'Denver Broncos': 'DEN', 'Detroit Lions': 'DET', 'Green Bay Packers': 'GB',
+                 'Houston Texans': 'HOU', 'Indianapolis Colts': 'IND', 'Jacksonville Jaguars': 'JAX', 'Kansas City Chiefs': 'KC',
+                 'Las Vegas Raiders': 'LV', 'Los Angeles Chargers': 'LAC', 'Los Angeles Rams': 'LA', 'Miami Dolphins': 'MIA',
+                 'Minnesota Vikings': 'MIN', 'New England Patriots': 'NE', 'New Orleans Saints': 'NO', 'New York Giants': 'NYG',
+                 'New York Jets': 'NYJ', 'Philadelphia Eagles': 'PHI', 'Pittsburgh Steelers': 'PIT', 'San Francisco 49ers': 'SF',
+                 'Seattle Seahawks': 'SEA', 'Tampa Bay Buccaneers': 'TB', 'Tennessee Titans': 'TEN', 'Washington Commanders': 'WAS'}
+    injuries = espn_injuries('football/nfl', lambda t: nfl_names.get(t.get('displayName')))
 
     players = []
     for x in player_raw:
@@ -616,8 +770,9 @@ def build_nfl(season):
             players.append(r)
 
     meta = dict(sport='nfl', label='NFL', family='football', period='Week', sigma=13.5, sigmaTot=13, btSkip=1,
-                hfa=1.5, trust=60, bye=1.0, rest='bye', formN=3, props=True, source='nflverse', **FOOTBALL_UI)
-    return dict(meta=meta, season=season, teamGames=team_games, games=sched, players=players)
+                hfa=1.5, trust=60, bye=1.0, rest='bye', formN=3, props=True, weather=True, qbOut=True,
+                source='nflverse · injuries from ESPN · weather from Open-Meteo', **FOOTBALL_UI)
+    return dict(meta=meta, season=season, teamGames=team_games, games=sched, players=players, injuries=injuries)
 
 
 # ---------------------------------------------------------------- College football (CollegeFootballData.com)
@@ -730,7 +885,7 @@ def build_cfb(season):
             ls.sort(key=lambda l: pref.index(pick(l, 'provider')) if pick(l, 'provider') in pref else 99)
             best[str(pick(row, 'id'))] = ls[0]
 
-    last_date, sched = {}, []
+    last_date, sched, true_opens = {}, [], {}
     for g in sorted(games_raw, key=lambda g: pick(g, 'startDate', 'start_date') or ''):
         gid = str(pick(g, 'id'))
         h, a = pick(g, 'homeTeam', 'home_team'), pick(g, 'awayTeam', 'away_team')
@@ -752,13 +907,45 @@ def build_cfb(season):
             aml=opt_int(pick(l, 'awayMoneyline', 'away_moneyline')), hml=opt_int(pick(l, 'homeMoneyline', 'home_moneyline')),
             neu=bool(pick(g, 'neutralSite', 'neutral_site', default=False)), ar=ar, hr=hr,
             hc=pick(g, 'homeConference', 'home_conference', default=''),
-            ac=pick(g, 'awayConference', 'away_conference', default='')))
+            ac=pick(g, 'awayConference', 'away_conference', default=''),
+            hid=str(pick(g, 'homeId', 'home_id', default='')), aid=str(pick(g, 'awayId', 'away_id', default='')),
+            vid=str(pick(g, 'venueId', 'venue_id', default=''))))
+        if l and (pick(l, 'spreadOpen', 'spread_open') is not None or pick(l, 'overUnderOpen', 'over_under_open') is not None):
+            so = opt_float(pick(l, 'spreadOpen', 'spread_open'))
+            true_opens[gid] = dict(sp=None if so is None else -so, tot=opt_float(pick(l, 'overUnderOpen', 'over_under_open')))
     sched.sort(key=lambda x: (x['w'], x['d'], x['tm']))
     finalize_games(team_games, sched)
+    track_open('cfb', season, sched, true_open=lambda g: true_opens.get(str(g['id'])))
+
+    # Stadiums (cached; they rarely change) for weather at kickoff.
+    venues = load_cache('cfb_venues.json')
+    if not venues:
+        for v in cfbd('/venues'):
+            if v.get('latitude') is not None:
+                venues[str(v['id'])] = [round(v['latitude'], 4), round(v['longitude'], 4), bool(v.get('dome'))]
+        save_cache('cfb_venues.json', venues)
+    add_weather(sched, lambda g: (venues[g['vid']][0], venues[g['vid']][1]) if g.get('vid') in venues and not venues[g['vid']][2] else None)
+
+    # Preseason ratings: last season's final SP+, pulled 40% back toward average.
+    priors = {}
+    try:
+        for r in cfbd('/ratings/sp', year=season - 1):
+            if r.get('team') and r.get('rating') is not None and r['team'] != 'nationalAverages':
+                priors[r['team']] = round(0.6 * float(r['rating']), 1)
+    except Exception:
+        priors = {}
+    names_by_id = {}
+    for g in sched:
+        names_by_id[g['hid']] = g['h']; names_by_id[g['aid']] = g['a']
+    injuries = espn_injuries('football/college-football', lambda t: names_by_id.get(str(t.get('id'))))
+    for g in sched:
+        g.pop('vid', None)
 
     meta = dict(sport='cfb', label='College football', family='football', period='Week', sigma=16, sigmaTot=15, btSkip=2,
-                hfa=2.5, trust=70, bye=1.0, rest='bye', formN=3, props=False, source='CollegeFootballData.com', **FOOTBALL_UI)
-    return dict(meta=meta, season=season, teamGames=team_games, games=sched, players=[])
+                hfa=2.5, trust=70, bye=1.0, rest='bye', formN=3, props=False, weather=True,
+                priors=priors, priorGames=4, priorLabel=f'{season - 1} SP+',
+                source='CollegeFootballData.com · injuries from ESPN · weather from Open-Meteo', **FOOTBALL_UI)
+    return dict(meta=meta, season=season, teamGames=team_games, games=sched, players=[], injuries=injuries)
 
 
 # ---------------------------------------------------------------- main

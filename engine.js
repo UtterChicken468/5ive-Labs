@@ -86,7 +86,7 @@
   function poss(S, p) { return S[p + 'fga'] - S[p + 'orb'] + S[p + 'tov'] + 0.475 * S[p + 'fta']; }
 
   // Per-sport settings; set with configure() once the sport's data loads.
-  let SIGMA = 13.5, SIGMA_TOT = 13, BT_SKIP = 1, FORM_N = 3, REST = 'bye', FAMILY = 'football';
+  let SIGMA = 13.5, SIGMA_TOT = 13, BT_SKIP = 1, FORM_N = 3, REST = 'bye', FAMILY = 'football', PRIORS = null, LG_SV = 0.9;
   const api = {};
   function configure(cfg) {
     if (cfg.sigma) SIGMA = cfg.sigma;
@@ -97,6 +97,9 @@
     FAMILY = cfg.family || 'football';
     api.FACTORS = FAMILIES[FAMILY].factors;
     api.PRESETS = FAMILIES[FAMILY].presets;
+    PROPS = PROP_SETS[FAMILY] || []; api.PROPS = PROPS;
+    PRIORS = cfg.priors || null;
+    LG_SV = cfg.lgSv || 0.9;
   }
 
   const phi = (x) => { // standard normal CDF
@@ -161,13 +164,35 @@
     const cs = sd(Object.values(comp)) || 1;
     const scale = sd(teams.map((t) => t.margin)) * (settings.trust / 100);
     const rating = {}, contrib = {};
+    const k = PRIORS ? (settings.prior ?? 4) : 0;
     teams.forEach((t) => {
-      rating[t.team] = comp[t.team] / cs * scale;
-      contrib[t.team] = {};
+      const r = comp[t.team] / cs * scale;
+      const pr = PRIORS ? (PRIORS[t.team] ?? -8) : 0; // teams with no prior rating start below average
+      rating[t.team] = k ? (t.n * r + k * pr) / (t.n + k) : r;
+      contrib[t.team] = k ? { prior: rating[t.team] - r } : {};
       F.forEach((f) => { contrib[t.team][f.key] = (weights[f.key] || 0) * z[t.team][f.key] / wsum / cs * scale; });
     });
     const league = { ppg: mean(teams.map((t) => t.pf)) };
     return { rating, contrib, z, league, weights };
+  }
+
+  // NFL: each team's starting QB = most pass attempts in its latest game.
+  function startingQB(data, team) {
+    if (!data._qb) {
+      data._qb = {};
+      (data.players || []).forEach((r) => {
+        if (r.p !== 'QB') return;
+        const cur = data._qb[r.t];
+        if (!cur || r.w > cur.w || (r.w === cur.w && r.pa > cur.pa)) data._qb[r.t] = { n: r.n, w: r.w, pa: r.pa };
+      });
+    }
+    return data._qb[team];
+  }
+  // NHL: a goalie's save % from his starts before this game, shrunk toward league average (~600 shots).
+  function goalieSv(data, gid, before) {
+    let sa = 0, sv = 0;
+    (data.goalies[gid] || []).forEach((s) => { if (s[0] < before) { sa += s[1]; sv += s[2]; } });
+    return (sv + LG_SV * 600) / (sa + 600);
   }
 
   // Baseball: run value of each probable starter vs a league-average starter, from his starts
@@ -195,6 +220,19 @@
     if (REST === 'bye') restEdge = (game.hr >= 10 ? 1 : 0) - (game.ar >= 10 ? 1 : 0); // coming off a bye
     if (REST === 'b2b') restEdge = (game.ar <= 1 ? 1 : 0) - (game.hr <= 1 ? 1 : 0);  // opponent on a back-to-back
     margin += restEdge * (settings.bye || 0);
+    let qb = null, goalie = null, weather = null;
+    if (data && data.injuries && settings.qbOut) { // NFL: starting QB ruled out or doubtful
+      const out = (t) => { const q = startingQB(data, t); return q && (data.injuries[t] || []).some((i) => i.n === q.n && (i.st === 'Out' || i.st === 'Doubtful')) ? q : null; };
+      const hq = out(game.h), aq = out(game.a);
+      if (hq || aq) { qb = { h: hq && hq.n, a: aq && aq.n }; margin += ((aq ? 1 : 0) - (hq ? 1 : 0)) * settings.qbOut; }
+    }
+    if (FAMILY === 'hockey' && data && data.goalies && settings.goalie) {
+      const hg = lines.hg !== undefined ? lines.hg : game.hg, ag = lines.ag !== undefined ? lines.ag : game.ag;
+      const tsv = (t) => 1 - div(t.S.o_gf, t.S.o_sf);
+      const adj = (gid, team) => gid ? (goalieSv(data, gid, game.w) - tsv(team)) * 28 : 0; // goals saved vs the team's usual goaltending
+      goalie = { h: adj(hg, h), a: adj(ag, a), hg, ag };
+      margin += (goalie.h - goalie.a) * settings.goalie / 5;
+    }
     let starter = null;
     if (FAMILY === 'baseball' && data && R.weights && R.weights.starter) {
       const k = R.weights.starter / 5;
@@ -204,10 +242,16 @@
     const k = settings.trust / 100, L = R.league.ppg;
     const homePts = L + k * (((h.pf + a.pa) / 2) - L);
     const awayPts = L + k * (((a.pf + h.pa) / 2) - L);
-    const total = homePts + awayPts;
+    let total = homePts + awayPts;
+    if (game.wx && settings.weather && FAMILY === 'football') { // wind, rain/snow and cold pull scoring down
+      const w = game.wx;
+      const pts = Math.max((w.w || 0) - 10, 0) * 0.3 + ((w.pp || 0) >= 60 && (w.pr || 0) >= 0.04 ? 1.5 : 0) + ((w.sn || 0) >= 0.05 ? 1.5 : 0) + ((w.t ?? 60) < 25 ? 1 : 0);
+      weather = -pts * settings.weather / 5;
+      total += weather;
+    }
     const hs = total / 2 + margin / 2, as = total / 2 - margin / 2;
     const pHome = phi(margin / SIGMA);
-    const out = { margin, total, hs, as, pHome, pAway: 1 - pHome, starter };
+    const out = { margin, total, hs, as, pHome, pAway: 1 - pHome, starter, qb, goalie, weather };
     if (lines.sp != null) {
       out.spEdge = margin - lines.sp; // + means model likes home vs the line
       out.pHomeCover = phi((margin - lines.sp) / SIGMA);
@@ -219,7 +263,8 @@
   }
 
   // Walk-forward backtest: each week predicted only with earlier weeks.
-  function backtest(data, weights, settings, edgeMin) {
+  function backtest(data, weights, settings, edgeMin, collect) {
+    const picks = collect ? [] : null;
     const done = data.games.filter((g) => g.hs != null).sort((a, b) => a.w - b.w);
     const byW = {}; done.forEach((g) => { (byW[g.w] || (byW[g.w] = [])).push(g); });
     const weeks = Object.keys(byW).map(Number).sort((a, b) => a - b);
@@ -234,6 +279,7 @@
       byW[w].forEach((g) => {
         const pr = predict(g, P, R, settings, { sp: g.sp, tot: g.tot }, data); if (!pr) return;
         const res = g.hs - g.as_;
+        if (picks) picks.push({ id: g.id, w, m: pr.margin, res, sp: g.sp });
         if (res !== 0) { n++; wk.n++; if ((pr.margin > 0) === (res > 0)) { su++; wk.su++; } }
         mae += Math.abs(pr.margin - res);
         if (g.sp != null) {
@@ -253,29 +299,51 @@
       per.push(wk);
     });
     const games = per.reduce((s, x) => s + x.n, 0);
-    return { su, n, vegasSu, vegasN, ats, ou, mae: games ? mae / games : 0, vegasMae: games ? vegasMae / games : 0, per };
+    return { su, n, vegasSu, vegasN, ats, ou, mae: games ? mae / games : 0, vegasMae: games ? vegasMae / games : 0, per, picks };
   }
 
   // ---------- Player props ----------
-  const PROPS = [
-    { key: 'py', label: 'Passing yards', pos: ['QB'], dist: 'normal', group: 'pass' },
-    { key: 'ptd', label: 'Passing TDs', pos: ['QB'], dist: 'poisson', group: 'passTd' },
-    { key: 'ry', label: 'Rushing yards', pos: ['QB', 'RB', 'WR'], dist: 'normal', group: 'rush' },
-    { key: 'rec', label: 'Receptions', pos: ['RB', 'WR', 'TE'], dist: 'poisson', group: 'rec' },
-    { key: 'rcy', label: 'Receiving yards', pos: ['RB', 'WR', 'TE'], dist: 'normal', group: 'recYds' },
-    { key: 'rry', label: 'Rush + rec yards', pos: ['RB', 'WR', 'TE'], dist: 'normal', group: 'scrim' },
-  ];
-  const statOf = (r, key) => key === 'rry' ? r.ry + r.rcy : r[key];
+  const avg = (games, f) => games.reduce((t, g) => t + f(g), 0) / (games.length || 1);
+  const PROP_SETS = {
+    football: [
+      { key: 'py', label: 'Passing yards', pos: ['QB'], dist: 'normal', minSd: 8, grp: () => 'QB', elig: (gs) => avg(gs, (g) => g.pa) >= 15 },
+      { key: 'ptd', label: 'Passing TDs', pos: ['QB'], dist: 'poisson', grp: () => 'QB', elig: (gs) => avg(gs, (g) => g.pa) >= 15 },
+      { key: 'ry', label: 'Rushing yards', pos: ['QB', 'RB', 'WR'], dist: 'normal', minSd: 8,
+        elig: (gs) => ({ RB: avg(gs, (g) => g.ru) >= 5, QB: avg(gs, (g) => g.ru) >= 4 && avg(gs, (g) => g.pa) >= 15, WR: avg(gs, (g) => g.ru) >= 2 })[gs[0].p] },
+      { key: 'rec', label: 'Receptions', pos: ['RB', 'WR', 'TE'], dist: 'poisson', elig: (gs) => avg(gs, (g) => g.tg) >= 3 },
+      { key: 'rcy', label: 'Receiving yards', pos: ['RB', 'WR', 'TE'], dist: 'normal', minSd: 8, elig: (gs) => avg(gs, (g) => g.tg) >= 3 },
+      { key: 'rry', label: 'Rush + rec yards', pos: ['RB', 'WR', 'TE'], dist: 'normal', minSd: 8, stat: (r) => r.ry + r.rcy,
+        elig: (gs) => gs[0].p === 'RB' ? avg(gs, (g) => g.ru + g.tg) >= 8 : avg(gs, (g) => g.tg) >= 4 },
+    ],
+    hockey: [
+      { key: 'sog', label: 'Shots on goal', pos: ['F', 'D'], dist: 'poisson', grp: () => 'S', elig: (gs) => avg(gs, (g) => g.toi) >= 12 },
+      { key: 'pts', label: 'Points', pos: ['F', 'D'], dist: 'poisson', grp: () => 'S', elig: (gs) => avg(gs, (g) => g.toi) >= 13 },
+      { key: 'gl', label: 'Goals', pos: ['F', 'D'], dist: 'poisson', grp: () => 'S', elig: (gs) => avg(gs, (g) => g.toi) >= 14 },
+      { key: 'sv', label: 'Goalie saves', pos: ['G'], dist: 'normal', minSd: 4, grp: () => 'G', elig: (gs) => gs.length >= 2 },
+    ],
+    basketball: [
+      { key: 'pts', label: 'Points', pos: ['G', 'F', 'C'], dist: 'normal', minSd: 3, grp: () => 'P', elig: (gs) => avg(gs, (g) => g.min) >= 18 },
+      { key: 'reb', label: 'Rebounds', pos: ['G', 'F', 'C'], dist: 'poisson', grp: () => 'P', elig: (gs) => avg(gs, (g) => g.min) >= 18 },
+      { key: 'ast', label: 'Assists', pos: ['G', 'F', 'C'], dist: 'poisson', grp: () => 'P', elig: (gs) => avg(gs, (g) => g.min) >= 18 },
+      { key: 'tpm', label: 'Made threes', pos: ['G', 'F', 'C'], dist: 'poisson', grp: () => 'P', elig: (gs) => avg(gs, (g) => g.min) >= 18 && avg(gs, (g) => g.tpm) >= 0.8 },
+      { key: 'pra', label: 'Pts + reb + ast', pos: ['G', 'F', 'C'], dist: 'normal', minSd: 4, grp: () => 'P', stat: (r) => r.pts + r.reb + r.ast, elig: (gs) => avg(gs, (g) => g.min) >= 18 },
+    ],
+    baseball: [],
+  };
+  let PROPS = PROP_SETS.football;
+  const propOf = (key) => PROPS.find((p) => p.key === key);
+  const statOf = (r, key) => { const p = propOf(key); return p && p.stat ? p.stat(r) : (r[key] || 0); };
+  const grpOf = (p, pos) => (p.grp ? p.grp(pos) : pos);
 
   // What each defense allows per game, by stat and position group, vs league average.
   function defenseAllowed(data) {
     const games = {}; // team -> set of weeks
     data.teamGames.forEach((r) => { (games[r.t] || (games[r.t] = new Set())).add(r.w); });
     const tot = {};
-    data.players.forEach((r) => {
+    (data.players || []).forEach((r) => {
       PROPS.forEach((p) => {
         if (!p.pos.includes(r.p)) return;
-        const k = r.o + '|' + p.key + '|' + (p.key === 'py' || p.key === 'ptd' ? 'QB' : r.p);
+        const k = r.o + '|' + p.key + '|' + grpOf(p, r.p);
         tot[k] = (tot[k] || 0) + statOf(r, p.key);
       });
     });
@@ -288,7 +356,7 @@
     });
     const lgAvg = {}; Object.entries(lg).forEach(([k, a]) => { lgAvg[k] = mean(a); });
     return (opp, stat, pos) => {
-      const p = (stat === 'py' || stat === 'ptd') ? 'QB' : pos;
+      const p = grpOf(propOf(stat), pos);
       const v = per[opp + '|' + stat + '|' + p], l = lgAvg[stat + '|' + p];
       if (v == null || !l) return 1;
       return v / l;
@@ -303,7 +371,7 @@
 
   // Projection for one player/prop. opts: {recent (0-100), matchup (0-100)}
   function projectProp(games, propKey, opp, defFn, opts) {
-    const prop = PROPS.find((p) => p.key === propKey);
+    const prop = propOf(propKey);
     const vals = games.map((g) => statOf(g, propKey));
     if (!vals.length) return null;
     const season = mean(vals);
@@ -313,7 +381,7 @@
     const mf = defFn(opp, propKey, games[0].p);
     const adj = 1 + (mf - 1) * (opts.matchup / 100) * 0.6; // damp: small samples
     const proj = Math.max(0, base * adj);
-    const spread = Math.max(sd(vals), proj * 0.3, prop.dist === 'normal' ? 8 : 0.5);
+    const spread = Math.max(sd(vals), proj * 0.3, prop.minSd || 0.5);
     return { proj, season, last3, matchup: mf, spread, dist: prop.dist, n: vals.length, vals };
   }
 
@@ -323,7 +391,7 @@
   }
 
   const DEFAULT_SETTINGS = { hfa: 1.5, trust: 60, bye: 1.0 };
-  Object.assign(api, { configure, DEFAULT_SETTINGS, PROPS, teamProfiles, ratings, predict, backtest,
+  Object.assign(api, { configure, DEFAULT_SETTINGS, teamProfiles, ratings, predict, backtest, propOf,
     defenseAllowed, projectProp, overProb, impliedProb, evPerUnit, profitPerUnit, phi, statOf });
   configure({ family: 'football' });
   root.Engine = api;

@@ -1,7 +1,0 @@
-{
- "url": "https://api-web.nhle.com/v1/schedule/2026-10-15",
- "status": 200,
- "sample": {
-  "n": 46
- }
-}
