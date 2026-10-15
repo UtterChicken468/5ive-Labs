@@ -82,5 +82,15 @@
   "season": 2026,
   "through": "2026-10-13",
   "upcoming": 1239
+ },
+ "ufc": {
+  "finals": 4001,
+  "history": [],
+  "next": "2026-10-17",
+  "ok": true,
+  "rows": 0,
+  "season": 2026,
+  "through": "2026-10-10",
+  "upcoming": 77
  }
 }
