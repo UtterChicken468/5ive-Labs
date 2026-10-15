@@ -654,7 +654,7 @@ function trainedView() {
   const label = (y) => META.family === 'hockey' ? y + '-' + String(y + 1).slice(2) : META.family === 'basketball' ? (y - 1) + '-' + String(y).slice(2) : String(y);
   const cal = (t.calibration || []).map(([p, w, n]) => `<span class="pill flat" title="${n} games">said ${p}% → won ${w}%</span>`).join(' ');
   return `<div class="wk"><h3 style="font-size:20px;text-transform:uppercase;margin-bottom:6px">Trained model</h3>
-    <p class="note" style="margin:0 0 10px">Learned from ${TRAINED.games.toLocaleString()} games (${label(seasons[0])} to now) and re-trained after every data refresh. The test below is on the ${label(TRAINED.testSeason)} season, which was left out of training, so it's a fair preview of how it should do going forward.</p>
+    <p class="note" style="margin:0 0 10px">Learned from ${TRAINED.games.toLocaleString()} games (${label(seasons[0])} to now) and re-trained after every data refresh. For a fair test, the ${label(TRAINED.testSeason)} season was held out of training and predicted game by game, the same way it predicts upcoming games. The live model then learns from everything.</p>
     <div class="tiles" style="margin-bottom:10px">
       <div class="tile"><span class="label">Winners picked</span><b>${t.su}%</b><span class="sub">Vegas favorite ${t.vegasSu ?? '–'}% · Balanced preset ${t.balancedSu}%</span></div>
       <div class="tile"><span class="label">Average miss</span><b>${t.mae}</b><span class="sub">${UNIT === 'pts' ? 'points' : UNIT} · Vegas ${t.vegasMae ?? '–'} · Balanced ${t.balancedMae}</span></div>
