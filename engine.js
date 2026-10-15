@@ -14,6 +14,7 @@
         { key: 'adjMargin', label: 'Opponent-adjusted margin', hint: 'Margin after accounting for who they played (like KenPom or SP+)', fn: (t) => t.adj },
         { key: 'offEpa', label: 'Offensive efficiency', hint: 'EPA per play on offense', fn: (t) => div(t.S.epa, t.S.pl) },
         { key: 'defEpa', label: 'Defensive efficiency', hint: 'EPA per play allowed (lower is better)', fn: (t) => -div(t.S.o_epa, t.S.o_pl) },
+        { key: 'yards', label: 'Yardage margin', hint: 'Total yards gained minus yards allowed, per game', fn: (t) => (t.S.py + t.S.ry - t.S.o_py - t.S.o_ry) / t.n },
         { key: 'ypp', label: 'Yards per play edge', hint: 'Offense YPP minus defense YPP', fn: (t) => div(t.S.py + t.S.ry, t.S.pl) - div(t.S.o_py + t.S.o_ry, t.S.o_pl) },
         { key: 'turnovers', label: 'Turnover margin', hint: 'Takeaways minus giveaways, per game', fn: (t) => (t.S.o_to - t.S.to) / t.n },
         { key: 'passRush', label: 'Pass rush vs protection', hint: 'Sacks made minus sacks allowed, per game', fn: (t) => (t.S.sk - t.S.ss) / t.n },
@@ -22,10 +23,10 @@
         { key: 'sos', label: 'Schedule strength', hint: 'Credit for tougher past opponents', fn: (t) => t.sos },
       ],
       presets: {
-        Balanced: { margin: 3, adjMargin: 6, offEpa: 6, defEpa: 6, ypp: 4, turnovers: 3, passRush: 2, form: 3, discipline: 1, sos: 3 },
-        'Efficiency first': { margin: 1, adjMargin: 3, offEpa: 9, defEpa: 8, ypp: 6, turnovers: 1, passRush: 2, form: 1, discipline: 0, sos: 3 },
-        Scoreboard: { margin: 6, adjMargin: 8, offEpa: 2, defEpa: 2, ypp: 1, turnovers: 2, passRush: 0, form: 6, discipline: 0, sos: 2 },
-        'Defense wins': { margin: 2, adjMargin: 3, offEpa: 3, defEpa: 10, ypp: 3, turnovers: 7, passRush: 7, form: 2, discipline: 2, sos: 2 },
+        Balanced: { margin: 3, adjMargin: 6, offEpa: 6, defEpa: 6, yards: 3, ypp: 4, turnovers: 3, passRush: 2, form: 3, discipline: 1, sos: 3 },
+        'Efficiency first': { margin: 1, adjMargin: 3, offEpa: 9, defEpa: 8, yards: 2, ypp: 6, turnovers: 1, passRush: 2, form: 1, discipline: 0, sos: 3 },
+        Scoreboard: { margin: 6, adjMargin: 8, offEpa: 2, defEpa: 2, yards: 2, ypp: 1, turnovers: 2, passRush: 0, form: 6, discipline: 0, sos: 2 },
+        'Defense wins': { margin: 2, adjMargin: 3, offEpa: 3, defEpa: 10, yards: 3, ypp: 3, turnovers: 7, passRush: 7, form: 2, discipline: 2, sos: 2 },
       },
     },
     hockey: {
