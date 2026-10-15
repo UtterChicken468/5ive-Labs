@@ -1,16 +1,16 @@
 {
  "cbb": {
-  "finals": 5529,
+  "finals": 0,
   "history": [
-   2024,
-   2025
+   2025,
+   2026
   ],
-  "next": null,
+  "next": "2026-11-01",
   "ok": true,
-  "rows": 11058,
-  "season": 2026,
-  "through": "2026-03-15",
-  "upcoming": 14
+  "rows": 0,
+  "season": 2027,
+  "through": "",
+  "upcoming": 146
  },
  "cfb": {
   "finals": 331,
@@ -38,6 +38,20 @@
   "season": 2026,
   "through": "2026-09-27",
   "upcoming": 0
+ },
+ "nba": {
+  "finals": 0,
+  "history": [
+   2024,
+   2025,
+   2026
+  ],
+  "next": "2026-10-20",
+  "ok": true,
+  "rows": 0,
+  "season": 2027,
+  "through": "",
+  "upcoming": 121
  },
  "nfl": {
   "finals": 79,
