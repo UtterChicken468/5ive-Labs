@@ -370,7 +370,8 @@ function evPill(ev) {
 function gamesView() {
   const { P, R } = model();
   const weekGames = DATA.games.filter((g) => g.w === S.week);
-  const items = weekGames.map((g) => ({ g, L: linesFor(g), pr: null })).map((x) => { x.pr = E.predict(x.g, P, R, S.settings, x.L); return x; });
+  const played = weekGames.filter((g) => g.hs != null).length;
+  const items = weekGames.filter((g) => g.hs == null).map((g) => ({ g, L: linesFor(g), pr: null })).map((x) => { x.pr = E.predict(x.g, P, R, S.settings, x.L); return x; });
   const maxEdge = (x) => Math.max(Math.abs(x.pr?.spEdge || 0), Math.abs(x.pr?.totEdge || 0));
   let list = items.filter((x) => x.pr);
   if (S.onlyEdges) list = list.filter((x) => maxEdge(x) >= S.edgeMin);
@@ -386,7 +387,7 @@ function gamesView() {
     <div class="f"><label class="label" for="teamQ">Team${META.sport === 'cfb' ? ' or conference' : ''}</label><input type="text" id="teamQ" placeholder="Search" value="${esc(S.teamQ)}" style="width:150px"></div>
     <label class="small" style="display:flex;gap:6px;align-items:center;padding-bottom:6px"><input type="checkbox" id="onlyEdges" ${S.onlyEdges ? 'checked' : ''}> Only games with an edge</label>
   </div>
-  <p class="note" style="margin:0 0 14px">Lines are editable: type in what your book shows and the edge updates. Spreads use book style (favorite is negative). ${byes.length ? 'On bye: ' + byes.join(', ') + '.' : ''}</p>
+  <p class="note" style="margin:0 0 14px">Lines are editable: type in what your book shows and the edge updates. Spreads use book style (favorite is negative). ${byes.length ? (byes.length > 8 ? `${byes.length} teams on bye.` : 'On bye: ' + byes.join(', ') + '.') : ''} ${played ? `${played} game${played > 1 ? 's' : ''} this week already played (graded in Accuracy).` : ''}</p>
   <div class="games">${list.map(gameCard).join('') || `<div class="empty">No games match${S.teamQ ? ' "' + esc(S.teamQ) + '"' : ''}${S.onlyEdges ? ' with an edge of ' + S.edgeMin + '+ points' : ''}.</div>`}</div>`;
 }
 function gameCard({ g, L, pr }) {
