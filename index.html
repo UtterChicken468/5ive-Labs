@@ -870,7 +870,24 @@ async function bootEdges() {
   const rows = [], counts = {};
   for (const key of keys) {
     let data; try { data = await fetch('data/' + key + '.json', { cache: 'no-cache' }).then((r) => r.json()); } catch (e) { continue; }
-    const m = data.meta; E.configure(m);
+    const m = data.meta;
+    if (key === 'ufc') { // fighters: moneylines only
+      const g2 = (k, d) => { try { const v = localStorage.getItem('gml:ufc:' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
+      const res = E.ufc.walk(data, g2('weights', { ...E.ufc.PRESETS.Trained })), over = g2('lines', {});
+      const fair = (mine, theirs) => { const a = E.impliedProb(mine), b = E.impliedProb(theirs); return a / (a + b); };
+      res.upcoming.filter(({ f }) => f.d && f.d >= today && f.d <= plus(6)).forEach(({ f, p }) => {
+        const o = over[f.id] || {}, aml = o.aml !== undefined ? o.aml : f.aml, bml = o.bml !== undefined ? o.bml : f.bml;
+        if (aml == null || bml == null) return;
+        [[f.an, p, aml, bml], [f.bn, 1 - p, bml, aml]].forEach(([nm, pm0, price, other]) => {
+          if (price > 250) return;
+          const pm = fair(price, other), ev = E.evPerUnit((pm0 + pm) / 2, price);
+          if (ev > 0.015) rows.push({ sport: 'ufc', label: 'UFC', vs: true, g: { a: f.an, h: f.bn, d: f.d, tm: f.tm }, type: 'Moneyline', bet: nm + ' (' + (price > 0 ? '+' + price : price) + ')', p: pm0, pm, ev, edge: Math.round(pm0 * 100) + '% to win' });
+        });
+      });
+      counts[key] = rows.filter((r) => r.sport === key).length;
+      continue;
+    }
+    E.configure(m);
     const pre = key === 'nfl' ? 'gml:' : 'gml:' + key + ':';
     const get = (k, d) => { try { const v = localStorage.getItem(pre + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
     const tr = m.trained;
@@ -921,7 +938,7 @@ async function bootEdges() {
   $('#view').innerHTML = rows.length ? `
     <div class="toolbar"><div class="small muted">${chips || ''}</div></div>
     <div class="tblwrap"><table><thead><tr><th>Sport</th><th>Game</th><th>When</th><th>Bet</th><th class="num">Model vs market</th><th class="num">Edge</th><th class="num">Value</th><th></th></tr></thead><tbody>
-    ${rows.map((r, i) => `<tr ${i >= 25 ? 'class="more" hidden' : ''}><td><span class="pill flat">${esc(r.label)}</span></td><td class="pname">${esc(r.g.a)} @ ${esc(r.g.h)}</td><td class="small">${when(r)}</td>
+    ${rows.map((r, i) => `<tr ${i >= 25 ? 'class="more" hidden' : ''}><td><span class="pill flat">${esc(r.label)}</span></td><td class="pname">${esc(r.g.a)} ${r.vs ? 'vs' : '@'} ${esc(r.g.h)}</td><td class="small">${when(r)}</td>
       <td><b>${esc(r.bet)}</b> <span class="muted small">${esc(r.type)}</span></td><td class="num">${Math.round(r.p * 100)}% <span class="muted small">vs ${Math.round(r.pm * 100)}%</span></td><td class="num">${esc(r.edge)}</td>
       <td class="num"><span class="pill ${r.ev > 0.03 ? 'good' : 'flat'}">EV ${r.ev >= 0 ? '+' : '−'}${Math.abs(r.ev * 100).toFixed(0)}%</span></td>
       <td><button class="logbtn" data-open="${r.sport}">Open</button></td></tr>`).join('')}
