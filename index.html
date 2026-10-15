@@ -1159,13 +1159,20 @@ function bootUfc(DATA) {
 
   function fightersView() {
     const cutoff = new Date(Date.now() - 2 * 3.15576e10).toISOString().slice(0, 10);
-    const rows = Object.entries(model.state).filter(([, s]) => s.last && s.last >= cutoff && s.n >= 2).map(([id, s]) => ({ id, s, f: fighter(id) }));
+    const rows = Object.entries(model.state).filter(([, s]) => s.last && s.last >= cutoff && s.n >= 4).map(([id, s]) => ({ id, s, f: fighter(id), x: U.features(s, fighter(id), today) }));
+    // Model score: your sliders applied to each fighter vs an average active fighter, shown as a win chance.
+    const keys = U.FACTORS.map((f) => f.key), avg = {};
+    keys.forEach((k) => { const v = rows.map((r) => r.x[k]).filter((x) => x != null); avg[k] = v.length ? v.reduce((a, b) => a + b, 0) / v.length : 0; });
+    rows.forEach((r) => {
+      const d = {}; keys.forEach((k) => { d[k] = r.x[k] == null ? 0 : (r.x[k] - avg[k]) / (k === 'reach' ? 3 : 1); });
+      r.score = U.sigmoid(U.logit(d, model.coef, S.weights));
+    });
     const wcs = [...new Set(rows.map((r) => r.s.wc).filter(Boolean))].sort();
-    const list = rows.filter((r) => S.wc === 'all' || r.s.wc === S.wc).sort((a, b) => b.s.elo - a.s.elo).slice(0, 60);
+    const list = rows.filter((r) => S.wc === 'all' || r.s.wc === S.wc).sort((a, b) => b.score - a.score).slice(0, 60);
     return `<div class="toolbar"><div class="f"><label class="label" for="wcSel">Weight class</label><select id="wcSel"><option value="all">All</option>${wcs.map((w) => `<option ${w === S.wc ? 'selected' : ''}>${esc(w)}</option>`).join('')}</select></div></div>
-      <p class="note" style="margin:0 0 12px">Active fighters (fought in the last two years) ranked by rating. Stats are UFC fights since ${DATA.meta.firstYear}.</p>
-      <div class="tblwrap"><table><thead><tr><th>#</th><th>Fighter</th><th>Class</th><th class="num">Rating</th><th class="num">UFC record</th><th class="num">Strike diff / min</th><th class="num">TD / 15 min</th><th class="num">Last 3</th></tr></thead><tbody>
-      ${list.map((r, i) => { const m = r.s.secs / 60; const w = r.s.res.filter((x) => x === 1).length, l = r.s.res.filter((x) => x === 0).length; return `<tr><td class="muted">${i + 1}</td><td class="pname">${esc(r.f.n || r.id)}</td><td class="small">${esc(r.s.wc)}</td><td class="num"><b>${Math.round(r.s.elo)}</b></td><td class="num">${w}–${l}</td><td class="num">${m ? ((r.s.ssl - r.s.sslAbs) / m).toFixed(1) : '–'}</td><td class="num">${m ? (15 * r.s.tdl / m).toFixed(1) : '–'}</td><td class="num">${r.s.res.slice(-3).map((x) => x === 1 ? 'W' : x === 0 ? 'L' : 'D').join(' ')}</td></tr>`; }).join('')}
+      <p class="note" style="margin:0 0 12px">Active fighters (4+ UFC fights, one in the last two years), ranked by your model: the chance each would beat an average active fighter, using your sliders. Move a slider and the order changes. Stats are UFC fights since ${DATA.meta.firstYear}.</p>
+      <div class="tblwrap"><table><thead><tr><th>#</th><th>Fighter</th><th>Class</th><th class="num">vs average</th><th class="num">Rating</th><th class="num">UFC record</th><th class="num">Strike diff / min</th><th class="num">TD / 15 min</th><th class="num">Last 3</th></tr></thead><tbody>
+      ${list.map((r, i) => { const m = r.s.secs / 60; const w = r.s.res.filter((x) => x === 1).length, l = r.s.res.filter((x) => x === 0).length; return `<tr><td class="muted">${i + 1}</td><td class="pname">${esc(r.f.n || r.id)}</td><td class="small">${esc(r.s.wc)}</td><td class="num"><b>${Math.round(r.score * 100)}%</b></td><td class="num">${Math.round(r.s.elo)}</td><td class="num">${w}–${l}</td><td class="num">${m ? ((r.s.ssl - r.s.sslAbs) / m).toFixed(1) : '–'}</td><td class="num">${m ? (15 * r.s.tdl / m).toFixed(1) : '–'}</td><td class="num">${r.s.res.slice(-3).map((x) => x === 1 ? 'W' : x === 0 ? 'L' : 'D').join(' ')}</td></tr>`; }).join('')}
       </tbody></table></div>`;
   }
 
