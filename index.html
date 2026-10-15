@@ -72,11 +72,32 @@ header.mast h1 img { display: block; height: clamp(54px, 9vw, 86px); width: auto
 .navrow .sports { flex: 1 1 auto }
 .syncbtn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 6px 12px; font-size: 13px; font-weight: 600; color: var(--muted) }
 .syncbtn.on { color: var(--good); border-color: var(--good) }
+#guideBtn.on { color: var(--accent-ink); background: var(--accent); border-color: var(--accent) }
 .syncbtn.err { color: var(--bad); border-color: var(--bad) }
 .syncpanel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px; margin-bottom: 14px; display: grid; gap: 10px; max-width: 720px }
 .syncpanel ol { margin: 0; padding-left: 20px; display: grid; gap: 4px }
 .syncpanel .row { display: flex; gap: 8px; flex-wrap: wrap }
 .syncpanel .row input { flex: 1 1 260px; font-family: ui-monospace, Menlo, monospace; font-size: 13px }
+
+.navright { display: flex; gap: 8px; align-items: center }
+a.syncbtn { text-decoration: none; display: inline-flex; align-items: center }
+.welcome { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; background: var(--accent-soft); border: 1px solid var(--accent); border-radius: var(--r); padding: 10px 14px; margin-bottom: 12px; font-size: 14px }
+.welcome span { flex: 1 1 260px }
+.welcome .btn { text-decoration: none }
+/* guide */
+.guide { max-width: 760px; display: grid; gap: 18px; font-size: 15.5px; line-height: 1.6 }
+.guide h2 { font-size: 26px; text-transform: uppercase }
+.guide h3 { font-size: 20px; text-transform: uppercase; margin-bottom: 4px }
+.guide section { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px }
+.guide p { margin: 6px 0 }
+.guide ul, .guide ol { margin: 6px 0; padding-left: 20px; display: grid; gap: 4px }
+.guide dl { display: grid; grid-template-columns: minmax(110px, max-content) minmax(0, 1fr); gap: 6px 14px; margin: 8px 0 0 }
+.guide dt { font-weight: 600 }
+.guide dd { margin: 0; color: var(--ink) }
+.guide .toc { display: flex; flex-wrap: wrap; gap: 6px }
+.guide .toc a { color: var(--accent); text-decoration: none; border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; font-size: 13px }
+.guide .callout { border-left: 3px solid var(--accent); border-radius: 0; padding: 4px 0 4px 12px; color: var(--muted) }
+@media (max-width: 520px) { .guide dl { grid-template-columns: minmax(0, 1fr) } .guide dd { margin-bottom: 6px } }
 
 /* sport switcher */
 .sports { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px }
@@ -220,7 +241,8 @@ td input { width: 70px }
     <h1><img src="logo.png" width="950" height="306" alt="5ive Lab"></h1>
     <div class="stamp" id="stamp"></div>
   </header>
-  <div class="navrow"><nav class="sports" id="sports" aria-label="Sport"></nav><button class="syncbtn" id="syncBtn" type="button">Sync: off</button></div>
+  <div class="navrow"><nav class="sports" id="sports" aria-label="Sport"></nav><div class="navright"><a class="syncbtn" id="guideBtn" href="#guide">How it works</a><button class="syncbtn" id="syncBtn" type="button">Sync: off</button></div></div>
+  <div class="welcome" id="welcome" hidden><span><b>New here?</b> Two minutes on how to read the picks and use the sliders.</span><a class="btn accent" href="#guide" id="welcomeGo">How it works</a><button class="btn ghost" id="welcomeX" type="button">Got it</button></div>
   <section class="syncpanel" id="syncPanel" hidden></section>
   <div class="hash" aria-hidden="true"></div>
 
@@ -840,6 +862,7 @@ const SPORTS = [
 ];
 function chosenSport() {
   const h = location.hash.slice(1);
+  if (h === 'guide') return 'guide';
   if (SPORTS.some((s) => s.key === h && !s.soon)) return h;
   try { const v = localStorage.getItem('gml:sport'); if (SPORTS.some((s) => s.key === v && !s.soon)) return v; } catch (e) {}
   return 'nfl';
@@ -848,6 +871,10 @@ const SPORT = chosenSport();
 document.getElementById('sports').innerHTML = SPORTS.map((s) => s.soon
   ? `<span class="sport soon" title="Coming soon">${s.label}<small>soon</small></span>`
   : `<button class="sport" data-sport="${s.key}" aria-pressed="${s.key === SPORT}">${s.label}</button>`).join('');
+document.getElementById('guideBtn').addEventListener('click', (e) => { e.preventDefault(); location.hash = 'guide'; location.reload(); });
+document.getElementById('welcomeGo').addEventListener('click', (e) => { e.preventDefault(); try { localStorage.setItem('gml:seenGuide', '1'); } catch (err) {} location.hash = 'guide'; location.reload(); });
+document.getElementById('welcomeX').addEventListener('click', () => { try { localStorage.setItem('gml:seenGuide', '1'); } catch (err) {} document.getElementById('welcome').hidden = true; });
+try { if (!localStorage.getItem('gml:seenGuide') && SPORT !== 'guide') document.getElementById('welcome').hidden = false; } catch (err) {}
 document.getElementById('sports').addEventListener('click', (e) => {
   const b = e.target.closest('[data-sport]'); if (!b || b.dataset.sport === SPORT) return;
   try { localStorage.setItem('gml:sport', b.dataset.sport); } catch (err) {}
@@ -1233,6 +1260,107 @@ function bootUfc(DATA) {
   recompute(); renderBuilder(); renderTabs(); render();
 }
 
+// ---------- How it works ----------
+function bootGuide() {
+  const $ = (q) => document.querySelector(q);
+  try { localStorage.setItem('gml:seenGuide', '1'); } catch (e) {}
+  $('aside.builder').hidden = true; $('#tabs').hidden = true; $('.layout').classList.add('solo');
+  $('#stamp').textContent = 'How 5ive Lab works: reading the picks, the sliders, and what the numbers mean.';
+  document.querySelectorAll('[data-sport]').forEach((b) => b.setAttribute('aria-pressed', 'false'));
+  $('#guideBtn').classList.add('on');
+  $('#view').innerHTML = `<div class="guide">
+  <h2>How it works</h2>
+  <nav class="toc" aria-label="Sections">
+    <a href="#g-what">What this is</a><a href="#g-card">Reading a game card</a><a href="#g-terms">Betting terms</a><a href="#g-model">The model panel</a>
+    <a href="#g-edges">Best edges</a><a href="#g-accuracy">Accuracy</a><a href="#g-props">Player props</a><a href="#g-log">Pick log and sync</a><a href="#g-ufc">UFC</a><a href="#g-data">Data and updates</a><a href="#g-limits">Know the limits</a>
+  </nav>
+
+  <section id="g-what"><h3>What this is</h3>
+    <p>5ive Lab predicts games in seven sports (NFL, college football, NBA, college basketball, NHL, MLB and UFC) using team stats, and compares its predictions to the betting lines. You decide what the model cares about by sliding factors up or down, or you can use the <b>Trained</b> model, which learned its settings from past seasons.</p>
+    <p>Pick a sport from the buttons at the top. Everything you change (sliders, lines you type in, picks you log) is saved in your browser.</p>
+  </section>
+
+  <section id="g-card"><h3>Reading a game card</h3>
+    <ol>
+      <li><b>Model score:</b> the score the model expects. "DET by 1.7" means it thinks Detroit wins by about 2.</li>
+      <li><b>Win bar:</b> each team's chance to win, from the model.</li>
+      <li><b>Spread, Total and Moneyline rows:</b> the betting line on the left (already filled in when available; you can type your sportsbook's number instead), the model's own line under it, and on the right which side the model likes and how sure it is.</li>
+      <li><b>Edge pill:</b> how far the model's number is from the betting line. A highlighted "Edge" means the gap is bigger than the threshold you picked in "Flag edges of".</li>
+      <li><b>Log:</b> saves that pick to your Pick log so you can track how it does.</li>
+      <li><b>Extras:</b> some cards show injuries (tap to open), kickoff weather, starting goalies or pitchers, and where the line opened ("moving toward you" means the market has moved in your model's direction, which is a good sign).</li>
+    </ol>
+  </section>
+
+  <section id="g-terms"><h3>Betting terms</h3>
+    <dl>
+      <dt>Spread</dt><dd>Points the favorite has to win by. "DET −1.5" means Detroit must win by 2 or more; "BOS +1.5" means Boston covers if it loses by 1 or wins. Hockey calls it the puck line and baseball the run line (usually 1.5).</dd>
+      <dt>Total (O/U)</dt><dd>Combined points scored. Over 222.5 wins if the teams score 223 or more.</dd>
+      <dt>Moneyline</dt><dd>Just pick the winner. −150 means bet $150 to win $100 (a favorite); +130 means bet $100 to win $130 (an underdog).</dd>
+      <dt>Edge</dt><dd>The gap between the model's number and the betting line. Bigger gaps mean bigger disagreement, not guaranteed wins.</dd>
+      <dt>Cover %</dt><dd>The model's chance that side wins the bet.</dd>
+      <dt>EV (expected value)</dt><dd>How much a $1 bet would make on average if the model's chances were exactly right. EV +5% means about 5 cents per dollar. Green is positive, red is negative.</dd>
+      <dt>Fair odds</dt><dd>The odds that would make a bet exactly break-even at the model's win chance. If the real odds pay more than fair, the model sees value.</dd>
+      <dt>Break-even</dt><dd>At standard −110 odds you need to win 52.4% of bets just to break even, which is why "against the spread" records hover near 50%.</dd>
+    </dl>
+  </section>
+
+  <section id="g-model"><h3>The model panel (left side)</h3>
+    <ul>
+      <li><b>Presets:</b> <b>Trained</b> is the model that learned from past seasons and is re-trained after every data update. The others are starting points with a different style (for example "Defense wins").</li>
+      <li><b>Factor sliders (0 to 10):</b> how much each stat matters. Hover or read the small text under each one for what it measures. Everything on the right updates as you slide.</li>
+      <li><b>Game settings:</b> home-field edge, rest (bye weeks or back-to-backs), "Trust in this season" (lower pulls every team toward average, useful early in a season), preseason ratings (how much last season counts before new games pile up), plus weather, starting QB, starting goalie or starting pitcher effects where they apply.</li>
+      <li><b>Saved models:</b> name and save a version of your sliders so you can compare it later.</li>
+    </ul>
+    <p class="callout">Not sure where to start? Use Trained, then change one slider at a time and watch the Accuracy tab.</p>
+  </section>
+
+  <section id="g-edges"><h3>Best edges</h3>
+    <p>The first button at the top. It scans every sport for the next couple of days and lists the bets where your model and the betting market disagree most, using the model you saved for each sport. Value is scored on a 50/50 blend of your model and the market price so long-shot underdogs don't flood the list, and moneylines longer than +250 are left out. Tap <b>Open</b> to jump to that game.</p>
+  </section>
+
+  <section id="g-accuracy"><h3>Accuracy</h3>
+    <ul>
+      <li><b>Backtest:</b> every past game this season is predicted using only the games before it, so the model never sees the answer. You get winners picked, record against the spread and totals, and the average miss, next to the same numbers for the Vegas favorite.</li>
+      <li><b>Trained model card:</b> how the trained model did on a whole season it never trained on. This is the most honest preview of how it should do going forward.</li>
+      <li><b>Honesty check:</b> "said 70%, won 71%" means that when the model was 70% sure, it was right about 71% of the time. Close numbers mean you can trust its percentages.</li>
+      <li><b>Model battle:</b> pick two models and see who won the games where they disagreed.</li>
+    </ul>
+  </section>
+
+  <section id="g-props"><h3>Player props</h3>
+    <p>For the NFL, NBA, NHL and college basketball. Each player's projection blends their season average with their last few games, nudged by how much the opponent usually allows. Type your sportsbook's line and odds to see the over or under chance and value. "Opp D" above 100% means the opponent gives up more than average.</p>
+  </section>
+
+  <section id="g-log"><h3>Pick log and sync</h3>
+    <p>Every pick you log is graded automatically once the game is final, with your record and units won or lost (1 unit risked per pick). Picks live in this browser. To keep the same picks and models on your phone and laptop, tap <b>Sync</b> at the top and follow the steps there (it uses a free GitHub token, stored only in your browser).</p>
+  </section>
+
+  <section id="g-ufc"><h3>UFC is a little different</h3>
+    <ul>
+      <li>Fights are grouped by event; pick one from the Event menu. The main event is listed first.</li>
+      <li>Only moneylines (who wins). Each fight shows both fighters' records, age, reach and stance, the model's win chance, and "fair" odds to compare with the real ones.</li>
+      <li>Every fighter has a rating that goes up and down with each win and loss (bigger moves for finishes), plus stats like strikes landed versus absorbed per minute and takedowns. The sliders set how much each one matters; Trained uses what the model learned from thousands of past fights.</li>
+      <li><b>Fighter ratings</b> ranks active fighters by their chance to beat an average fighter, using your sliders.</li>
+    </ul>
+  </section>
+
+  <section id="g-data"><h3>Data and updates</h3>
+    <p>Stats, scores, schedules, injuries and most betting lines refresh automatically about twice a day (around 9 AM and 5 PM Eastern), and the trained models re-learn after each refresh. Late games show up the next morning. Lines move between updates, so check your sportsbook and type in the current number if it changed. The header on each page says when that sport last updated and where the data comes from.</p>
+  </section>
+
+  <section id="g-limits"><h3>Know the limits</h3>
+    <ul>
+      <li>The models are close to Vegas at picking winners but don't consistently beat the betting lines. Treat picks as a second opinion, not a sure thing.</li>
+      <li>The model only knows what's in the stats. Injuries, suspensions and lineup news can matter more than any slider, so check the news.</li>
+      <li>Early in a season, ratings lean on last season and are less reliable.</li>
+      <li>Sports betting is only legal for adults (21+ in most US states). If you bet, only use money you can afford to lose.</li>
+    </ul>
+  </section>
+  </div>`;
+  document.querySelectorAll('.guide .toc a').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); const t = document.querySelector(a.getAttribute('href')); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); }));
+}
+
+if (SPORT === 'guide') bootGuide(); else
 if (SPORT === 'ufc') syncFirst.then(() => fetch('data/ufc.json', { cache: 'no-cache' })).then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then(bootUfc)
   .catch((err) => { document.getElementById('view').innerHTML = '<div class="empty">Couldn\'t load the UFC data (' + String(err.message || err) + '). Reload to try again.</div>'; });
 else if (SPORT === 'edges') syncFirst.then(bootEdges); else
