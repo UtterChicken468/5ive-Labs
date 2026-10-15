@@ -271,6 +271,15 @@ body.noscroll { overflow: hidden }
 .dbtn:hover { border-color: var(--accent) }
 @media (max-width: 520px) { .detail { padding: 0 } .dsheet { border-radius: 0; min-height: 100%; padding: 18px 14px 40px } .dm b { font-size: 22px } .ds { font-size: 38px } .tape .tp { grid-template-columns: 74px minmax(0,1fr) 74px; font-size: 13px } .rgs, .yd { grid-template-columns: 1fr 1fr } }
 
+.vt .vr { display: grid; grid-template-columns: minmax(0,.8fr) minmax(0,1.1fr) minmax(0,1fr) minmax(0,1.2fr); gap: 10px; align-items: start; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px }
+.vt .vr > span { min-width: 0; overflow-wrap: anywhere }
+.vt .vh { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); padding-top: 0 }
+.vt .vk { font-weight: 700 }
+.vt small { font-size: 12px } .vt .move { display: block; margin-top: 3px; font-size: 11px }
+@media (max-width: 520px) { .vt .vr { grid-template-columns: 1fr 1fr; gap: 4px 10px } .vt .vr .vk { grid-column: 1 / -1; color: var(--accent) } .vt .vh { display: none }
+  .vt .vr > span:nth-child(2)::before { content: 'Vegas · '; color: var(--muted); font-size: 11px } .vt .vr > span:nth-child(3)::before { content: 'Model · '; color: var(--muted); font-size: 11px }
+  .vt .vr > span:nth-child(4) { grid-column: 1 / -1 } }
+
 /* tables */
 .tblwrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r) }
 table { border-collapse: collapse; width: 100%; font-size: 14px }
@@ -789,6 +798,7 @@ function gameDetail(gid) {
         <div><span class="label">Win chance</span><b>${vH != null ? (vH >= 0.5 ? esc(g.h) + ' ' + pct(vH) : esc(g.a) + ' ' + pct(1 - vH)) : '–'}</b><small>model ${pr.pHome >= 0.5 ? esc(g.h) + ' ' + pct(pr.pHome) : esc(g.a) + ' ' + pct(pr.pAway)}</small></div>
       </div></div>
     ${pitchersRow(g, pr)}${weatherRow(g, pr)}${injuryRow(g, pr)}
+    ${vegasSection(g, L, pr)}
     ${whyRows.length ? `<section><h4>Why the model leans ${esc(pr.margin >= 0 ? g.h : g.a)}</h4><p class="note small">How much each factor moves the predicted margin${unit ? ' (in' + unit + ')' : ' (in points)'}. Bars point toward the team it helps.</p>
       <div class="why2"><div class="whd"><span>${esc(g.a)}</span><span></span><span>${esc(g.h)}</span></div>${whyRows.map((x) => `<div class="wr"><span class="wl">${esc(x.k)}</span>
         <span class="wb"><i class="${x.v >= 0 ? 'h' : 'a'}" style="width:${Math.abs(x.v) / wmax * 50}%"></i></span><span class="wv">${sgn(Math.abs(x.v), META.family === 'football' || META.family === 'basketball' ? 1 : 2)} ${esc(x.v >= 0 ? g.h : g.a)}</span></div>`).join('')}</div></section>` : ''}
@@ -802,6 +812,44 @@ function gameDetail(gid) {
   wrap.innerHTML = html; wrap.hidden = false; document.body.classList.add('noscroll');
   wrap.scrollTop = 0; wrap.querySelector('.dsheet').scrollTop = 0;
 }
+// Vegas vs model, every market for one game (used in the detail sheet)
+function vegasSection(g, L, pr) {
+  const unit = UNIT === 'pts' ? 'pts' : UNIT, rnd = (v) => UNIT === 'pts' ? Math.round(v) : fmt(v);
+  const hasSp = L.sp != null, hasTot = L.tot != null, hasMl = L.hml != null && L.aml != null;
+  if (!hasSp && !hasTot && !hasMl) return `<section><h4>Vegas vs your model</h4><p class="note small">No betting lines for this game yet. They usually post a few days before; you can also type your book's lines on the game card.</p></section>`;
+  const vH = hasMl ? E.impliedProb(L.hml) / (E.impliedProb(L.hml) + E.impliedProb(L.aml)) : null;
+  const price = (v) => v != null && v !== -110 ? ` <small>(${odds(v)})</small>` : '';
+  const rows = [];
+  // implied final score from the spread and total
+  if (hasSp && hasTot) {
+    const vh = (L.tot + L.sp) / 2, va = (L.tot - L.sp) / 2;
+    rows.push(['Final score', `${esc(g.a)} ${rnd(va)}, ${esc(g.h)} ${rnd(vh)}`, `${esc(g.a)} ${rnd(pr.as)}, ${esc(g.h)} ${rnd(pr.hs)}`, '<span class="muted small">Vegas score implied by its spread and total</span>']);
+    rows.push([`${esc(g.a)} points`, fmt(va), fmt(pr.as), gapCell(pr.as - va, unit, 'more', 'fewer')]);
+    rows.push([`${esc(g.h)} points`, fmt(vh), fmt(pr.hs), gapCell(pr.hs - vh, unit, 'more', 'fewer')]);
+  }
+  if (hasSp) {
+    const side = pr.spEdge > 0 ? g.h : g.a, bet = side === g.h ? bookSpread(g.h, L.sp) : bookSpread(g.a, -L.sp);
+    const cp = pr.spEdge > 0 ? pr.pHomeCover : 1 - pr.pHomeCover, pz = side === g.h ? L.hspp : L.aspp;
+    rows.push([esc(META.spreadName || 'Spread'), esc(bookSpread(g.h, L.sp)) + price(L.hspp) + moveNote(g, 'sp', L, pr), esc(bookSpread(g.h, half(pr.margin))),
+      `<b>${Math.abs(pr.spEdge).toFixed(1)} ${unit}</b> → ${esc(bet)}${price(pz)}<br><small>${pct(cp)} to cover · ${evPill(E.evPerUnit(cp, pz ?? -110))}</small>`]);
+  }
+  if (hasTot) {
+    const ov = pr.totEdge == null ? pr.total > L.tot : pr.totEdge > 0, tp = pr.totEdge == null ? null : (ov ? pr.pOver : 1 - pr.pOver), pz = ov ? L.ovp : L.unp;
+    rows.push(['Total', `${L.tot}${L.ovp != null ? ` <small>(o ${odds(L.ovp)} / u ${odds(L.unp)})</small>` : ''}` + moveNote(g, 'tot', L, pr), fmt(pr.total),
+      `<b>${Math.abs(pr.total - L.tot).toFixed(1)} ${unit}</b> → ${ov ? 'Over' : 'Under'} ${L.tot}${tp != null ? `<br><small>${pct(tp)} chance · ${evPill(E.evPerUnit(tp, pz ?? -110))}</small>` : '<br><small class="muted">chance shown after both teams play</small>'}`]);
+  }
+  if (hasMl) {
+    const team = pr.pHome >= vH ? g.h : g.a, pm = team === g.h ? pr.pHome : pr.pAway, ml = team === g.h ? L.hml : L.aml;
+    rows.push(['Moneyline', `${esc(g.a)} ${odds(L.aml)} · ${esc(g.h)} ${odds(L.hml)}`, `${esc(g.a)} ${odds(fairOdds(pr.pAway))} · ${esc(g.h)} ${odds(fairOdds(pr.pHome))} <small class="muted">fair</small>`, '<span class="muted small">"Fair" is the price that matches the model\'s win chance</span>']);
+    rows.push(['Win chance', `${esc(g.a)} ${pct(1 - vH)} · ${esc(g.h)} ${pct(vH)}`, `${esc(g.a)} ${pct(pr.pAway)} · ${esc(g.h)} ${pct(pr.pHome)}`,
+      `<b>${Math.round(Math.abs(pr.pHome - vH) * 100)}% gap</b> → ${esc(team)} ${odds(ml)}<br><small>${evPill(E.evPerUnit(pm, ml))}</small>`]);
+  }
+  return `<section><h4>Vegas vs your model</h4><p class="note small">Every market for this game side by side. Edit lines on the game card if your sportsbook differs.</p>
+    <div class="vt"><div class="vr vh"><span></span><span>Vegas</span><span>Your model</span><span>Gap</span></div>
+    ${rows.map(([k, v, m, e]) => `<div class="vr"><span class="vk">${k}</span><span>${v}</span><span>${m}</span><span>${e}</span></div>`).join('')}</div></section>`;
+}
+function gapCell(d, unit, up, down) { return Math.abs(d) < 0.05 ? '<span class="muted">same</span>' : `<b>${Math.abs(d).toFixed(1)}</b> ${unit} ${d > 0 ? up : down}`; }
+function fairOdds(p) { p = Math.min(0.99, Math.max(0.01, p)); return p >= 0.5 ? -Math.round(100 * p / (1 - p)) : Math.round(100 * (1 - p) / p); }
 function closeDetail() { const w = document.getElementById('detail'); if (w.hidden) return; w.hidden = true; w.innerHTML = ''; document.body.classList.remove('noscroll'); }
 document.getElementById('detail').addEventListener('click', (e) => { if (e.target.id === 'detail' || e.target.closest('[data-dclose]')) closeDetail(); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetail(); });
