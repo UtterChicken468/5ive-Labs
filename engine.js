@@ -301,7 +301,8 @@
       out.spEdge = margin - lines.sp; // + means model likes home vs the line
       out.pHomeCover = phi((margin - lines.sp) / SIGMA);
     }
-    if (lines.tot != null) { out.totEdge = total - lines.tot; out.pOver = phi((total - lines.tot) / SIGMA_TOT); }
+    // Totals need each team's own scoring; before both have played, skip the total edge.
+    if (lines.tot != null && h.n && a.n) { out.totEdge = total - lines.tot; out.pOver = phi((total - lines.tot) / SIGMA_TOT); }
     if (lines.hml != null) out.evHome = evPerUnit(pHome, lines.hml);
     if (lines.aml != null) out.evAway = evPerUnit(1 - pHome, lines.aml);
     return out;
