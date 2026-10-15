@@ -182,3 +182,56 @@ for (const sport of SPORTS) {
     `ATS ${t.atsPct ?? '-'}% · ${Date.now() - t0}ms`);
   console.log('   weights', JSON.stringify(final.weights), 'settings', JSON.stringify(final.settings), 'sigma', sigma);
 }
+
+// ======================= UFC =======================
+// Logistic regression on fighter-vs-fighter factor edges. Each fight is used twice (once from
+// each corner, flipped) so the model can't learn anything from which corner a fighter is in.
+(function trainUfc() {
+  const file = path.join(DATA, 'ufc.json');
+  if (!fs.existsSync(file)) return;
+  const data = load(file);
+  const keys = E.ufc.FACTORS.map((f) => f.key);
+  const unit = Object.fromEntries(keys.map((k) => [k, 1]));
+  const rows = [];
+  E.ufc.walk(data, E.ufc.PRESETS.Trained, unit, (f, x) => {
+    const y = +f.d.slice(0, 4);
+    if (y < data.meta.firstYear + 2 || f.win === 'draw') return; // first two years warm up the ratings
+    rows.push({ year: y, x: keys.map((k) => x[k]), won: f.win === 'a' ? 1 : 0 });
+  });
+  if (rows.length < 300) { console.log('ufc: not enough fights yet'); return; }
+  function fitLogistic(rs, lambda = 2) {
+    let b = new Array(keys.length).fill(0);
+    for (let it = 0; it < 25; it++) {
+      const g = new Array(keys.length).fill(0), H = keys.map(() => new Array(keys.length).fill(0));
+      for (const r of rs) for (const s of [1, -1]) { // both corners
+        const x = r.x.map((v) => v * s), yv = s === 1 ? r.won : 1 - r.won;
+        const p = 1 / (1 + Math.exp(-x.reduce((t, v, i) => t + v * b[i], 0)));
+        for (let i = 0; i < keys.length; i++) { g[i] += (yv - p) * x[i]; for (let j = 0; j < keys.length; j++) H[i][j] += p * (1 - p) * x[i] * x[j]; }
+      }
+      for (let i = 0; i < keys.length; i++) { g[i] -= lambda * b[i]; H[i][i] += lambda; }
+      const step = solve(H, g); b = b.map((v, i) => v + step[i]);
+      if (Math.max(...step.map(Math.abs)) < 1e-6) break;
+    }
+    return Object.fromEntries(keys.map((k, i) => [k, round(b[i], 4)]));
+  }
+  const score = (rs, coef) => {
+    let right = 0, ll = 0;
+    rs.forEach((r) => { const p = 1 / (1 + Math.exp(-r.x.reduce((t, v, i) => t + v * coef[keys[i]], 0))); right += (p >= 0.5) === (r.won === 1) ? 1 : 0; ll -= Math.log(Math.max(1e-6, r.won ? p : 1 - p)); });
+    return { n: rs.length, su: round(right / rs.length * 100, 1), ll: round(ll / rs.length, 3) };
+  };
+  const years = [...new Set(rows.map((r) => r.year))].sort();
+  const thisYear = new Date().getFullYear();
+  const testYear = years.filter((y) => y < thisYear).pop();
+  const train = rows.filter((r) => r.year < testYear), test = rows.filter((r) => r.year === testYear);
+  const coefTest = fitLogistic(train);
+  const t = score(test, coefTest), base = score(test, E.ufc.DEFAULT_COEF);
+  // calibration + betting favorite on the test year, using the model's own walk
+  const bt = E.ufc.backtest({ ...data, meta: { ...data.meta, trained: { coef: coefTest } } }, E.ufc.PRESETS.Trained, testYear);
+  const cal = bt.cal.filter((q) => q.n).map((q) => [Math.round(q.p / q.n * 100), Math.round(q.won / q.n * 100), q.n]);
+  const coef = fitLogistic(rows);
+  data.meta.trained = { coef, fights: rows.length, years: [years[0], years[years.length - 1]], testYear,
+    test: { ...t, baseSu: base.su, baseLl: base.ll, favSu: bt.favN ? round(bt.favRight / bt.favN * 100, 1) : null, favN: bt.favN, calibration: cal } };
+  fs.writeFileSync(file, JSON.stringify(data));
+  console.log(`ufc: trained on ${rows.length} fights (${years[0]}-${years[years.length - 1]}); test ${testYear}: winners ${t.su}% (untrained ${base.su}%), log loss ${t.ll} (untrained ${base.ll})`);
+  console.log('   coef', JSON.stringify(coef));
+})();

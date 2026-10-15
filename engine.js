@@ -99,6 +99,7 @@
     if (cfg.formN) FORM_N = cfg.formN;
     if (cfg.rest) REST = cfg.rest;
     FAMILY = cfg.family || 'football';
+    if (!FAMILIES[FAMILY]) { api.FACTORS = []; api.PRESETS = {}; PROPS = []; api.PROPS = []; return; } // UFC uses api.ufc
     api.FACTORS = FAMILIES[FAMILY].factors;
     api.PRESETS = FAMILIES[FAMILY].presets;
     PROPS = PROP_SETS[FAMILY] || []; api.PROPS = PROPS;
@@ -451,6 +452,109 @@
       cb(w, byW[w], finalizeProfiles(acc));
     });
   }
+  // ======================= UFC: fighters instead of teams =======================
+  // Each fighter carries a chess-style rating plus per-minute fight stats, built only from
+  // fights before the one being predicted. Win chance = logistic(sum of factor edges).
+  const UFC_FACTORS = [
+    { key: 'elo', label: 'Fighter rating', hint: 'Chess-style rating from every UFC result since 2019' },
+    { key: 'striking', label: 'Striking differential', hint: 'Significant strikes landed minus absorbed, per minute' },
+    { key: 'grappling', label: 'Takedown game', hint: 'Takedowns landed minus allowed, per 15 minutes' },
+    { key: 'power', label: 'Knockdown power', hint: 'Knockdowns per 15 minutes' },
+    { key: 'subs', label: 'Submission threat', hint: 'Submission attempts per 15 minutes' },
+    { key: 'control', label: 'Control time', hint: 'Share of fight time spent in control' },
+    { key: 'reach', label: 'Reach', hint: 'Reach advantage, in inches' },
+    { key: 'age', label: 'Age', hint: 'Edge to the younger fighter' },
+    { key: 'layoff', label: 'Ring rust', hint: 'Penalty for a long layoff since the last fight' },
+    { key: 'experience', label: 'UFC experience', hint: 'Number of UFC fights' },
+    { key: 'form', label: 'Recent form', hint: 'Results of the last three fights' },
+  ];
+  // Untrained starting point: the rating does almost all the work.
+  const UFC_DEFAULT_COEF = { elo: 0.55, striking: 0.15, grappling: 0.05, power: 0.1, subs: 0.03, control: 0.3, reach: 0.04, age: 0.15, layoff: 0.05, experience: 0.05, form: 0.2 };
+  const UFC_PRESETS = {
+    Trained: Object.fromEntries(UFC_FACTORS.map((f) => [f.key, 5])),
+    'Rating only': Object.fromEntries(UFC_FACTORS.map((f) => [f.key, f.key === 'elo' ? 5 : 0])),
+    Striker: { elo: 4, striking: 9, grappling: 2, power: 9, subs: 1, control: 1, reach: 7, age: 5, layoff: 5, experience: 4, form: 5 },
+    Grappler: { elo: 4, striking: 3, grappling: 9, power: 3, subs: 8, control: 9, reach: 2, age: 5, layoff: 5, experience: 4, form: 5 },
+  };
+  const yearsBetween = (a, b) => (new Date(b) - new Date(a)) / 3.15576e10;
+  function ufcFeatures(st, fighter, date) {
+    const mins = st.secs / 60;
+    const age = fighter && fighter.dob ? yearsBetween(fighter.dob, date) : 30;
+    const days = st.last ? (new Date(date) - new Date(st.last)) / 864e5 : 0;
+    return {
+      elo: (st.elo - 1500) / 100,
+      striking: (st.ssl - st.sslAbs) / (mins + 10),
+      grappling: 15 * (st.tdl - st.tdlAbs) / (mins + 15),
+      power: 15 * st.kd / (mins + 15),
+      subs: 15 * st.sub / (mins + 15),
+      control: st.ctrl / (st.secs + 600),
+      reach: fighter && fighter.r ? fighter.r : null,
+      age: -age / 5,
+      layoff: -Math.log1p(Math.max(0, days - 120) / 365),
+      experience: Math.log1p(st.n),
+      form: st.res.length ? mean(st.res.slice(-3)) - 0.5 : 0,
+    };
+  }
+  function ufcDiff(fa, fb) {
+    const x = {};
+    UFC_FACTORS.forEach(({ key }) => {
+      if (key === 'reach') x.reach = fa.reach != null && fb.reach != null ? (fa.reach - fb.reach) / 3 : 0;
+      else x[key] = fa[key] - fb[key];
+    });
+    return x;
+  }
+  const ufcLogit = (x, coef, weights) => UFC_FACTORS.reduce((z, { key }) => z + (coef[key] || 0) * ((weights[key] ?? 5) / 5) * x[key], 0);
+  const sigmoid = (z) => 1 / (1 + Math.exp(-z));
+  // Walk every fight in order. onFight(f, x, p) sees each finished fight before it updates
+  // the fighters; returns final fighter states and predictions for fights not yet fought.
+  function ufcWalk(data, weights, coef, onFight) {
+    coef = coef || (data.meta.trained && data.meta.trained.coef) || UFC_DEFAULT_COEF;
+    weights = weights || UFC_PRESETS.Trained;
+    const S = {}, F = data.fighters || {};
+    const get = (id) => S[id] || (S[id] = { elo: 1450, n: 0, secs: 0, ssl: 0, sslAbs: 0, tdl: 0, tdlAbs: 0, kd: 0, sub: 0, ctrl: 0, res: [], last: null, wc: '' });
+    const upcoming = [];
+    for (const f of data.fights) {
+      const A = get(f.a), B = get(f.b);
+      const x = ufcDiff(ufcFeatures(A, F[f.a], f.d), ufcFeatures(B, F[f.b], f.d));
+      const p = sigmoid(ufcLogit(x, coef, weights));
+      if (f.win == null) { upcoming.push({ f, x, p }); continue; }
+      if (onFight) onFight(f, x, p);
+      // rating update (bigger swing for finishes, newcomers move faster)
+      const sa = f.win === 'a' ? 1 : f.win === 'b' ? 0 : 0.5;
+      const ea = 1 / (1 + 10 ** ((B.elo - A.elo) / 400));
+      const mult = f.win !== 'draw' && !f.dec ? 1.2 : 1;
+      const kA = (A.n < 5 ? 45 : 32) * mult, kB = (B.n < 5 ? 45 : 32) * mult;
+      A.elo += kA * (sa - ea); B.elo += kB * (ea - sa);
+      if (f.sa && f.sb && f.sec) {
+        const [kda, ssla, , tdla, , suba, ctrla] = f.sa, [kdb, sslb, , tdlb, , subb, ctrlb] = f.sb;
+        A.secs += f.sec; B.secs += f.sec;
+        A.ssl += ssla; A.sslAbs += sslb; B.ssl += sslb; B.sslAbs += ssla;
+        A.tdl += tdla; A.tdlAbs += tdlb; B.tdl += tdlb; B.tdlAbs += tdla;
+        A.kd += kda; B.kd += kdb; A.sub += suba; B.sub += subb; A.ctrl += ctrla; B.ctrl += ctrlb;
+      }
+      A.n++; B.n++; A.res.push(sa); B.res.push(1 - sa); A.last = f.d; B.last = f.d; A.wc = f.wc; B.wc = f.wc;
+    }
+    return { state: S, upcoming, coef };
+  }
+  // Accuracy from a given year on: winners picked, calibration, and vs the betting favorite.
+  function ufcBacktest(data, weights, fromYear) {
+    const r = { n: 0, right: 0, ll: 0, favN: 0, favRight: 0, byYear: {}, cal: [[0.5, 0.6], [0.6, 0.7], [0.7, 0.8], [0.8, 1.01]].map(([lo, hi]) => ({ lo, hi, n: 0, p: 0, won: 0 })), picks: [] };
+    ufcWalk(data, weights, null, (f, x, p) => {
+      if (+f.d.slice(0, 4) < fromYear || f.win === 'draw') return;
+      const aWon = f.win === 'a', pick = p >= 0.5;
+      const y = f.d.slice(0, 4), by = r.byYear[y] || (r.byYear[y] = { n: 0, right: 0 });
+      r.n++; by.n++; if (pick === aWon) { r.right++; by.right++; }
+      r.ll -= Math.log(Math.max(1e-6, aWon ? p : 1 - p));
+      const pf = Math.max(p, 1 - p), bin = r.cal.find((b) => pf >= b.lo && pf < b.hi);
+      if (bin) { bin.n++; bin.p += pf; bin.won += (pick === aWon) ? 1 : 0; }
+      if (f.aml != null && f.bml != null && f.aml !== f.bml) { r.favN++; if ((f.aml < f.bml) === aWon) r.favRight++; }
+      r.picks.push({ id: f.id, p, aWon });
+    });
+    r.ll /= r.n || 1;
+    return r;
+  }
+  api.ufc = { FACTORS: UFC_FACTORS, PRESETS: UFC_PRESETS, DEFAULT_COEF: UFC_DEFAULT_COEF, walk: ufcWalk, backtest: ufcBacktest, features: ufcFeatures, logit: ufcLogit, sigmoid };
+
   Object.assign(api, { configure, DEFAULT_SETTINGS, teamProfiles, ratings, predict, backtest, propOf, walk, starterRuns, priors: () => PRIORS,
     defenseAllowed, projectProp, overProb, impliedProb, evPerUnit, profitPerUnit, phi, statOf });
   configure({ family: 'football' });

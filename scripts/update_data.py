@@ -875,6 +875,8 @@ def build_ufc(_season):
     out = []
     for f in sorted(fights, key=lambda x: x['date'] or ''):
         d, tm = et_parts(f['date'])
+        if not f['done'] and (not d or d < (today - datetime.timedelta(days=1)).isoformat() or 'TBA' in (f['an'] + f['bn'])):
+            continue  # cancelled bouts and placeholder opponents
         st = stats.get(f['id']) or {}
         row = dict(id=f['id'], eid=f['eid'], ev=f['ev'], d=d, tm=tm, wc=f['wc'], sched=f['sched'], a=f['a'], b=f['b'],
                    an=f['an'], bn=f['bn'], ar=f['ar'], br=f['br'], win=f['win'] if f['done'] else None,

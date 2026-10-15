@@ -836,6 +836,7 @@ const SPORTS = [
   { key: 'nba', label: 'NBA' },
   { key: 'cbb', label: 'College basketball' },
   { key: 'mlb', label: 'MLB' },
+  { key: 'ufc', label: 'UFC' },
 ];
 function chosenSport() {
   const h = location.hash.slice(1);
@@ -1058,7 +1059,158 @@ window.Sync = Sync;
 
 document.getElementById('view').innerHTML = '<div class="empty">Loading this week\'s data…</div>';
 const syncFirst = Sync.enabled() ? Promise.race([Sync.pull(), new Promise((r) => setTimeout(r, 4000))]) : Promise.resolve();
-if (SPORT === 'edges') syncFirst.then(bootEdges); else
+// ---------- UFC: fight cards instead of games ----------
+function bootUfc(DATA) {
+  const E = window.Engine, U = E.ufc;
+  const $ = (q) => document.querySelector(q);
+  const esc = (v) => String(v ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const pre = 'gml:ufc:';
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(pre + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(pre + k, JSON.stringify(v)); } catch (e) {} window.Sync && Sync.changed(pre + k); },
+  };
+  const T = DATA.meta.trained;
+  const S = { weights: store.get('weights', { ...U.PRESETS.Trained }), lines: store.get('lines', {}), picks: store.get('picks', []),
+    tab: store.get('tab', 'fights'), ev: null, wc: 'all', confirmClear: false };
+  const pct = (p) => Math.round(p * 100) + '%';
+  const odds = (o) => o == null ? '–' : (o > 0 ? '+' + o : String(o));
+  const fair = (p) => { const q = Math.min(0.99, Math.max(0.01, p)); return q >= 0.5 ? -Math.round(q / (1 - q) * 100) : Math.round((1 - q) / q * 100); };
+  const sdate = (d) => d ? new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : '';
+  const fighter = (id) => (DATA.fighters || {})[id] || {};
+  const age = (id, d) => { const f = fighter(id); return f.dob ? Math.floor((new Date(d) - new Date(f.dob)) / 3.15576e10) : null; };
+  function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('on'), 1600); }
+  document.body.classList.add('sport-ufc');
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+  const done = DATA.fights.filter((f) => f.win != null);
+  $('#stamp').innerHTML = `UFC · ${done.length.toLocaleString()} fights since ${DATA.meta.firstYear} · results, stats and fighter profiles from ESPN, lines from The Odds API. Lines move, so check your book before you trust an edge.`;
+  $('aside .group').hidden = true; $('#saved').closest('.group').hidden = true;
+
+  let model = null;
+  const recompute = () => { model = U.walk(DATA, S.weights); };
+
+  // ---- model panel
+  function renderBuilder() {
+    $('#presets').innerHTML = Object.keys(U.PRESETS).map((n) => `<button class="chip ${n === 'Trained' ? 'trained' : ''}" data-upreset="${esc(n)}" aria-pressed="${U.FACTORS.every((f) => (U.PRESETS[n][f.key] ?? 0) === (S.weights[f.key] ?? 0))}">${esc(n)}</button>`).join('');
+    $('#sliders').innerHTML = U.FACTORS.map((f) => `
+      <label class="sl" for="u-${f.key}"><span class="nm">${f.label}</span><span class="val" id="uv-${f.key}">${S.weights[f.key] ?? 0}</span>
+        <span class="hint">${f.hint}</span>
+        <input type="range" id="u-${f.key}" data-uw="${f.key}" min="0" max="10" step="1" value="${S.weights[f.key] ?? 0}"></label>`).join('');
+  }
+  const aside = $('aside');
+  aside.querySelector('.small.muted').textContent = '5 is the strength the model learned from past fights. Slide up to lean on a factor more, down to ignore it.';
+  aside.addEventListener('input', (e) => { const t = e.target; if (!t.dataset.uw) return; S.weights[t.dataset.uw] = +t.value; $('#uv-' + t.dataset.uw).textContent = t.value; store.set('weights', S.weights); cancelAnimationFrame(rf); rf = requestAnimationFrame(() => { recompute(); renderBuilderChips(); render(); }); });
+  let rf = 0;
+  const renderBuilderChips = () => document.querySelectorAll('[data-upreset]').forEach((b) => b.setAttribute('aria-pressed', U.FACTORS.every((f) => (U.PRESETS[b.dataset.upreset][f.key] ?? 0) === (S.weights[f.key] ?? 0))));
+  aside.addEventListener('click', (e) => { const b = e.target.closest('[data-upreset]'); if (!b) return; S.weights = { ...U.PRESETS[b.dataset.upreset] }; store.set('weights', S.weights); renderBuilder(); recompute(); render(); });
+
+  // ---- tabs
+  const TABS = [['fights', 'Fight cards'], ['fighters', 'Fighter ratings'], ['accuracy', 'Accuracy'], ['log', 'Pick log']];
+  const renderTabs = () => { $('#tabs').innerHTML = TABS.map(([k, n]) => `<button role="tab" data-tab="${k}" aria-selected="${S.tab === k}">${n}${k === 'log' && S.picks.length ? ' · ' + S.picks.length : ''}</button>`).join(''); };
+  $('#tabs').addEventListener('click', (e) => { const b = e.target.closest('[data-tab]'); if (!b) return; S.tab = b.dataset.tab; store.set('tab', S.tab); S.confirmClear = false; renderTabs(); render(); });
+
+  const linesFor = (f) => { const o = S.lines[f.id] || {}; return { aml: o.aml !== undefined ? o.aml : f.aml, bml: o.bml !== undefined ? o.bml : f.bml }; };
+  function evPill(ev) { return ev == null ? '' : `<span class="pill ${ev > 0.03 ? 'good' : ev < -0.03 ? 'bad' : 'flat'}">EV ${ev >= 0 ? '+' : '−'}${Math.abs(ev * 100).toFixed(0)}%</span>`; }
+  function info(id, d) { const f = fighter(id), a = age(id, d); return [a ? a + ' yrs' : null, f.r ? f.r + '" reach' : null, f.st || null].filter(Boolean).join(' · '); }
+
+  function fightsView() {
+    const up = model.upcoming.filter(({ f }) => f.d && f.d >= today);
+    if (!up.length) return '<div class="empty">No upcoming UFC fights on the schedule yet. Check back after the next refresh.</div>';
+    const events = []; up.forEach((u) => { let e = events.find((x) => x.eid === u.f.eid); if (!e) events.push(e = { eid: u.f.eid, name: u.f.ev, d: u.f.d, fights: [] }); e.fights.push(u); });
+    if (!S.ev || !events.some((e) => e.eid === S.ev)) S.ev = events[0].eid;
+    const ev = events.find((e) => e.eid === S.ev);
+    const cards = ev.fights.slice().reverse().map(({ f, p }) => { // main event first
+      const L = linesFor(f), pb = 1 - p;
+      const evA = L.aml != null ? E.evPerUnit(p, L.aml) : null, evB = L.bml != null ? E.evPerUnit(pb, L.bml) : null;
+      const best = evA == null && evB == null ? null : (evA ?? -9) >= (evB ?? -9) ? { side: 'a', name: f.an, ev: evA, ml: L.aml, p } : { side: 'b', name: f.bn, ev: evB, ml: L.bml, p: pb };
+      const ap = Math.round(p * 100);
+      const move = f.oml && L.aml != null && f.oml[0] !== L.aml ? `<span class="move ${(p > 0.5) === (L.aml < f.oml[0]) ? 'yes' : 'no'}">opened ${odds(f.oml[0])} / ${odds(f.oml[1])}</span>` : '';
+      return `<article class="game ${best && best.ev > 0.05 ? 'hot' : ''}">
+        <div class="gh"><div class="matchup" style="font-size:20px">${esc(f.an)}<span class="at">vs</span>${esc(f.bn)}</div><div class="kick">${esc(f.wc)}${f.sched === 5 ? ' · 5 rds' : ''}</div></div>
+        <div class="why">${esc(f.an)}: ${esc(f.ar)}${info(f.a, f.d) ? ' · ' + esc(info(f.a, f.d)) : ''}<br>${esc(f.bn)}: ${esc(f.br)}${info(f.b, f.d) ? ' · ' + esc(info(f.b, f.d)) : ''}</div>
+        <div class="wp"><div class="a" style="flex:${Math.max(ap, 14)}">${esc(f.an.split(' ').slice(-1)[0])} ${ap}%</div><div class="h" style="flex:${Math.max(100 - ap, 14)}">${esc(f.bn.split(' ').slice(-1)[0])} ${100 - ap}%</div></div>
+        <div class="mk"><span class="k">Money&shy;line</span>
+          <span class="ins"><label class="small muted" for="ua-${f.id}">${esc(f.an.split(' ').slice(-1)[0])}</label><input type="number" step="5" id="ua-${f.id}" data-uline="aml" data-f="${f.id}" value="${L.aml ?? ''}">
+            <label class="small muted" for="ub-${f.id}">${esc(f.bn.split(' ').slice(-1)[0])}</label><input type="number" step="5" id="ub-${f.id}" data-uline="bml" data-f="${f.id}" value="${L.bml ?? ''}">
+            <span class="small muted">fair ${odds(fair(p))} / ${odds(fair(pb))}</span>${move}</span>
+          <span class="out">${best ? `${evPill(best.ev)}<br><span class="small">${esc(best.name.split(' ').slice(-1)[0])} ${odds(best.ml)} · ${pct(best.p)}</span> <button class="logbtn" data-ulog="${f.id}" data-side="${best.side}">Log</button>` : '<span class="muted">enter odds</span>'}</span></div>
+      </article>`;
+    }).join('');
+    return `<div class="toolbar"><div class="f"><label class="label" for="evSel">Event</label><select id="evSel">${events.slice(0, 6).map((e) => `<option value="${e.eid}" ${e.eid === S.ev ? 'selected' : ''}>${esc(e.name)} · ${sdate(e.d)}</option>`).join('')}</select></div></div>
+      <p class="note" style="margin:0 0 14px">Main event first. "Fair" is the price that matches the model's win chance; value shows when the real odds pay more than that. ${DATA.meta.oddsNote ? 'Lines: ' + esc(DATA.meta.oddsNote) + '.' : ''}</p>
+      <div class="games">${cards}</div>`;
+  }
+
+  function fightersView() {
+    const cutoff = new Date(Date.now() - 2 * 3.15576e10).toISOString().slice(0, 10);
+    const rows = Object.entries(model.state).filter(([, s]) => s.last && s.last >= cutoff && s.n >= 2).map(([id, s]) => ({ id, s, f: fighter(id) }));
+    const wcs = [...new Set(rows.map((r) => r.s.wc).filter(Boolean))].sort();
+    const list = rows.filter((r) => S.wc === 'all' || r.s.wc === S.wc).sort((a, b) => b.s.elo - a.s.elo).slice(0, 60);
+    return `<div class="toolbar"><div class="f"><label class="label" for="wcSel">Weight class</label><select id="wcSel"><option value="all">All</option>${wcs.map((w) => `<option ${w === S.wc ? 'selected' : ''}>${esc(w)}</option>`).join('')}</select></div></div>
+      <p class="note" style="margin:0 0 12px">Active fighters (fought in the last two years) ranked by rating. Stats are UFC fights since ${DATA.meta.firstYear}.</p>
+      <div class="tblwrap"><table><thead><tr><th>#</th><th>Fighter</th><th>Class</th><th class="num">Rating</th><th class="num">UFC record</th><th class="num">Strike diff / min</th><th class="num">TD / 15 min</th><th class="num">Last 3</th></tr></thead><tbody>
+      ${list.map((r, i) => { const m = r.s.secs / 60; const w = r.s.res.filter((x) => x === 1).length, l = r.s.res.filter((x) => x === 0).length; return `<tr><td class="muted">${i + 1}</td><td class="pname">${esc(r.f.n || r.id)}</td><td class="small">${esc(r.s.wc)}</td><td class="num"><b>${Math.round(r.s.elo)}</b></td><td class="num">${w}–${l}</td><td class="num">${m ? ((r.s.ssl - r.s.sslAbs) / m).toFixed(1) : '–'}</td><td class="num">${m ? (15 * r.s.tdl / m).toFixed(1) : '–'}</td><td class="num">${r.s.res.slice(-3).map((x) => x === 1 ? 'W' : x === 0 ? 'L' : 'D').join(' ')}</td></tr>`; }).join('')}
+      </tbody></table></div>`;
+  }
+
+  function accuracyView() {
+    const from = DATA.meta.firstYear + 2, bt = U.backtest(DATA, S.weights, from);
+    const years = Object.entries(bt.byYear).sort();
+    const cal = bt.cal.filter((q) => q.n).map((q) => `<span class="pill flat" title="${q.n} fights">said ${Math.round(q.p / q.n * 100)}% → won ${Math.round(q.won / q.n * 100)}%</span>`).join(' ');
+    const t = T && T.test;
+    return `<p class="note" style="margin:0 0 14px">Every fight from ${from} on, predicted using only fights before it. Upsets are common in MMA, so even good models land in the 60s.</p>
+      <div class="tiles">
+        <div class="tile"><span class="label">Winners picked</span><b>${bt.n ? pct(bt.right / bt.n) : '–'}</b><span class="sub">${bt.right.toLocaleString()} of ${bt.n.toLocaleString()} fights</span></div>
+        <div class="tile"><span class="label">Betting favorite</span><b>${bt.favN ? pct(bt.favRight / bt.favN) : '–'}</b><span class="sub">${bt.favN ? bt.favN + ' fights with saved odds' : 'odds saved from now on'}</span></div>
+        ${t ? `<div class="tile"><span class="label">Trained, tested on ${T.testYear}</span><b>${t.su}%</b><span class="sub">untrained ${t.baseSu}% · ${t.n} fights held out of training</span></div>` : ''}
+      </div>
+      ${cal ? `<div class="wk"><h3 style="font-size:20px;text-transform:uppercase;margin-bottom:8px">Honesty check</h3><div class="small muted">Favorites by how sure the model was: ${cal}</div></div>` : ''}
+      <div class="tblwrap"><table><thead><tr><th>Year</th><th class="num">Fights</th><th class="num">Winners picked</th></tr></thead><tbody>
+      ${years.map(([y, v]) => `<tr><td>${y}</td><td class="num">${v.n}</td><td class="num">${pct(v.right / v.n)}</td></tr>`).join('')}</tbody></table></div>`;
+  }
+
+  function logView() {
+    if (!S.picks.length) return '<div class="empty">No UFC picks logged yet. Hit <b>Log</b> on any fight and it lands here, graded automatically after the event.</div>';
+    const byId = Object.fromEntries(DATA.fights.map((f) => [f.id, f]));
+    let w = 0, l = 0, u = 0;
+    const rows = S.picks.slice().reverse().map((p) => {
+      const f = byId[p.fid]; let res = 'pending';
+      if (f && f.win) { if (f.win === 'draw') res = 'push'; else if (f.win === p.side) { res = 'win'; w++; u += E.profitPerUnit(p.odds); } else { res = 'loss'; l++; u -= 1; } }
+      return `<tr><td>${esc(sdate(f ? f.d : ''))}</td><td class="pname">${esc(p.desc)}</td><td>${odds(p.odds)}</td><td class="small">${esc(p.why)}</td><td><span class="pill ${res === 'win' ? 'good' : res === 'loss' ? 'bad' : 'flat'}">${res}</span></td><td><button class="logbtn" data-uunlog="${p.ts}" aria-label="Remove pick">✕</button></td></tr>`;
+    }).join('');
+    return `<div class="tiles"><div class="tile"><span class="label">Record</span><b>${w}–${l}</b><span class="sub">${S.picks.length - w - l} pending or pushed</span></div>
+      <div class="tile"><span class="label">Units</span><b style="color:${u > 0 ? 'var(--good)' : u < 0 ? 'var(--bad)' : 'inherit'}">${u >= 0 ? '+' : '−'}${Math.abs(u).toFixed(2)}</b><span class="sub">1 unit risked per pick</span></div></div>
+      <div class="tblwrap"><table><thead><tr><th>Date</th><th>Pick</th><th>Odds</th><th>Model said</th><th>Result</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+      <p class="note">${S.confirmClear ? `<span class="confirm">Remove all ${S.picks.length} picks? <button class="btn accent" id="uclearYes">Remove all</button><button class="btn ghost" id="uclearNo">Keep</button></span>` : '<button class="btn ghost" id="uclear">Clear log</button>'}</p>`;
+  }
+
+  function render() {
+    $('#view').innerHTML = ({ fights: fightsView, fighters: fightersView, accuracy: accuracyView, log: logView }[S.tab] || fightsView)();
+  }
+  $('#view').addEventListener('change', (e) => {
+    const t = e.target;
+    if (t.id === 'evSel') { S.ev = t.value; render(); }
+    if (t.id === 'wcSel') { S.wc = t.value; render(); }
+    if (t.dataset.uline) { const o = S.lines[t.dataset.f] || (S.lines[t.dataset.f] = {}); o[t.dataset.uline] = t.value === '' ? null : +t.value; store.set('lines', S.lines); render(); }
+  });
+  $('#view').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.ulog) {
+      const u = model.upcoming.find((x) => x.f.id === b.dataset.ulog); if (!u) return;
+      const f = u.f, L = linesFor(f), side = b.dataset.side, name = side === 'a' ? f.an : f.bn, ml = side === 'a' ? L.aml : L.bml;
+      S.picks.push({ ts: Date.now(), fid: f.id, side, odds: ml ?? -110, desc: `${name} ML (${f.an} vs ${f.bn})`, why: pct(side === 'a' ? u.p : 1 - u.p) + ' to win' });
+      store.set('picks', S.picks); renderTabs(); toast('Logged ' + name);
+    }
+    if (b.dataset.uunlog) { S.picks = S.picks.filter((p) => String(p.ts) !== b.dataset.uunlog); store.set('picks', S.picks); renderTabs(); render(); }
+    if (b.id === 'uclear') { S.confirmClear = true; render(); }
+    if (b.id === 'uclearNo') { S.confirmClear = false; render(); }
+    if (b.id === 'uclearYes') { S.picks = []; S.confirmClear = false; store.set('picks', S.picks); renderTabs(); render(); }
+  });
+  recompute(); renderBuilder(); renderTabs(); render();
+}
+
+if (SPORT === 'ufc') syncFirst.then(() => fetch('data/ufc.json', { cache: 'no-cache' })).then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then(bootUfc)
+  .catch((err) => { document.getElementById('view').innerHTML = '<div class="empty">Couldn\'t load the UFC data (' + String(err.message || err) + '). Reload to try again.</div>'; });
+else if (SPORT === 'edges') syncFirst.then(bootEdges); else
 syncFirst.then(() => fetch('data/' + SPORT + '.json', { cache: 'no-cache' }))
   .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
   .then(boot)
