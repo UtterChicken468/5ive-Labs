@@ -90,7 +90,7 @@
   function poss(S, p) { return S[p + 'fga'] - S[p + 'orb'] + S[p + 'tov'] + 0.475 * S[p + 'fta']; }
 
   // Per-sport settings; set with configure() once the sport's data loads.
-  let SIGMA = 13.5, SIGMA_TOT = 13, BT_SKIP = 1, FORM_N = 3, REST = 'bye', FAMILY = 'football', PRIORS = null, LG_SV = 0.9, HFA0 = 1.5, CAP = 28;
+  let SIGMA = 13.5, SIGMA_TOT = 13, BT_SKIP = 1, FORM_N = 3, REST = 'bye', FAMILY = 'football', PRIORS = null, LG_SV = 0.9, HFA0 = 1.5, CAP = 28, LG_PTS = null;
   const api = {};
   function configure(cfg) {
     if (cfg.sigma) SIGMA = cfg.sigma;
@@ -105,6 +105,7 @@
     PRIORS = cfg.priors || null;
     LG_SV = cfg.lgSv || 0.9;
     HFA0 = cfg.hfa ?? 1.5;
+    LG_PTS = cfg.lgPts ?? null;
     CAP = cfg.marginCap || ({ football: 28, hockey: 5, basketball: 30, baseball: 8 })[FAMILY];
   }
 
@@ -176,7 +177,13 @@
   // Ratings in points (goals, runs) vs an average team.
   function ratings(profiles, weights, settings) {
     const teams = Object.values(profiles).filter((t) => t.n >= 1);
-    if (teams.length < 4) return { rating: {}, contrib: {}, league: null };
+    if (teams.length < 4) { // before the season (almost) anyone has played: last season's ratings carry it
+      if (!PRIORS) return { rating: {}, contrib: {}, league: null };
+      const rating = {}, contrib = {};
+      Object.entries(PRIORS).forEach(([t, v]) => { rating[t] = v; contrib[t] = { prior: v }; });
+      const ppg = teams.length ? mean(teams.map((t) => t.pf)) : (LG_PTS ?? 0);
+      return { rating, contrib, z: {}, league: { ppg }, weights };
+    }
     const F = api.FACTORS.filter((f) => !f.game);
     const z = {};
     F.forEach((f) => {
@@ -202,6 +209,7 @@
       contrib[t.team] = k ? { prior: k * pr / (t.n + k) } : {};
       F.forEach((f) => { contrib[t.team][f.key] = (weights[f.key] || 0) * z[t.team][f.key] / wsum * per * keep; });
     });
+    if (PRIORS) Object.entries(PRIORS).forEach(([t, v]) => { if (rating[t] === undefined) { rating[t] = v; contrib[t] = { prior: v }; } });
     const league = { ppg: mean(teams.map((t) => t.pf)) };
     return { rating, contrib, z, league, weights };
   }
@@ -249,8 +257,9 @@
 
   // Predict one game. lines: {sp (home favored by), tot, hml, aml}
   function predict(game, profiles, R, settings, lines, data) {
-    const h = profiles[game.h], a = profiles[game.a];
-    if (!h || !a || R.rating[game.h] == null || R.rating[game.a] == null) return null;
+    if (!R.league || R.rating[game.h] == null || R.rating[game.a] == null) return null;
+    const blank = { pf: R.league.ppg, pa: R.league.ppg, n: 0, S: {} }; // no games yet: league-average scoring
+    const h = profiles[game.h] || blank, a = profiles[game.a] || blank;
     let margin = R.rating[game.h] - R.rating[game.a] + (game.neu ? 0 : settings.hfa);
     let restEdge = 0;
     if (REST === 'bye') restEdge = (game.hr >= 10 ? 1 : 0) - (game.ar >= 10 ? 1 : 0); // coming off a bye

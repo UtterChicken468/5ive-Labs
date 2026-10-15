@@ -71,7 +71,7 @@ function rowsFor(ds, cur) {
       const L = R.league.ppg;
       rows.push({
         zh: keys.map((k) => R.z[g.h][k]), za: keys.map((k) => R.z[g.a][k]), nh: h.n, na: a.n,
-        ph: pri ? (pri[g.h] ?? -8) : 0, pa: pri ? (pri[g.a] ?? -8) : 0,
+        hasP: !!pri, ph: pri ? (pri[g.h] ?? -8) : 0, pa: pri ? (pri[g.a] ?? -8) : 0,
         home: g.neu ? 0 : 1, rest,
         st: cur.meta.family === 'baseball' ? E.starterRuns(ds, g.hp, g.w) - E.starterRuns(ds, g.ap, g.w) : 0,
         y: Math.max(-cap, Math.min(cap, g.hs - g.as_)),
@@ -85,8 +85,9 @@ function rowsFor(ds, cur) {
 function design(rows, k, fam) {
   const X = [], y = [];
   rows.forEach((r) => {
-    const wh = k ? r.nh / (r.nh + k) : 1, wa = k ? r.na / (r.na + k) : 1;
-    const off = k ? (k * r.ph / (r.nh + k) - k * r.pa / (r.na + k)) : 0;
+    const kk = r.hasP ? k : 0; // seasons without a prior (the oldest one) just use their own games
+    const wh = kk ? r.nh / (r.nh + kk) : 1, wa = kk ? r.na / (r.na + kk) : 1;
+    const off = kk ? (kk * r.ph / (r.nh + kk) - kk * r.pa / (r.na + kk)) : 0;
     const x = r.zh.map((v, i) => wh * v - wa * r.za[i]);
     x.push(r.home, r.rest);
     if (fam === 'baseball') x.push(r.st);
@@ -150,7 +151,7 @@ for (const sport of SPORTS) {
   const curBuilt = { ds: cur, rows: curRows, keys };
   const test = offseason ? curBuilt : built[built.length - 1];
   const trainRows = (offseason ? built : built.slice(0, -1)).flatMap((x) => x.rows);
-  const kGrid = cur.meta.priors ? [0, 1, 2, 3, 4, 6] : [0];
+  const kGrid = cur.meta.priors ? (cur.meta.period === 'Day' ? [0, 3, 6, 10, 15, 25, 40] : [0, 1, 2, 3, 4, 6]) : [0];
   let best = null;
   for (const k of kGrid) {
     const m = trainRows.length > 200 ? fitModel(trainRows, keys, k, cur.meta) : fitModel(test.rows, keys, k, cur.meta);

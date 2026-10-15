@@ -311,7 +311,7 @@ function updatedText(iso) {
   const d = new Date(iso);
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' at ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
-$('#stamp').innerHTML = `${META.label} · ${META.seasonLabel || DATA.season} regular season · stats through <b>${DAILY ? shortDate(dateOfW[lastDone]) : 'Week ' + lastDone}</b> (${completed.length} games)${META.note ? ' · ' + esc(META.note) : ''} · stats, schedule and lines from ${esc(META.source)}, updated ${updatedText(DATA.updated)}. Lines move, so check your book before you trust an edge.`;
+$('#stamp').innerHTML = `${META.label} · ${META.seasonLabel || DATA.season} regular season · ${completed.length ? `stats through <b>${DAILY ? shortDate(dateOfW[lastDone]) : 'Week ' + lastDone}</b> (${completed.length} games)` : `<b>season hasn't started</b> · picks use ${esc(META.priorLabel || 'last season')}`}${META.note ? ' · ' + esc(META.note) : ''} · stats, schedule and lines from ${esc(META.source)}, updated ${updatedText(DATA.updated)}. Lines move, so check your book before you trust an edge.`;
 
 // ---------- builder ----------
 function renderBuilder() {
@@ -586,7 +586,7 @@ function propsView() {
 // ---------- rankings ----------
 function rankingsView() {
   const { P, R } = model();
-  const list = Object.keys(R.rating).map((t) => ({ t, r: R.rating[t], p: P[t], c: R.contrib[t] })).sort((a, b) => b.r - a.r);
+  const list = Object.keys(R.rating).map((t) => ({ t, r: R.rating[t], p: P[t] || { n: 0, pf: 0, pa: 0 }, c: R.contrib[t] })).sort((a, b) => b.r - a.r);
   const max = Math.max(...list.map((x) => Math.abs(x.r)), 1);
   const lbl = Object.fromEntries(E.FACTORS.map((f) => [f.key, f.label.toLowerCase()])); lbl.prior = 'preseason rating';
   return `<p class="note" style="margin:0 0 12px">Points better or worse than an average team on a neutral field, using your weights. The line under each team names what's driving its rating most.</p>
@@ -833,6 +833,7 @@ const SPORTS = [
   { key: 'nfl', label: 'NFL' },
   { key: 'cfb', label: 'College football' },
   { key: 'nhl', label: 'NHL' },
+  { key: 'nba', label: 'NBA' },
   { key: 'cbb', label: 'College basketball' },
   { key: 'mlb', label: 'MLB' },
 ];

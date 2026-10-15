@@ -579,7 +579,15 @@ def finalize_games_gk(team_games, sched):
 
 
 # ---------------------------------------------------------------- College basketball (ESPN)
-ESPN_CBB = 'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball'
+ESPN = 'https://site.api.espn.com/apis/site/v2/sports'
+BBALL = {
+    'cbb': dict(path='basketball/mens-college-basketball', groups='50', start=(11, 1), end=(3, 16), label='College basketball',
+                short=False, hfa=3.0, sigma=11, sigmaTot=16, trust=70, rest='none', bye=0, byeMax=0, formN=5, btSkip=21,
+                startsIn='November'),
+    'nba': dict(path='basketball/nba', groups=None, start=(10, 1), end=(4, 20), label='NBA',
+                short=True, hfa=2.0, sigma=12.5, sigmaTot=18, trust=80, rest='b2b', bye=1.5, byeMax=4, formN=8, btSkip=14,
+                startsIn='October'),
+}
 
 
 def espn_line(o):
@@ -603,8 +611,13 @@ def espn_line(o):
     return line
 
 
-def cbb_box(eid):
-    s = get_json(f'{ESPN_CBB}/summary?event={eid}')
+def bball_pos(abbr):
+    a = (abbr or 'F').upper()
+    return 'C' if a == 'C' else 'G' if a in ('G', 'PG', 'SG') else 'F'
+
+
+def bball_box(path, eid):
+    s = get_json(f'{ESPN}/{path}/summary?event={eid}')
     teams = {}
     for t in (s.get('boxscore') or {}).get('teams', []):
         st = {x.get('name'): x.get('displayValue') for x in t.get('statistics', [])}
@@ -640,13 +653,14 @@ def cbb_players(summary):
                     continue
                 ath = a.get('athlete') or {}
                 out.setdefault(tid, []).append([str(ath.get('id', '')), ath.get('shortName') or ath.get('displayName', ''),
-                                                (ath.get('position') or {}).get('abbreviation', 'F')[:1] or 'F',
+                                                bball_pos((ath.get('position') or {}).get('abbreviation')),
                                                 mins, num(val('PTS')), num(val('REB')), num(val('AST')), split_pair(val('3PT'), 0)])
     return out
 
 
-def cbb_day(day):
-    sb = get_json(f'{ESPN_CBB}/scoreboard?dates={day.strftime("%Y%m%d")}&groups=50&limit=400')
+def bball_day(path, groups, day):
+    q = f'&groups={groups}' if groups else ''
+    sb = get_json(f'{ESPN}/{path}/scoreboard?dates={day.strftime("%Y%m%d")}{q}&limit=400')
     out = []
     for e in sb.get('events', []):
         if (e.get('season') or {}).get('type') != 2:
@@ -665,62 +679,61 @@ def cbb_day(day):
     return out
 
 
-def build_cbb(_season):
+def build_bball(key):
+    cfg = BBALL[key]
+    path = cfg['path']
     today = datetime.datetime.now(ET).date()
+    season_days = lambda y: [datetime.date(y - 1, *cfg['start']) + datetime.timedelta(days=i)
+                             for i in range((datetime.date(y, *cfg['end']) - datetime.date(y - 1, *cfg['start'])).days + 1)]
     y = YEAR if HIST else (today.year + 1 if today.month >= 8 else today.year)  # season named for the spring it ends in
 
-    def season_days(y):
-        d, end = datetime.date(y - 1, 11, 1), datetime.date(y, 3, 16)
-        while d <= end:
-            yield d
-            d += datetime.timedelta(days=1)
+    teams_raw = get_json(f'{ESPN}/{path}/teams?limit=500' + (f'&groups={cfg["groups"]}' if cfg['groups'] else ''))
+    tlist = {str(t['team']['id']): t['team'] for lg in teams_raw.get('sports', [{}])[0].get('leagues', []) for t in lg.get('teams', [])}
+    names = {k: (t.get('abbreviation') if cfg['short'] else (t.get('shortDisplayName') or t.get('location') or t.get('abbreviation'))) for k, t in tlist.items()}
+    counts = {}
+    for n in names.values():
+        counts[n] = counts.get(n, 0) + 1
+    for k, n in list(names.items()):
+        if counts[n] > 1:
+            names[k] = f"{n} ({tlist[k].get('abbreviation', k)})"
+
+    def load_season(y, horizon):
+        sb_name = f'{key}_scoreboard_{y}.json' if key != 'cbb' else f'cbb_scoreboard_{y}.json'
+        sb = load_cache(sb_name)
+        days = [d for d in season_days(y) if d <= today + datetime.timedelta(days=horizon)]
+        need = [d for d in days if d.isoformat() not in sb or (d - today).days >= -3]
+        if need:
+            got = parallel(lambda d: bball_day(path, cfg['groups'], d), need, workers=8)
+            for d, v in got.items():
+                if isinstance(v, list):
+                    sb[d.isoformat()] = v
+            save_cache(sb_name, sb)
+        return [e for v in sb.values() for e in v if e['h'] in names and e['a'] in names]
 
     note = None
-    if not HIST and today < datetime.date(y - 1, 11, 1):
+    events = load_season(y, 21)
+    if not HIST and not events:  # new season more than three weeks away: show last season
         y -= 1
-        note = f'{y - 1}-{str(y)[2:]} season · the new season starts in November'
+        note = f"{y - 1}-{str(y)[2:]} season · the new season starts in {cfg['startsIn']}"
+        events = load_season(y, 0)
 
-    teams_raw = get_json(f'{ESPN_CBB}/teams?groups=50&limit=500')
-    d1 = {}
-    for lg in teams_raw.get('sports', [{}])[0].get('leagues', []):
-        for t in lg.get('teams', []):
-            tm = t['team']
-            d1[str(tm['id'])] = tm.get('shortDisplayName') or tm.get('location') or tm.get('abbreviation')
-    counts = {}
-    for n in d1.values():
-        counts[n] = counts.get(n, 0) + 1
-    teams_raw_all = {str(t['team']['id']): t['team'] for lg in teams_raw.get('sports', [{}])[0].get('leagues', []) for t in lg.get('teams', [])}
-    for k, n in list(d1.items()):
-        if counts[n] > 1:
-            d1[k] = f"{n} ({teams_raw_all[k].get('abbreviation', k)})"
-
-    sb_name = f'cbb_scoreboard_{y}.json'
-    sb = load_cache(sb_name)
-    days = [d for d in season_days(y) if d <= today + datetime.timedelta(days=7)]
-    need = [d for d in days if d.isoformat() not in sb or (today - d).days <= 3]
-    fetched = parallel(cbb_day, need, workers=8)
-    for d, v in fetched.items():
-        if isinstance(v, list):
-            sb[d.isoformat()] = v
-    save_cache(sb_name, sb)
-
-    events = [e for v in sb.values() for e in v if e['h'] in d1 and e['a'] in d1]
-    box_name = f'cbb_box_{y}.json'
+    box_name = f'{key}_box_{y}.json'
     box = load_cache(box_name)
     need = [e['id'] for e in events if e['hs'] is not None and (e['id'] not in box or '_error' in box[e['id']])]
-    box.update(parallel(cbb_box, need, workers=12))
-    save_cache(box_name, box)
+    if need:
+        box.update(parallel(lambda eid: bball_box(path, eid), need, workers=12))
+        save_cache(box_name, box)
 
     sched = []
     for e in events:
         d, tm = et_parts(e['date'])
         b = box.get(e['id']) or {}
         line = (b.get('line') if e['hs'] is not None else None) or e.get('line') or {}
-        sched.append(dict(id=e['id'], d=d, tm=tm, h=d1[e['h']], a=d1[e['a']], hid=e['h'], aid=e['a'],
+        sched.append(dict(id=e['id'], d=d, tm=tm, h=names[e['h']], a=names[e['a']], hid=e['h'], aid=e['a'],
                           hs=e['hs'], as_=e['as_'], neu=e['neu'],
                           sp=line.get('sp'), tot=line.get('tot'), hml=line.get('hml'), aml=line.get('aml')))
     if not sched:
-        raise RuntimeError(f'No {y} college basketball games found.')
+        raise RuntimeError(f"No {y} {cfg['label']} games found.")
     first = day_index(sched)
     rest_days(sched)
     team_games = []
@@ -741,19 +754,30 @@ def build_cbb(_season):
             for tid, team, opp in ((g['hid'], g['h'], g['a']), (g['aid'], g['a'], g['h'])):
                 for pid, nm, pos, mins, pts, reb, ast, tpm in pl.get(tid, []):
                     if mins >= 10 and g['hs'] is not None:
-                        players.append(dict(id=pid, n=nm, p=pos if pos in ('G', 'F', 'C') else 'F', t=team, o=opp, w=g['w'],
+                        players.append(dict(id=pid, n=nm, p=bball_pos(pos), t=team, o=opp, w=g['w'],
                                             min=mins, pts=pts, reb=reb, ast=ast, tpm=tpm))
+    injuries = espn_injuries(path, lambda t: names.get(str(t.get('id'))))
     for g in sched:
         g['gk'] = g['id']
         g.pop('hid'); g.pop('aid')
     finalize_games_gk(team_games, sched)
     sched.sort(key=lambda g: (g['d'], g['tm']))
-    track_open('cbb', y, sched)
-    meta = dict(sport='cbb', label='College basketball', family='basketball', period='Day', start=first.isoformat(),
-                seasonLabel=f'{y - 1}-{str(y)[2:]}', sigma=11, sigmaTot=16, btSkip=21, formN=5, hfa=3.0, trust=70,
-                bye=0, rest='none', props=bool(players), unit='pts', spreadName='Spread', edgeSteps=[1, 2, 3, 4, 5],
-                edgeDefault=2, hfaMax=5, hfaStep=0.5, byeMax=0, byeStep=0.5, note=note, source='ESPN')
-    return dict(meta=meta, season=y, teamGames=team_games, games=sched, players=players)
+    track_open(key, y, sched)
+    meta = dict(sport=key, label=cfg['label'], family='basketball', period='Day', start=first.isoformat(),
+                seasonLabel=f'{y - 1}-{str(y)[2:]}', sigma=cfg['sigma'], sigmaTot=cfg['sigmaTot'], btSkip=cfg['btSkip'],
+                formN=cfg['formN'], hfa=cfg['hfa'], trust=cfg['trust'], bye=cfg['bye'], rest=cfg['rest'],
+                props=bool(players) or (not note and not HIST), unit='pts', spreadName='Spread', edgeSteps=[1, 2, 3, 4, 5],
+                edgeDefault=2, hfaMax=5, hfaStep=0.5, byeMax=cfg['byeMax'], byeStep=0.5, note=note,
+                source='ESPN' + (' · injuries from ESPN' if key == 'nba' else ''))
+    return dict(meta=meta, season=y, teamGames=team_games, games=sched, players=players, injuries=injuries)
+
+
+def build_cbb(_season):
+    return build_bball('cbb')
+
+
+def build_nba(_season):
+    return build_bball('nba')
 
 
 # ---------------------------------------------------------------- NFL (nflverse)
@@ -1005,7 +1029,7 @@ def build_cfb(season):
 
 
 # ---------------------------------------------------------------- main
-SPORTS = {'nfl': build_nfl, 'cfb': build_cfb, 'nhl': build_nhl, 'cbb': build_cbb, 'mlb': build_mlb}
+SPORTS = {'nfl': build_nfl, 'cfb': build_cfb, 'nhl': build_nhl, 'cbb': build_cbb, 'nba': build_nba, 'mlb': build_mlb}
 
 
 def main():
@@ -1038,16 +1062,78 @@ def main():
             print(f'{sport}: FAILED - {e}', file=sys.stderr)
 
     build_history(status, args)
+    add_priors(status, args)
     with open(status_path, 'w', encoding='utf-8') as f:
         json.dump(status, f, indent=1, sort_keys=True)
 
 
 HIST_DIR = os.path.join(DATA_DIR, 'history')
 
+# How each sport carries last season into the new one: margin cap (blowouts), how far to pull
+# ratings back toward average, and how many games' worth of weight the prior starts with.
+PRIOR_CFG = {'nfl': (28, 0.5, 3), 'nhl': (5, 0.5, 10), 'mlb': (8, 0.5, 25), 'cbb': (30, 0.4, 6), 'nba': (30, 0.35, 10)}
+
+
+def final_ratings(data, cap, regress):
+    """Opponent-adjusted margin over a full season (simple rating system), pulled toward average."""
+    hfa = data['meta'].get('hfa', 0)
+    margins, opps = {}, {}
+    for g in data['games']:
+        if g['hs'] is None:
+            continue
+        m = max(-cap, min(cap, g['hs'] - g['as_'])) - (0 if g.get('neu') else hfa)
+        for t, o, v in ((g['h'], g['a'], m), (g['a'], g['h'], -m)):
+            margins.setdefault(t, []).append(v); opps.setdefault(t, []).append(o)
+    r = {t: sum(v) / len(v) for t, v in margins.items()}
+    for _ in range(60):
+        nx = {t: sum(margins[t]) / len(margins[t]) + sum(r[o] for o in opps[t]) / len(opps[t]) for t in r}
+        mu = sum(nx.values()) / len(nx)
+        r = {t: 0.5 * r[t] + 0.5 * (nx[t] - mu) for t in r}
+    pts = [g['hs'] + g['as_'] for g in data['games'] if g['hs'] is not None]
+    lg = round(sum(pts) / len(pts) / 2, 2) if pts else None
+    return {t: round(v * (1 - regress), 2) for t, v in r.items()}, lg
+
+
+def season_label(sport, y):
+    return f'{y - 1}-{str(y)[2:]}' if sport in ('cbb', 'nba') else f'{y}-{str(y + 1)[2:]}' if sport == 'nhl' else str(y)
+
+
+def add_priors(status, args):
+    """Give every season (current and past) last season's final ratings as a starting point,
+    so the model can make picks before a season's first games. College football keeps SP+."""
+    for sport in [s for s in args.only.split(',') if s in PRIOR_CFG]:
+        if not (status.get(sport) or {}).get('ok'):
+            continue
+        cap, regress, games = PRIOR_CFG[sport]
+        files = {}
+        for f in os.listdir(HIST_DIR) if os.path.isdir(HIST_DIR) else []:
+            if f.startswith(sport + '_') and f.endswith('.json'):
+                files[int(f[len(sport) + 1:-5])] = os.path.join(HIST_DIR, f)
+        cur_path = os.path.join(DATA_DIR, sport + '.json')
+        targets = dict(files); targets[status[sport]['season']] = cur_path
+        for y, path in sorted(targets.items()):
+            prev = files.get(y - 1)
+            if not prev:
+                continue
+            with open(prev, encoding='utf-8') as f:
+                pr, lg = final_ratings(json.load(f), cap, regress)
+            with open(path, encoding='utf-8') as f:
+                data = json.load(f)
+            meta = data['meta']
+            new = dict(meta, priors=pr, priorGames=games, priorLabel=f'{season_label(sport, y - 1)} final ratings', lgPts=lg)
+            if new == meta:
+                continue
+            data['meta'] = new
+            if path == cur_path:
+                write_if_changed(path, {k: v for k, v in data.items() if k != 'updated'})
+            else:
+                with open(path, 'w', encoding='utf-8') as f:
+                    json.dump(data, f, separators=(',', ':'))
+
 
 def history_seasons(sport, cur):
     """Past seasons the trainer learns from, relative to the season currently on the site."""
-    back = {'nfl': 5, 'cfb': 3, 'nhl': 3, 'mlb': 2, 'cbb': 2}[sport]
+    back = {'nfl': 5, 'cfb': 3, 'nhl': 3, 'mlb': 2, 'cbb': 2, 'nba': 3}[sport]
     return [cur - i for i in range(back, 0, -1)]
 
 
