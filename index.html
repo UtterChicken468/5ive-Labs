@@ -507,7 +507,7 @@ function gameCard({ g, L, pr }) {
   const cands = [];
   if (pr.spEdge != null) cands.push({ type: 'spread', side: spSide, text: spBet, p: coverP, price: priceOf(spPrice) });
   if (pr.totEdge != null) cands.push({ type: 'total', side: totSide, text: totSide + ' ' + L.tot, p: totP, price: priceOf(totPrice) });
-  if (hasMl) { const hp = E.blendWin(pr.pHome, vH); cands.push({ type: 'ml', side: mlTeam, text: mlTeam + ' to win', p: mlTeam === g.h ? hp : 1 - hp, price: mlTeam === g.h ? L.hml : L.aml }); }
+  if (hasMl) cands.push({ type: 'ml', side: mlTeam, text: mlTeam + ' to win', p: mlTeam === g.h ? pr.pHome : pr.pAway, price: mlTeam === g.h ? L.hml : L.aml });
   cands.forEach((c) => { c.ev = E.evPerUnit(c.p, c.price); });
   const best = cands.sort((a, b) => b.ev - a.ev)[0];
   const BE = 0.524; // a -110 bet needs to win 52.4% to break even
@@ -540,7 +540,7 @@ function gameCard({ g, L, pr }) {
         <label for="hml-${g.id}">${g.h}</label><input type="number" step="5" id="hml-${g.id}" data-line="hml" data-g="${g.id}" value="${L.hml ?? ''}" placeholder="odds">
         ${hasMl ? `<span class="imp">${vH >= 0.5 ? g.h + ' ' + pct(vH) : g.a + ' ' + pct(1 - vH)}</span>` : ''}</span>
       <span class="mc">${pr.pHome >= 0.5 ? g.h + ' ' + pct(pr.pHome) : g.a + ' ' + pct(pr.pAway)}</span>
-      <span class="ec">${!hasMl ? '<span class="muted small">enter odds</span>' : `<span class="pill ${mlGap >= 0.05 && cands.some((x) => x.type === 'ml' && x.ev > 0) ? 'acc' : 'flat'}">${Math.round(mlGap * 100)}% gap</span><span class="small">→ ${mlTeam} ${odds(mlTeam === g.h ? L.hml : L.aml)}</span><span class="small muted">model is higher on ${mlTeam}</span>${(() => { const c = cands.find((x) => x.type === 'ml'); return c ? `<span class="small muted">honest ${pct(c.p)} · ${evPill(c.ev)}</span>` : ''; })()}<button class="logbtn" data-log="ml" data-g="${g.id}" data-side="${mlTeam}">Log</button>`}</span>
+      <span class="ec">${!hasMl ? '<span class="muted small">enter odds</span>' : `<span class="pill ${mlGap >= 0.05 ? 'acc' : 'flat'}">${Math.round(mlGap * 100)}% gap</span><span class="small">→ ${mlTeam} ${odds(mlTeam === g.h ? L.hml : L.aml)}</span><span class="small muted">model is higher on ${mlTeam}</span><button class="logbtn" data-log="ml" data-g="${g.id}" data-side="${mlTeam}">Log</button>`}</span>
     </div>
     ${best ? `<div class="bestbet ${best.ev > 0.03 ? 'good' : ''}"><span>${best.ev > 0 ? 'Model\'s best bet' : 'No value at these prices · closest'}: <b>${esc(best.text)}</b> · ${pct(best.p)} chance · ${evPill(best.ev)}</span></div>` : ''}
   </article>`;
@@ -744,18 +744,8 @@ function trainedView() {
       <div class="tile"><span class="label">Test games</span><b>${t.n.toLocaleString()}</b><span class="sub">${label(TRAINED.testSeason)} season</span></div>
     </div>
     ${cal ? `<div class="small muted">Honesty check, favorites by how sure the model was: ${cal}</div>` : ''}
-    ${vsVegasView()}
     ${isTrained() ? '' : '<p class="note" style="margin:10px 0 0">You\'re not using it right now. Tap <b>Trained</b> at the top of the model panel to switch.</p>'}
   </div>`;
-}
-
-function vsVegasView() {
-  const M = META.mkt; if (!M) return `<p class="note" style="margin:10px 0 0">No past betting lines saved for this sport yet, so the bet chances use a cautious estimate until a season of lines has been collected.</p>`;
-  const row = (name, m) => m ? `<div class="tile"><span class="label">${name} edges ${M.edgeMin}+ ${UNIT}</span><b>${m.hit}%</b><span class="sub">won, ${m.hitN.toLocaleString()} past bets · counts ${Math.round(m.s * 100)}% of the gap</span></div>` : '';
-  const ml = M.ml ? `<div class="tile"><span class="label">Moneyline win chance</span><b>${Math.round(M.ml.w * 100)}% model</b><span class="sub">${100 - Math.round(M.ml.w * 100)}% Vegas, the mix that predicted ${M.ml.n.toLocaleString()} past games best</span></div>` : '';
-  return `<h3 style="font-size:16px;text-transform:uppercase;margin:14px 0 6px">Against Vegas</h3>
-    <p class="note" style="margin:0 0 10px">Every past game with a betting line, checked the honest way: when the model disagreed with Vegas, who was right? These numbers set the chances you see on each game card. 52.4% is break-even at −110.</p>
-    <div class="tiles">${row(META.spreadName || 'Spread', M.sp)}${row('Total', M.tot)}${ml}</div>`;
 }
 
 // ---------- model battles ----------
@@ -1009,7 +999,7 @@ async function bootEdges() {
       const add = (type, bet, p, price, other, edge) => {
         if (type === 'Moneyline' && price > 250) return;      // skip long shots
         if (fixedLine && type !== 'Moneyline' && price == null) return;
-        const pm = fair(price, other), pb = type === 'Moneyline' ? E.blendWin(p, pm) : p; // chances are already honest (see engine vsMarket / blendWin)
+        const pm = fair(price, other), pb = (p + pm) / 2; // 50/50 blend of your model and the market
         const ev = E.evPerUnit(pb, price ?? -110);
         if (ev > 0.015) rows.push({ ...base, type, bet: bet + (price != null && price !== -110 ? ' (' + (price > 0 ? '+' + price : price) + ')' : ''), p, pm, ev, edge });
       };
@@ -1052,7 +1042,7 @@ async function bootEdges() {
   }
   const chip = (group, val, label, on) => `<button type="button" class="fchip" data-f="${group}" data-v="${val}" aria-pressed="${on}">${esc(label)}</button>`;
   function render() {
-    if (!rows.length) { $('#view').innerHTML = `<div class="empty">No bets with real value right now. That's normal: Vegas lines are sharp, and once the model's chances are checked against past seasons, most gaps turn out to be noise. Check back after the next refresh.</div>`; return; }
+    if (!rows.length) { $('#view').innerHTML = `<div class="empty">No edges in the next couple of days with your current models. Try lowering the edge threshold in a sport, or check back after the next data refresh.</div>`; return; }
     const list = filtered(), shown = showAll ? list : list.slice(0, 25);
     const active = F.sports.length || F.kinds.length || F.day !== 'all' || F.minEv || F.q;
     $('#view').innerHTML = `
@@ -1075,7 +1065,7 @@ async function bootEdges() {
     </tbody></table></div>
     ${list.length > shown.length ? `<p><button class="btn ghost" id="showAll">Show all ${list.length}</button></p>` : ''}`
     : '<div class="empty">No bets match these filters.</div>'}
-    <p class="note">Value uses honest chances: the model's gap from Vegas only counts as much as gaps like it actually paid off in past seasons. Moneylines longer than +250 are left out. Uses real prices when the feed has them (−110 otherwise), each sport's saved sliders, and any lines you typed in.</p>`;
+    <p class="note">Value uses a 50/50 blend of your model and the market's fair price, so long-shot underdogs don't flood the list just because the model is less extreme than the odds. Moneylines longer than +250 are left out. Uses real prices when the feed has them (−110 otherwise), each sport's saved sliders, and any lines you typed in.</p>`;
   }
   render();
   $('#view').addEventListener('click', (e) => {
@@ -1417,7 +1407,6 @@ function bootGuide() {
       <li><b>Example:</b> Vegas has DEN +2.5, your model says DEN +1.5. The model thinks Denver should only be getting 1.5 points, so getting 2.5 is a gift: Edge shows "1.0 pts → DEN +2.5". Same idea for totals: Vegas 40.5, model 46.1 means a 5.6 point edge on the Over.</li>
       <li><b>Win chance row:</b> Vegas's chance comes from the moneyline odds (with the sportsbook's cut removed), next to the model's chance. The gap tells you which team the model is higher on than Vegas.</li>
       <li><b>The chance is honest, not just the gap:</b> Vegas lines are sharp, so a big gap doesn't automatically mean a good bet. The "% chance" under each edge is based on how often gaps like that actually won in past seasons, and "past edges won" shows that record. In the NFL, for example, the model's spread and total gaps have won about 49% of the time, so those bets show close to 50% no matter how big the gap looks.</li>
-      <li><b>Win chance "honest" %:</b> the model's win chance blended with Vegas's, weighted by how well each predicted past games. So far Vegas alone has been the better predictor in every sport we could test, so this lands close to Vegas's number.</li>
       <li><b>Highlighted edge:</b> the gap is bigger than your "Flag edges of" threshold <i>and</i> the honest chance is above 52.4%, the break-even rate at normal −110 odds.</li>
       <li><b>Model's best bet:</b> the bottom line picks the single bet with the best value (EV) at the current prices, and how likely the model thinks it is to hit.</li>
       <li><b>Log:</b> saves that pick to your Pick log so you can track how it does.</li>

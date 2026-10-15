@@ -133,27 +133,15 @@ function calibration(picks, sigma) {
   return bins.filter((q) => q.n).map((q) => [Math.round(q.p / q.n * 100), Math.round(q.won / q.n * 100), q.n]);
 }
 
-// Moneylines: the blend of model and market win chance with the lowest log loss on past games.
-function fitMl(rows) {
-  if (rows.length < 150) return undefined;
-  const ll = (w) => rows.reduce((s, [pm, pk, y]) => { const p = Math.min(0.99, Math.max(0.01, w * pm + (1 - w) * pk)); return s - (y ? Math.log(p) : Math.log(1 - p)); }, 0) / rows.length;
-  let best = 0; for (let w = 0; w <= 1.0001; w += 0.05) if (ll(w) < ll(best)) best = w;
-  return { w: round(best, 2), n: rows.length, logLoss: round(ll(best), 4), marketLogLoss: round(ll(0), 4), modelLogLoss: round(ll(1), 4) };
-}
-
 // How much of the model's gap from the Vegas line actually shows up in results, per market.
 // Regress (result - line) on (model - line) over every past game with a line; slope kept in 0..1.
 function marketTrust(past, cur, model) {
-  const sp = [], tot = [], ml = [];
+  const sp = [], tot = [];
   past.forEach((ds) => {
     E.configure({ ...cur.meta, mkt: null, priors: ds.meta.priors || null });
     E.backtest(ds, model.weights, { ...model.settings, qbOut: 0, weather: 0, goalie: 0 }, 0, true).picks.forEach((p) => {
       if (p.sp != null) sp.push([p.m - p.sp, p.res - p.sp]);
       if (p.tot != null && p.pOver != null) tot.push([p.t - p.tot, p.at - p.tot]);
-      if (p.hml != null && p.aml != null && p.res !== 0) {
-        const a = E.impliedProb(p.hml), b = E.impliedProb(p.aml);
-        ml.push([p.pH, a / (a + b), p.res > 0 ? 1 : 0]);
-      }
     });
   });
   const fit = (rows, min) => {
@@ -164,8 +152,8 @@ function marketTrust(past, cur, model) {
       n: rows.length, hitN: big.length, hit: big.length ? round(won / big.length * 100, 1) : null };
   };
   const min = cur.meta.edgeDefault ?? 1.5;
-  const out = { sp: fit(sp, min), tot: fit(tot, min), ml: fitMl(ml), edgeMin: min };
-  return out.sp || out.tot || out.ml ? out : null;
+  const out = { sp: fit(sp, min), tot: fit(tot, min), edgeMin: min };
+  return out.sp || out.tot ? out : null;
 }
 
 for (const sport of SPORTS) {

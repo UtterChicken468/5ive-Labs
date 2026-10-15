@@ -314,19 +314,10 @@
   // Chance a spread or total bet wins. Vegas lines are sharp, so the model's gap from the line is
   // only worth what past seasons showed it was worth: MKT[k].s is the fitted share of the gap that
   // actually showed up in results (0 = none, 1 = all of it) and MKT[k].sd how far results land
-  // from the line. Sports without past lines use a cautious default (every sport we could test
-  // came out between 0 and 0.22).
+  // from the line. Sports without past lines use a cautious default.
   function vsMarket(k, gap, sigma) {
     const m = MKT && MKT[k];
-    return m ? phi(m.s * gap / m.sd) : phi(0.1 * gap / sigma);
-  }
-
-  // Honest win chance for a moneyline: the model's chance blended with the market's (bookmaker cut
-  // removed), with the model's share MKT.ml.w fitted on past seasons. Default 0.2 until a sport has past lines.
-  function blendWin(pModel, pMarket) {
-    if (pMarket == null) return pModel;
-    const w = MKT && MKT.ml ? MKT.ml.w : 0.2;
-    return w * pModel + (1 - w) * pMarket;
+    return m ? phi(m.s * gap / m.sd) : phi(0.2 * gap / sigma);
   }
 
   function backtest(data, weights, settings, edgeMin, collect) {
@@ -345,7 +336,7 @@
       byW[w].forEach((g) => {
         const pr = predict(g, P, R, settings, { sp: g.sp, tot: g.tot }, data); if (!pr) return;
         const res = g.hs - g.as_;
-        if (picks) picks.push({ id: g.id, w, m: pr.margin, res, sp: g.sp, t: pr.total, tot: g.tot, at: g.hs + g.as_, pOver: pr.pOver, pH: pr.pHome, hml: g.hml, aml: g.aml });
+        if (picks) picks.push({ id: g.id, w, m: pr.margin, res, sp: g.sp, t: pr.total, tot: g.tot, at: g.hs + g.as_, pOver: pr.pOver });
         if (res !== 0) { n++; wk.n++; if ((pr.margin > 0) === (res > 0)) { su++; wk.su++; } }
         mae += Math.abs(pr.margin - res);
         if (g.sp != null) {
@@ -581,7 +572,7 @@
   api.ufc = { FACTORS: UFC_FACTORS, PRESETS: UFC_PRESETS, DEFAULT_COEF: UFC_DEFAULT_COEF, DEFAULT_WEIGHTS: UFC_DEFAULT_WEIGHTS, trainedWeights: ufcTrainedWeights, walk: ufcWalk, backtest: ufcBacktest, features: ufcFeatures, logit: ufcLogit, sigmoid };
 
   Object.assign(api, { configure, DEFAULT_SETTINGS, teamProfiles, ratings, predict, backtest, propOf, walk, starterRuns, priors: () => PRIORS,
-    defenseAllowed, projectProp, overProb, impliedProb, blendWin, evPerUnit, profitPerUnit, phi, statOf });
+    defenseAllowed, projectProp, overProb, impliedProb, evPerUnit, profitPerUnit, phi, statOf });
   configure({ family: 'football' });
   root.Engine = api;
 })(typeof window !== 'undefined' ? window : globalThis);
