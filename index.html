@@ -218,6 +218,59 @@ details.inj > div { margin-top: 4px }
 .linkbtn { font: inherit; background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; text-decoration: underline }
 @media (max-width: 520px) { .frow.selects label:not(.grow) { flex: 1 1 30% } .frow.selects select { width: 100% } }
 
+/* game detail sheet */
+body.noscroll { overflow: hidden }
+.detail { position: fixed; inset: 0; z-index: 50; background: rgba(4,10,14,.72); backdrop-filter: blur(3px); display: flex; justify-content: center; align-items: flex-start; overflow-y: auto; padding: 28px 12px }
+.dsheet { position: relative; width: 100%; max-width: 760px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 22px 22px 28px; box-shadow: 0 30px 80px rgba(0,0,0,.5) }
+.dsheet section { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line) }
+.dsheet h4 { font-family: var(--display); font-size: 19px; text-transform: uppercase; letter-spacing: .02em; margin: 0 0 4px }
+.dsheet h5 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 6px }
+.dsheet .note { margin: 0 0 10px }
+.dx { position: absolute; right: 12px; top: 12px; width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); font-size: 16px; cursor: pointer }
+.dh .kick { color: var(--muted); font-size: 13px; padding-right: 44px }
+.dm { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; margin: 10px 0 12px; text-align: center }
+.dm b { display: block; font-family: var(--display); font-size: 28px; text-transform: uppercase; line-height: 1.05 }
+.dm span { color: var(--muted); font-size: 13px }
+.ds { font-family: var(--display); font-size: 46px; font-weight: 700; line-height: 1 }
+.ds i { font-style: normal; color: var(--muted); margin: 0 6px }
+.dl { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; margin-top: 12px }
+.dl > div { background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; min-width: 0 }
+.dl b { display: block; font-size: 15px; margin-top: 2px; overflow-wrap: anywhere }
+.dl small { color: var(--muted); font-size: 12px }
+.why2 .whd, .why2 .wr { display: grid; grid-template-columns: minmax(0,1.3fr) minmax(0,1fr) auto; gap: 10px; align-items: center }
+.why2 .whd { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px }
+.why2 .whd span:last-child { text-align: right }
+.why2 .wr { padding: 6px 0; border-bottom: 1px dashed var(--line); font-size: 14px }
+.wb { position: relative; height: 10px; background: var(--surface-2); border-radius: 5px }
+.wb::after { content: ''; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--muted) }
+.wb i { position: absolute; top: 0; bottom: 0; border-radius: 5px }
+.wb i.h { left: 50%; background: var(--accent) } .wb i.a { right: 50%; background: var(--vegas, #8fa6b0) }
+.wv { font-size: 13px; font-weight: 600; white-space: nowrap; text-align: right }
+.tape .tp { display: grid; grid-template-columns: 90px minmax(0,1fr) 90px; gap: 8px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 14px }
+.tape .tp span:first-child { text-align: left } .tape .tp span:last-child { text-align: right }
+.tape .tp .l { text-align: center; color: var(--muted); font-size: 13px }
+.tape .tp small { color: var(--muted); font-size: 11px; margin-left: 4px; font-weight: 400 }
+.tape .tp .b { color: var(--accent); font-weight: 700 }
+.tape .th { font-family: var(--display); font-size: 17px; text-transform: uppercase; border-bottom: 2px solid var(--line) }
+.yd { display: grid; grid-template-columns: 1fr 1fr; gap: 10px }
+.ydc { background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px; min-width: 0; overflow-wrap: anywhere }
+.ydc .label { display: block } .ydc b { font-family: var(--display); font-size: 34px; margin-right: 4px } .ydc small { color: var(--muted) }
+.ydb { display: flex; gap: 3px; height: 8px; margin-top: 8px } .ydb i { border-radius: 4px; background: var(--accent) } .ydb i + i { background: var(--good) }
+.ydl { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-top: 5px }
+.rgs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px }
+.rg { display: grid; grid-template-columns: 24px 1fr auto; gap: 8px; align-items: center; padding: 4px 0; font-size: 14px }
+.rg .r { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; font-size: 12px; font-weight: 700; background: var(--surface-2) }
+.rg .r.W { background: var(--accent-soft); color: var(--good) } .rg .r.L { color: var(--bad) }
+.dp { margin-top: 12px }
+.dpr { display: grid; grid-template-columns: 46px minmax(0,1fr) auto; gap: 4px 10px; align-items: center; padding: 7px 0; border-bottom: 1px dashed var(--line); font-size: 14px }
+.dpr .t { color: var(--muted); font-size: 12px; font-weight: 700 }
+.dpr .v { text-align: right } .dpr .v b { font-size: 16px } .dpr .v small { display: block; color: var(--muted); font-size: 11px }
+.dpr .o { grid-column: 2 / 4; font-size: 12px; color: var(--accent) } .dpr .o:empty { display: none }
+.mbtn { background: none; border: 0; padding: 0; color: inherit; cursor: pointer; text-align: left }
+.dbtn { margin-top: 10px; width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); color: var(--accent); font: inherit; font-weight: 600; cursor: pointer }
+.dbtn:hover { border-color: var(--accent) }
+@media (max-width: 520px) { .detail { padding: 0 } .dsheet { border-radius: 0; min-height: 100%; padding: 18px 14px 40px } .dm b { font-size: 22px } .ds { font-size: 38px } .tape .tp { grid-template-columns: 74px minmax(0,1fr) 74px; font-size: 13px } .rgs, .yd { grid-template-columns: 1fr 1fr } }
+
 /* tables */
 .tblwrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r) }
 table { border-collapse: collapse; width: 100%; font-size: 14px }
@@ -275,6 +328,7 @@ td input { width: 70px }
   <div class="navrow"><nav class="sports" id="sports" aria-label="Sport"></nav><div class="navright"><a class="syncbtn" id="guideBtn" href="#guide">How it works</a><button class="syncbtn" id="syncBtn" type="button">Sync: off</button></div></div>
   <div class="welcome" id="welcome" hidden><span><b>New here?</b> Two minutes on how to read the picks and use the sliders.</span><a class="btn accent" href="#guide" id="welcomeGo">How it works</a><button class="btn ghost" id="welcomeX" type="button">Got it</button></div>
   <section class="syncpanel" id="syncPanel" hidden></section>
+  <div id="detail" class="detail" hidden></div>
   <div class="hash" aria-hidden="true"></div>
 
   <div class="layout">
@@ -515,7 +569,7 @@ function gameCard({ g, L, pr }) {
   const gapPill = (v, unit) => v == null ? '' : `<span class="pill ${Math.abs(v) >= S.edgeMin ? 'acc' : 'flat'}">${Math.abs(v).toFixed(1)} ${unit}</span>`;
   const sp0 = (v) => v == null ? '' : -v; // book style for the home team
   return `<article class="game ${hot ? 'hot' : ''}">
-    <div class="gh"><div class="matchup">${g.a}<span class="at">@</span>${g.h}</div><div class="kick">${kickoff(g)}${g.neu ? '<br>Neutral site' : ''}${g.rd ? '<br><b style="color:var(--accent)">' + esc(g.rd) + '</b>' : ''}</div></div>
+    <div class="gh"><button class="matchup mbtn" data-detail="${g.id}" title="Full breakdown">${g.a}<span class="at">@</span>${g.h}</button><div class="kick">${kickoff(g)}${g.neu ? '<br>Neutral site' : ''}${g.rd ? '<br><b style="color:var(--accent)">' + esc(g.rd) + '</b>' : ''}</div></div>
     <div class="score"><b>${UNIT === 'pts' ? Math.round(pr.as) + '–' + Math.round(pr.hs) : fmt(pr.as) + '–' + fmt(pr.hs)}</b><span class="small muted">model score · ${fav} by ${fmt(Math.abs(pr.margin))}</span></div>
     <div class="wp" title="Model win probability"><div class="a" style="flex:${Math.max(ap, 12)}">${g.a} ${ap}%</div><div class="h" style="flex:${Math.max(hp, 12)}">${g.h} ${hp}%</div></div>
     ${pitchersRow(g, pr)}${goalieRow(g, pr)}${weatherRow(g, pr)}${injuryRow(g, pr)}
@@ -540,6 +594,7 @@ function gameCard({ g, L, pr }) {
       <span class="ec">${!hasMl ? '<span class="muted small">enter odds</span>' : `<span class="pill ${mlGap >= 0.05 ? 'acc' : 'flat'}">${Math.round(mlGap * 100)}% gap</span><span class="small">→ ${mlTeam} ${odds(mlTeam === g.h ? L.hml : L.aml)}</span><span class="small muted">model is higher on ${mlTeam}</span><button class="logbtn" data-log="ml" data-g="${g.id}" data-side="${mlTeam}">Log</button>`}</span>
     </div>
     ${best ? `<div class="bestbet ${best.ev > 0.03 ? 'good' : ''}"><span>${best.ev > 0 ? 'Model\'s best bet' : 'No value at these prices · closest'}: <b>${esc(best.text)}</b> · ${pct(best.p)} chance · ${evPill(best.ev)}</span></div>` : ''}
+    <button class="dbtn" data-detail="${g.id}">Full breakdown: stats, props, why ›</button>
   </article>`;
 }
 
@@ -589,6 +644,167 @@ function pitchersRow(g, pr) {
   const adj = pr.starter == null ? '' : ` · pitching edge ${g.h} ${sgn(pr.starter, 2)} runs`;
   return `<div class="why">Starters: ${esc(n(g.ap))} (${g.a}) vs ${esc(n(g.hp))} (${g.h})${adj}</div>`;
 }
+
+// ---------- game detail sheet: everything about one game ----------
+// Stat rows per sport family: [label, fn(profile) -> number, higher is better?, format]
+const pct1 = (v) => (v * 100).toFixed(1) + '%';
+const f1 = (v) => v.toFixed(1), f0 = (v) => Math.round(v).toLocaleString(), f2 = (v) => v.toFixed(2), f3 = (v) => v.toFixed(3).replace(/^0/, '');
+const per = (p, k) => (p.S[k] || 0) / p.n;
+const ratio = (a, b) => (b ? a / b : 0);
+const STAT_ROWS = {
+  football: [
+    ['Points per game', (p) => p.pf, true, f1],
+    ['Points allowed', (p) => p.pa, false, f1],
+    ['Total yards per game', (p) => per(p, 'py') + per(p, 'ry'), true, f0],
+    ['Yards allowed per game', (p) => per(p, 'o_py') + per(p, 'o_ry'), false, f0],
+    ['Passing yards per game', (p) => per(p, 'py'), true, f0],
+    ['Rushing yards per game', (p) => per(p, 'ry'), true, f0],
+    ['Yards per play', (p) => ratio(p.S.py + p.S.ry, p.S.pl), true, f1],
+    ['Yards per play allowed', (p) => ratio(p.S.o_py + p.S.o_ry, p.S.o_pl), false, f1],
+    ['EPA per play (offense)', (p) => ratio(p.S.epa, p.S.pl), true, f2],
+    ['EPA per play allowed', (p) => ratio(p.S.o_epa, p.S.o_pl), false, f2],
+    ['Turnover margin per game', (p) => (p.S.o_to - p.S.to) / p.n, true, (v) => sgn(v, 1)],
+    ['Sacks per game', (p) => per(p, 'sk'), true, f1],
+    ['Sacks allowed per game', (p) => per(p, 'ss'), false, f1],
+    ['Penalty yards per game', (p) => per(p, 'pen'), false, f0],
+  ],
+  hockey: [
+    ['Goals per game', (p) => p.pf, true, f2],
+    ['Goals allowed', (p) => p.pa, false, f2],
+    ['Shots per game', (p) => per(p, 'sf'), true, f1],
+    ['Shots allowed', (p) => per(p, 'o_sf'), false, f1],
+    ['Shooting %', (p) => ratio(p.S.gf, p.S.sf), true, pct1],
+    ['Save %', (p) => 1 - ratio(p.S.o_gf, p.S.o_sf), true, f3],
+    ['Power play %', (p) => per(p, 'pp'), true, pct1],
+    ['Penalty kill %', (p) => per(p, 'pk'), true, pct1],
+    ['Faceoff %', (p) => per(p, 'fo'), true, pct1],
+  ],
+  basketball: [
+    ['Points per game', (p) => p.pf, true, f1],
+    ['Points allowed', (p) => p.pa, false, f1],
+    ['Offensive rating', (p) => 100 * ratio(p.S.pts, p.S.fga - p.S.orb + p.S.tov + 0.475 * p.S.fta), true, f1],
+    ['Defensive rating', (p) => 100 * ratio(p.S.o_pts, p.S.o_fga - p.S.o_orb + p.S.o_tov + 0.475 * p.S.o_fta), false, f1],
+    ['Effective FG %', (p) => ratio(p.S.fgm + 0.5 * p.S.tpm, p.S.fga), true, pct1],
+    ['Opponent effective FG %', (p) => ratio(p.S.o_fgm + 0.5 * p.S.o_tpm, p.S.o_fga), false, pct1],
+    ['3-pointers made per game', (p) => per(p, 'tpm'), true, f1],
+    ['Turnovers per game', (p) => per(p, 'tov'), false, f1],
+    ['Offensive rebounds per game', (p) => per(p, 'orb'), true, f1],
+    ['Free throw attempts per game', (p) => per(p, 'fta'), true, f1],
+  ],
+  baseball: [
+    ['Runs per game', (p) => p.pf, true, f2],
+    ['Runs allowed', (p) => p.pa, false, f2],
+    ['OPS', (p) => ratio(p.S.h + p.S.bb + p.S.hbp, p.S.pa) + ratio(p.S.tb, p.S.pa - p.S.bb - p.S.hbp - p.S.sf), true, f3],
+    ['Home runs per game', (p) => per(p, 'hr'), true, f2],
+    ['Walk rate', (p) => ratio(p.S.bb, p.S.pa), true, pct1],
+    ['Strikeout rate', (p) => ratio(p.S.so, p.S.pa), false, pct1],
+    ['Starters ERA', (p) => 9 * ratio(p.S.sp_er, p.S.sp_ip), false, f2],
+    ['Bullpen ERA', (p) => 9 * ratio(p.S.bp_er, p.S.bp_ip), false, f2],
+  ],
+};
+function teamRecord(t, before) {
+  let w = 0, l = 0, tie = 0;
+  DATA.games.forEach((x) => { if (x.hs == null || (before && x.d >= before)) return; if (x.h !== t && x.a !== t) return;
+    const my = x.h === t ? x.hs : x.as_, op = x.h === t ? x.as_ : x.hs; if (my > op) w++; else if (my < op) l++; else tie++; });
+  return w + '–' + l + (tie ? '–' + tie : '');
+}
+function recentGames(t, before, n) {
+  return DATA.games.filter((x) => x.hs != null && (x.h === t || x.a === t) && x.d < before).sort((a, b) => b.d.localeCompare(a.d)).slice(0, n).map((x) => {
+    const home = x.h === t, my = home ? x.hs : x.as_, op = home ? x.as_ : x.hs;
+    return { d: x.d, opp: home ? x.a : x.h, home, res: my > op ? 'W' : my < op ? 'L' : 'T', score: my + '–' + op };
+  });
+}
+function detailProps(g) {
+  if (!META.props || !DATA.players.length || !E.PROPS.length) return '';
+  const opp = { [g.h]: g.a, [g.a]: g.h };
+  const groups = E.PROPS.map((prop) => {
+    const rows = [];
+    Object.entries(playerGames).forEach(([id, games]) => {
+      const team = games[games.length - 1].t; if (!opp[team] || games.length < 2) return;
+      if (!prop.pos.includes(games[0].p) || !prop.elig(games)) return;
+      if (games[0].p === 'G') { const side = g.h === team ? 'hg' : 'ag', ov = (S.lines[g.id] || {})[side]; if ('G' + (ov || g[side]) !== id) return; }
+      else if (games[games.length - 1].w !== lastWeekByTeam[team]) return;
+      const pj = E.projectProp(games, prop.key, opp[team], DEF, { recent: S.recent, matchup: S.matchup }); if (!pj) return;
+      const saved = S.props[id + '|' + prop.key] || {};
+      const line = saved.line != null && saved.line !== '' ? +saved.line : null;
+      rows.push({ id, name: games[0].n, team, pj, line, pOver: line != null ? E.overProb(pj, line) : null });
+    });
+    rows.sort((a, b) => b.pj.proj - a.pj.proj);
+    const top = [g.a, g.h].flatMap((t) => rows.filter((r) => r.team === t).slice(0, prop.key === 'py' || prop.key === 'ptd' || prop.key === 'sv' ? 1 : 2));
+    if (!top.length) return '';
+    return `<div class="dp"><h5>${esc(prop.label)}</h5>${top.map((r) => `<div class="dpr"><span class="t">${esc(r.team)}</span><span class="n">${esc(r.name)}</span>
+      <span class="v"><b>${fmt(r.pj.proj)}</b><small>avg ${fmt(r.pj.season)} · last 3 ${fmt(r.pj.last3)}</small></span>
+      <span class="o">${r.line != null ? `${r.pOver >= 0.5 ? 'Over' : 'Under'} ${r.line} · ${pct(Math.max(r.pOver, 1 - r.pOver))}` : ''}</span></div>`).join('')}</div>`;
+  }).join('');
+  return groups ? `<section><h4>Player projections</h4><p class="note small">Projected for this game from season average, recent form and the opponent's defense. Lines you enter on the Player props tab show up here.</p>${groups}</section>` : '';
+}
+function gameDetail(gid) {
+  const g = DATA.games.find((x) => String(x.id) === String(gid)); if (!g) return;
+  const L = linesFor(g), { P, R } = model(), pr = E.predict(g, P, R, S.settings, L, DATA); if (!pr) return;
+  const A = P[g.a], H = P[g.h];
+  const vH = L.hml != null && L.aml != null ? E.impliedProb(L.hml) / (E.impliedProb(L.hml) + E.impliedProb(L.aml)) : null;
+  const ap = Math.round(pr.pAway * 100), hp = 100 - ap;
+  // Why: each factor's push toward one team, in points (home minus away), plus game-day adjustments
+  const lbl = Object.fromEntries(E.FACTORS.map((f) => [f.key, f.label])); lbl.prior = 'Preseason rating';
+  const ca = R.contrib[g.a] || {}, ch = R.contrib[g.h] || {};
+  const why = [...new Set([...Object.keys(ca), ...Object.keys(ch)])].map((k) => ({ k: lbl[k] || k, v: (ch[k] || 0) - (ca[k] || 0) }));
+  if (!g.neu && S.settings.hfa) why.push({ k: 'Home field', v: S.settings.hfa });
+  if (pr.qb) { if (pr.qb.h) why.push({ k: g.h + ' QB out', v: -S.settings.qbOut }); if (pr.qb.a) why.push({ k: g.a + ' QB out', v: S.settings.qbOut }); }
+  if (pr.goalie && (pr.goalie.h || pr.goalie.a)) why.push({ k: 'Starting goalies', v: ((pr.goalie.h || 0) - (pr.goalie.a || 0)) * S.settings.goalie / 5 });
+  if (pr.starter) why.push({ k: 'Starting pitchers', v: pr.starter });
+  const whyRows = why.filter((x) => Math.abs(x.v) >= 0.05).sort((a, b) => Math.abs(b.v) - Math.abs(a.v)).slice(0, 8);
+  const wmax = Math.max(...whyRows.map((x) => Math.abs(x.v)), 0.1);
+  // Tale of the tape with league ranks
+  const rows = STAT_ROWS[META.family] || [];
+  const teams = Object.values(P).filter((p) => p.n);
+  const tape = A && H && A.n && H.n ? rows.map(([label, fn, hi, f]) => {
+    const vals = teams.map(fn).filter((v) => isFinite(v)).sort((a, b) => hi ? b - a : a - b);
+    const rank = (v) => vals.findIndex((x) => (hi ? x <= v + 1e-9 : x >= v - 1e-9)) + 1;
+    const va = fn(A), vh = fn(H); if (!isFinite(va) || !isFinite(vh)) return '';
+    const better = va === vh ? 0 : (va > vh) === hi ? -1 : 1;
+    return `<div class="tp"><span class="${better < 0 ? 'b' : ''}">${f(va)}<small>#${rank(va)}</small></span><span class="l">${label}</span><span class="${better > 0 ? 'b' : ''}">${f(vh)}<small>#${rank(vh)}</small></span></div>`;
+  }).join('') : '';
+  // Football: projected team yardage for this game (each offense vs that defense, averaged)
+  let yards = '';
+  if (META.family === 'football' && A && H && A.n && H.n) {
+    const proj = (o, d, k) => (per(o, k) + per(d, 'o_' + k)) / 2;
+    const ty = (o, d) => ({ pass: proj(o, d, 'py'), rush: proj(o, d, 'ry') });
+    const ya = ty(A, H), yh = ty(H, A);
+    yards = `<section><h4>Projected team yardage</h4><div class="yd">
+      ${[[g.a, ya], [g.h, yh]].map(([t, y]) => `<div class="ydc"><span class="label">${esc(t)}</span><b>${f0(y.pass + y.rush)}</b><small>yards</small>
+        <div class="ydb"><i style="flex:${y.pass}"></i><i style="flex:${y.rush}"></i></div><div class="ydl"><span>Pass ${f0(y.pass)}</span><span>Rush ${f0(y.rush)}</span></div></div>`).join('')}
+      </div><p class="note small">Each offense's yards per game averaged with what the other defense allows.</p></section>`;
+  }
+  const rec = (t) => recentGames(t, g.d, 5).map((x) => `<div class="rg"><span class="r ${x.res}">${x.res}</span><span>${x.home ? 'vs' : '@'} ${esc(x.opp)}</span><span class="muted">${x.score}</span></div>`).join('') || '<div class="muted small">No games yet</div>';
+  const h2h = DATA.games.filter((x) => x.hs != null && ((x.h === g.h && x.a === g.a) || (x.h === g.a && x.a === g.h)) && x.d < g.d);
+  const unit = UNIT === 'pts' ? '' : ' ' + UNIT;
+  const html = `<div class="dsheet" role="dialog" aria-modal="true" aria-label="${esc(g.a)} at ${esc(g.h)}">
+    <button class="dx" data-dclose aria-label="Close">✕</button>
+    <div class="dh"><div class="kick">${kickoff(g)}${g.rd ? ' · ' + esc(g.rd) : ''}${g.neu ? ' · Neutral site' : ''}</div>
+      <div class="dm"><div><b>${esc(g.a)}</b><span>${teamRecord(g.a, g.d)}</span></div><div class="ds">${UNIT === 'pts' ? Math.round(pr.as) : fmt(pr.as)}<i>–</i>${UNIT === 'pts' ? Math.round(pr.hs) : fmt(pr.hs)}</div><div><b>${esc(g.h)}</b><span>${teamRecord(g.h, g.d)}</span></div></div>
+      <div class="wp"><div class="a" style="flex:${Math.max(ap, 12)}">${esc(g.a)} ${ap}%</div><div class="h" style="flex:${Math.max(hp, 12)}">${esc(g.h)} ${hp}%</div></div>
+      <div class="dl">
+        <div><span class="label">${esc(META.spreadName || 'Spread')}</span><b>${L.sp != null ? esc(bookSpread(g.h, L.sp)) : '–'}</b><small>model ${esc(bookSpread(g.h, half(pr.margin)))}</small></div>
+        <div><span class="label">Total</span><b>${L.tot ?? '–'}</b><small>model ${fmt(pr.total)}</small></div>
+        <div><span class="label">Win chance</span><b>${vH != null ? (vH >= 0.5 ? esc(g.h) + ' ' + pct(vH) : esc(g.a) + ' ' + pct(1 - vH)) : '–'}</b><small>model ${pr.pHome >= 0.5 ? esc(g.h) + ' ' + pct(pr.pHome) : esc(g.a) + ' ' + pct(pr.pAway)}</small></div>
+      </div></div>
+    ${pitchersRow(g, pr)}${weatherRow(g, pr)}${injuryRow(g, pr)}
+    ${whyRows.length ? `<section><h4>Why the model leans ${esc(pr.margin >= 0 ? g.h : g.a)}</h4><p class="note small">How much each factor moves the predicted margin${unit ? ' (in' + unit + ')' : ' (in points)'}. Bars point toward the team it helps.</p>
+      <div class="why2"><div class="whd"><span>${esc(g.a)}</span><span></span><span>${esc(g.h)}</span></div>${whyRows.map((x) => `<div class="wr"><span class="wl">${esc(x.k)}</span>
+        <span class="wb"><i class="${x.v >= 0 ? 'h' : 'a'}" style="width:${Math.abs(x.v) / wmax * 50}%"></i></span><span class="wv">${sgn(Math.abs(x.v), META.family === 'football' || META.family === 'basketball' ? 1 : 2)} ${esc(x.v >= 0 ? g.h : g.a)}</span></div>`).join('')}</div></section>` : ''}
+    ${yards}
+    ${tape ? `<section><h4>Tale of the tape</h4><p class="note small">Season to date. Small number is the league rank. The better side is highlighted.</p><div class="tape"><div class="tp th"><span>${esc(g.a)}</span><span></span><span>${esc(g.h)}</span></div>${tape}</div></section>` : ''}
+    <section><h4>Last 5 games</h4><div class="rgs"><div><h5>${esc(g.a)}</h5>${rec(g.a)}</div><div><h5>${esc(g.h)}</h5>${rec(g.h)}</div></div>
+      ${h2h.length ? `<p class="small" style="margin-top:10px"><b>Earlier this season:</b> ${h2h.map((x) => `${esc(x.a)} ${x.as_} @ ${esc(x.h)} ${x.hs}`).join(' · ')}</p>` : ''}</section>
+    ${detailProps(g)}
+  </div>`;
+  const wrap = document.getElementById('detail');
+  wrap.innerHTML = html; wrap.hidden = false; document.body.classList.add('noscroll');
+  wrap.scrollTop = 0; wrap.querySelector('.dsheet').scrollTop = 0;
+}
+function closeDetail() { const w = document.getElementById('detail'); if (w.hidden) return; w.hidden = true; w.innerHTML = ''; document.body.classList.remove('noscroll'); }
+document.getElementById('detail').addEventListener('click', (e) => { if (e.target.id === 'detail' || e.target.closest('[data-dclose]')) closeDetail(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDetail(); });
 
 // ---------- props ----------
 const DEF = E.defenseAllowed(DATA);
@@ -826,7 +1042,7 @@ function currentModelName() {
   return p || 'Custom';
 }
 function logGamePick(type, gid, side) {
-  const g = DATA.games.find((x) => x.id === gid); const L = linesFor(g);
+  const g = DATA.games.find((x) => String(x.id) === String(gid)); const L = linesFor(g);
   const { P, R } = model(); const pr = E.predict(g, P, R, S.settings, L, DATA);
   let desc, line, o, why;
   if (type === 'spread') { line = L.sp; desc = side === g.h ? bookSpread(g.h, L.sp) : bookSpread(g.a, -L.sp); o = (side === g.h ? L.hspp : L.aspp) ?? -110; why = `model ${bookSpread(g.h, half(pr.margin))}`; }
@@ -892,6 +1108,7 @@ $('#view').addEventListener('change', (e) => {
 });
 $('#view').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.detail) { gameDetail(b.dataset.detail); return; }
   if (b.dataset.log) logGamePick(b.dataset.log, b.dataset.g, b.dataset.side);
   if (b.dataset.logprop) logPropPick(b.dataset.logprop, b.dataset.side);
   if (b.dataset.unlog) { S.picks = S.picks.filter((p) => String(p.ts) !== b.dataset.unlog); store.set('picks', S.picks); renderTabs(); renderView(); }
@@ -1405,6 +1622,7 @@ function bootGuide() {
       <li><b>Win chance row:</b> Vegas's chance comes from the moneyline odds (with the sportsbook's cut removed), next to the model's chance. The gap tells you which team the model is higher on than Vegas.</li>
       <li><b>Highlighted edge:</b> the gap is bigger than the threshold you set in "Flag edges of". Small gaps are noise.</li>
       <li><b>Model's best bet:</b> the bottom line picks the single bet with the best value (EV) at the current prices, and how likely the model thinks it is to hit.</li>
+      <li><b>Full breakdown:</b> tap a matchup or the "Full breakdown" button for everything about one game: why the model leans one way (factor by factor), projected team yardage (football), a tale of the tape with league ranks, each team's last 5 games, and player projections.</li>
       <li><b>Log:</b> saves that pick to your Pick log so you can track how it does.</li>
       <li><b>Extras:</b> some cards show injuries (tap to open), kickoff weather, starting goalies or pitchers, and where the line opened ("moving toward you" means the market has moved in your model's direction, which is a good sign).</li>
     </ol>
