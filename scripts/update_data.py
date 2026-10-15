@@ -606,7 +606,32 @@ def cbb_box(eid):
                                            drb=num(st.get('defensiveRebounds')), tov=num(tov))
     pc = s.get('pickcenter') or []
     pc = sorted(pc, key=lambda o: (o.get('provider') or {}).get('priority', 99))
-    return dict(teams=teams, line=espn_line(pc[0]) if pc else {})
+    return dict(teams=teams, line=espn_line(pc[0]) if pc else {}, players=cbb_players(s))
+
+
+def cbb_players(summary):
+    """Player lines from an ESPN summary -> {team id: [[id, name, pos, min, pts, reb, ast, 3pm], ...]}."""
+    out = {}
+    for t in (summary.get('boxscore') or {}).get('players', []) or []:
+        tid = str((t.get('team') or {}).get('id', ''))
+        for block in t.get('statistics', []) or []:
+            names = [str(n).upper() for n in (block.get('names') or block.get('labels') or [])]
+            ix = {n: i for i, n in enumerate(names)}
+            if 'PTS' not in ix:
+                continue
+            for a in block.get('athletes', []) or []:
+                st = a.get('stats') or []
+                if not st or a.get('didNotPlay'):
+                    continue
+                val = lambda k: st[ix[k]] if k in ix and ix[k] < len(st) else '0'
+                mins = num(val('MIN'))
+                if mins <= 0:
+                    continue
+                ath = a.get('athlete') or {}
+                out.setdefault(tid, []).append([str(ath.get('id', '')), ath.get('shortName') or ath.get('displayName', ''),
+                                                (ath.get('position') or {}).get('abbreviation', 'F')[:1] or 'F',
+                                                mins, num(val('PTS')), num(val('REB')), num(val('AST')), split_pair(val('3PT'), 0)])
+    return out
 
 
 def cbb_day(day):
@@ -697,6 +722,16 @@ def build_cbb(_season):
             continue
         for me, op, t, o, pts in ((g['hid'], g['aid'], g['h'], g['a'], g['hs']), (g['aid'], g['hid'], g['a'], g['h'], g['as_'])):
             team_games.append(dict(w=g['w'], g=g['id'], t=t, o=o, pts=float(pts), **tb[me]))
+    players = []
+    if not note:  # player props only for the season in progress
+        for g in sched:
+            b = box.get(g['id']) or {}
+            pl = b.get('players') or {}
+            for tid, team, opp in ((g['hid'], g['h'], g['a']), (g['aid'], g['a'], g['h'])):
+                for pid, nm, pos, mins, pts, reb, ast, tpm in pl.get(tid, []):
+                    if mins >= 10 and g['hs'] is not None:
+                        players.append(dict(id=pid, n=nm, p=pos if pos in ('G', 'F', 'C') else 'F', t=team, o=opp, w=g['w'],
+                                            min=mins, pts=pts, reb=reb, ast=ast, tpm=tpm))
     for g in sched:
         g['gk'] = g['id']
         g.pop('hid'); g.pop('aid')
@@ -705,9 +740,9 @@ def build_cbb(_season):
     track_open('cbb', y, sched)
     meta = dict(sport='cbb', label='College basketball', family='basketball', period='Day', start=first.isoformat(),
                 seasonLabel=f'{y - 1}-{str(y)[2:]}', sigma=11, sigmaTot=16, btSkip=21, formN=5, hfa=3.0, trust=70,
-                bye=0, rest='none', props=False, unit='pts', spreadName='Spread', edgeSteps=[1, 2, 3, 4, 5],
+                bye=0, rest='none', props=bool(players), unit='pts', spreadName='Spread', edgeSteps=[1, 2, 3, 4, 5],
                 edgeDefault=2, hfaMax=5, hfaStep=0.5, byeMax=0, byeStep=0.5, note=note, source='ESPN')
-    return dict(meta=meta, season=y, teamGames=team_games, games=sched, players=[])
+    return dict(meta=meta, season=y, teamGames=team_games, games=sched, players=players)
 
 
 # ---------------------------------------------------------------- NFL (nflverse)
