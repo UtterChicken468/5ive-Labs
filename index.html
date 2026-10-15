@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#101a16">
+<meta name="theme-color" content="#0b1526">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -17,26 +17,18 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
 <style>
 /* Layout: sticky model-builder rail on the left, tabbed results on the right; stacks to one column on phones. */
+/* Prime time: one committed dark look (navy + electric blue), the same in every viewer theme. */
 :root {
-  --bg: #eef2f0; --surface: #ffffff; --surface-2: #f6f8f7; --ink: #14201b; --muted: #5a6962; --line: #d4dcd8;
-  --accent: #d9530b; --accent-ink: #ffffff; --accent-soft: #fbe6d9;
-  --good: #1d7a4d; --good-soft: #dff1e7; --bad: #b8382a; --bad-soft: #f8e1dd;
-  --pos: #2a7f5a; --neg: #c2603a; --vegas: #8a9a93;
+  --bg: #0b1526; --surface: #13213a; --surface-2: #182946; --ink: #e8eef8; --muted: #93a3bd; --line: #26395c;
+  --accent: #4f8ff7; --accent-ink: #06132b; --accent-soft: #1b3866;
+  --good: #3ecf8e; --good-soft: #10352a; --bad: #ff7272; --bad-soft: #3d1d26;
+  --pos: #3ecf8e; --neg: #ff8a5c; --vegas: #5d6f8f;
   --display: "Saira Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
   --body: "Barlow", "Segoe UI", system-ui, sans-serif;
   --r: 10px;
-  --brand-ground: #101a16; --brand-ink: #b9c7c0;
+  --brand-ground: #0f1c33; --brand-ink: #a9b8d0;
+  color-scheme: dark;
 }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --bg: #0e1412; --surface: #161e1b; --surface-2: #1c2622; --ink: #e4ebe7; --muted: #95a49d; --line: #2b3732;
-  --accent: #ff7b33; --accent-ink: #1a0d05; --accent-soft: #3a2316;
-  --good: #4cc98d; --good-soft: #15301f; --bad: #f2786a; --bad-soft: #3a1c18;
-  --pos: #4cb583; --neg: #e8835c; --vegas: #6f7f78; color-scheme: dark } }
-:root[data-theme="dark"] {
-  --bg: #0e1412; --surface: #161e1b; --surface-2: #1c2622; --ink: #e4ebe7; --muted: #95a49d; --line: #2b3732;
-  --accent: #ff7b33; --accent-ink: #1a0d05; --accent-soft: #3a2316;
-  --good: #4cc98d; --good-soft: #15301f; --bad: #f2786a; --bad-soft: #3a1c18;
-  --pos: #4cb583; --neg: #e8835c; --vegas: #6f7f78; color-scheme: dark }
 
 * { box-sizing: border-box }
 html { -webkit-text-size-adjust: 100% }
@@ -64,8 +56,8 @@ header.mast h1 { margin: 0; line-height: 0; min-width: 0 }
 header.mast h1 img { display: block; height: clamp(54px, 9vw, 86px); width: auto; max-width: 100% }
 .stamp { font-size: 13px; color: var(--brand-ink); max-width: 46ch }
 .stamp b { color: #fff }
-.hash { height: 10px; margin-bottom: 18px; border-top: 2px solid var(--ink);
-  background: repeating-linear-gradient(90deg, var(--ink) 0 2px, transparent 2px 10%), repeating-linear-gradient(90deg, var(--line) 0 1px, transparent 1px 2%);
+.hash { height: 10px; margin-bottom: 18px; border-top: 2px solid var(--line);
+  background: repeating-linear-gradient(90deg, var(--muted) 0 2px, transparent 2px 10%), repeating-linear-gradient(90deg, var(--line) 0 1px, transparent 1px 2%);
   background-size: 100% 10px, 100% 5px; background-repeat: no-repeat; opacity: .55 }
 
 .layout { display: grid; grid-template-columns: 330px minmax(0, 1fr); gap: 22px; align-items: start }
@@ -101,7 +93,7 @@ aside.builder > *, .sliders > *, .sl > *, .group > *, .saverow > * { min-width: 
 aside h2 { font-size: 22px; text-transform: uppercase }
 .presets { display: flex; flex-wrap: wrap; gap: 6px }
 .chip { border: 1px solid var(--line); background: var(--surface-2); border-radius: 999px; padding: 4px 11px; font-size: 13px; font-weight: 500 }
-.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink) }
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent) }
 .sliders { display: grid; gap: 12px }
 .sl { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center }
 .sl .nm { font-weight: 600; font-size: 14px }
@@ -112,7 +104,7 @@ aside h2 { font-size: 22px; text-transform: uppercase }
 .saverow { display: flex; gap: 6px }
 .saverow input { flex: 1; min-width: 0 }
 input[type=text], input[type=number], select { background: var(--surface-2); border: 1px solid var(--line); border-radius: 7px; padding: 6px 9px; min-width: 0 }
-.btn { border: 1px solid var(--ink); background: var(--ink); color: var(--bg); border-radius: 7px; padding: 6px 12px; font-weight: 600; font-size: 14px }
+.btn { border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); border-radius: 7px; padding: 6px 12px; font-weight: 600; font-size: 14px }
 .btn.ghost { background: transparent; color: var(--ink); border-color: var(--line) }
 .btn.accent { background: var(--accent); border-color: var(--accent); color: var(--accent-ink) }
 .saved { display: grid; gap: 4px }
@@ -121,10 +113,10 @@ input[type=text], input[type=number], select { background: var(--surface-2); bor
 .saved .row .x { background: none; border: 0; color: var(--muted); padding: 2px 6px }
 
 /* tabs */
-nav.tabs { display: flex; gap: 2px; border-bottom: 2px solid var(--ink); overflow-x: auto; margin-bottom: 16px }
+nav.tabs { display: flex; gap: 2px; border-bottom: 2px solid var(--line); overflow-x: auto; margin-bottom: 16px }
 nav.tabs button { background: none; border: 0; padding: 8px 14px 7px; font-family: var(--display); font-size: 18px; font-weight: 600;
   text-transform: uppercase; color: var(--muted); white-space: nowrap; border-radius: 7px 7px 0 0 }
-nav.tabs button[aria-selected="true"] { background: var(--ink); color: var(--bg) }
+nav.tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink) }
 .toolbar { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: end; margin-bottom: 14px }
 .toolbar .f { display: grid; gap: 3px }
 .note { font-size: 13px; color: var(--muted); max-width: 70ch }
@@ -144,7 +136,7 @@ nav.tabs button[aria-selected="true"] { background: var(--ink); color: var(--bg)
 .wp { display: flex; height: 22px; border-radius: 5px; overflow: hidden; gap: 2px; font-size: 12px; font-weight: 600 }
 .wp div { display: flex; align-items: center; padding: 0 7px; white-space: nowrap; min-width: 0 }
 .wp .a { background: var(--surface-2); color: var(--ink); border: 1px solid var(--line); border-radius: 5px 0 0 5px }
-.wp .h { background: var(--ink); color: var(--bg); justify-content: flex-end; border-radius: 0 5px 5px 0 }
+.wp .h { background: var(--accent); color: var(--accent-ink); justify-content: flex-end; border-radius: 0 5px 5px 0 }
 .mk { display: grid; grid-template-columns: 74px minmax(0,1fr) auto; gap: 6px 10px; align-items: center; font-size: 14px; padding-top: 8px; border-top: 1px solid var(--line) }
 .mk .k { font-family: var(--display); font-weight: 600; font-size: 16px; text-transform: uppercase }
 .mk .ins { display: flex; gap: 6px; flex-wrap: wrap; align-items: center }
@@ -181,7 +173,7 @@ td input { width: 70px }
 .pname { font-weight: 600 }
 .spark { display: inline-flex; align-items: end; gap: 2px; height: 22px; vertical-align: middle }
 .spark i { width: 5px; background: var(--muted); border-radius: 2px 2px 0 0; opacity: .55 }
-.spark i.last { background: var(--ink); opacity: 1 }
+.spark i.last { background: var(--accent); opacity: 1 }
 
 /* rankings */
 .rank { display: grid; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px }
@@ -467,7 +459,7 @@ function moveNote(g, k, L, pr) {
   if (o == null || now == null || o === now) return '';
   const target = k === 'sp' ? pr.margin : pr.total;
   const toward = Math.abs(target - now) < Math.abs(target - o);
-  const fmtL = (v) => k === 'sp' ? bookSpread(g.h, v) : v;
+  const fmtL = (v) => k === 'sp' ? (v === 0 ? 'PK' : (v > 0 ? '−' : '+') + Math.abs(v)) : v;
   return `<span class="move ${toward ? 'yes' : 'no'}" title="${toward ? 'The market has moved toward your model since it opened' : 'The market has moved away from your model since it opened'}">opened ${esc(String(fmtL(o)))} ${toward ? '↗ toward you' : '↘ away'}</span>`;
 }
 function weatherRow(g, pr) {
