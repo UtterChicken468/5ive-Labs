@@ -144,9 +144,12 @@ for (const sport of SPORTS) {
   const keys = built[0].keys;
   const curRows = rowsFor(cur, cur).rows;
 
-  // Honest test: train without the newest past season, test on it.
-  const test = built[built.length - 1];
-  const trainRows = built.slice(0, -1).flatMap((x) => x.rows);
+  // Honest test: train without the newest complete season, test on it. Between seasons
+  // (college basketball and MLB in the fall) the site's own file is that complete season.
+  const offseason = !cur.games.some((g) => g.hs == null && g.d >= new Date().toISOString().slice(0, 10));
+  const curBuilt = { ds: cur, rows: curRows, keys };
+  const test = offseason ? curBuilt : built[built.length - 1];
+  const trainRows = (offseason ? built : built.slice(0, -1)).flatMap((x) => x.rows);
   const kGrid = cur.meta.priors ? [0, 1, 2, 3, 4, 6] : [0];
   let best = null;
   for (const k of kGrid) {
