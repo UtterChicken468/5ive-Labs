@@ -160,12 +160,8 @@ function marketTrust(past, cur, model) {
     if (rows.length < 150) return undefined;
     const sxy = rows.reduce((s, [x, y]) => s + x * y, 0), sxx = rows.reduce((s, [x]) => s + x * x, 0) || 1;
     const big = rows.filter(([x, y]) => Math.abs(x) >= min && y !== 0), won = big.filter(([x, y]) => (x > 0) === (y > 0)).length;
-    // Top picks: the quarter of games where the model disagreed with the line the most.
-    const gaps = rows.map(([x]) => Math.abs(x)).sort((a, b) => a - b), topMin = gaps[Math.floor(gaps.length * 0.75)];
-    const top = rows.filter(([x, y]) => Math.abs(x) >= topMin && y !== 0), topWon = top.filter(([x, y]) => (x > 0) === (y > 0)).length;
     return { s: round(Math.min(1, Math.max(0, sxy / sxx)), 3), sd: round(Math.sqrt(rows.reduce((s, [, y]) => s + y * y, 0) / rows.length), 2),
-      n: rows.length, hitN: big.length, hit: big.length ? round(won / big.length * 100, 1) : null,
-      topMin: round(topMin, 2), topN: top.length, topHit: top.length ? round(topWon / top.length * 100, 1) : null };
+      n: rows.length, hitN: big.length, hit: big.length ? round(won / big.length * 100, 1) : null };
   };
   const min = cur.meta.edgeDefault ?? 1.5;
   const out = { sp: fit(sp, min), tot: fit(tot, min), ml: fitMl(ml), edgeMin: min };

@@ -203,7 +203,6 @@ details.inj > div { margin-top: 4px }
 .cmp > :nth-child(4n+5), .cmp > :nth-child(4n+6), .cmp > :nth-child(4n+7), .cmp > :nth-child(4n+8) { padding-top: 8px; border-top: 1px dashed var(--line) }
 .bestbet { display: flex; flex-direction: column; gap: 3px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); padding: 8px 10px; font-size: 13.5px }
 .bestbet.good { border-color: var(--good); }
-.starbadge { display: inline-block; margin-left: 10px; vertical-align: middle; font-family: var(--body, inherit); font-size: 12px; font-weight: 700; letter-spacing: .02em; text-transform: none; padding: 3px 9px; border-radius: 999px; background: var(--accent); color: var(--accent-ink) }
 @media (max-width: 520px) { .cmp { grid-template-columns: 58px minmax(0, 1.1fr) minmax(0, 0.8fr) minmax(0, 1.1fr); gap: 6px 6px; font-size: 13px } .cmp .vc input { width: 62px } .cmp .rl { font-size: 13px } }
 
 /* best edges filters */
@@ -217,7 +216,7 @@ details.inj > div { margin-top: 4px }
 .frow.selects label.grow { flex: 1 1 180px }
 .frow.selects input { width: 100%; color: var(--ink); font: inherit }
 .linkbtn { font: inherit; background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; text-decoration: underline }
-@media (max-width: 520px) { .frow.selects label:not(.grow) { flex: 1 1 40% } .frow.selects select { width: 100% } }
+@media (max-width: 520px) { .frow.selects label:not(.grow) { flex: 1 1 30% } .frow.selects select { width: 100% } }
 
 /* tables */
 .tblwrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r) }
@@ -469,7 +468,6 @@ function gamesView() {
   const played = weekGames.filter((g) => g.hs != null).length;
   const items = weekGames.filter((g) => g.hs == null).map((g) => ({ g, L: linesFor(g), pr: null })).map((x) => { x.pr = E.predict(x.g, P, R, S.settings, x.L, DATA); return x; });
   const maxEdge = (x) => Math.max(Math.abs(x.pr?.spEdge || 0), Math.abs(x.pr?.totEdge || 0));
-  markBestBets(items.filter((x) => x.pr));
   let list = items.filter((x) => x.pr);
   if (S.onlyEdges) list = list.filter((x) => maxEdge(x) >= S.edgeMin);
   if (S.teamQ) { const q = S.teamQ.toLowerCase(); list = list.filter((x) => x.g.h.toLowerCase().includes(q) || x.g.a.toLowerCase().includes(q) || (x.g.hc || '').toLowerCase().includes(q) || (x.g.ac || '').toLowerCase().includes(q)); }
@@ -487,15 +485,7 @@ function gamesView() {
   <p class="note" style="margin:0 0 14px">Lines are editable: type in what your book shows and the edge updates. ${META.spreadName || 'Spread'}s use book style (favorite is negative). ${byes.length ? (byes.length > 8 ? `${byes.length} teams on bye.` : 'On bye: ' + byes.join(', ') + '.') : ''} ${played ? `${played} game${played > 1 ? 's' : ''} ${DAILY ? 'on this date' : 'this week'} already played (graded in Accuracy).` : ''}</p>
   <div class="games">${list.map(gameCard).join('') || `<div class="empty">No games match${S.teamQ ? ' "' + esc(S.teamQ) + '"' : ''}${S.onlyEdges ? ' with an edge of ' + S.edgeMin + '+ ' + UNIT : ''}.</div>`}</div>`;
 }
-// Best bets: the quarter of the slate where the model disagrees with Vegas the most (at least one).
-// Strength is the model's own chance on its strongest spread or total pick.
-function pickStrength(pr, L) { const o = pickOptions(META, pr, L || {}); return o.length ? o[0].s : 0; }
-function markBestBets(items) {
-  const withLines = items.filter((x) => pickStrength(x.pr, x.L) > 0).sort((a, b) => pickStrength(b.pr, b.L) - pickStrength(a.pr, a.L));
-  const n = Math.max(1, Math.round(withLines.length * 0.25));
-  withLines.forEach((x, i) => { x.star = i < n; });
-}
-function gameCard({ g, L, pr, star }) {
+function gameCard({ g, L, pr }) {
   const fav = pr.margin >= 0 ? g.h : g.a;
   const spName = META.spreadName || 'Spread';
   const priceOf = (v) => v ?? -110;
@@ -526,12 +516,9 @@ function gameCard({ g, L, pr, star }) {
     c.raw = c.type === 'spread' ? E.phi(Math.abs(pr.spEdge) / sig) : c.type === 'total' ? E.phi(Math.abs(pr.totEdge) / sigT)
       : (c.side === g.h ? pr.pHome : pr.pAway);
     c.lean = c.type === 'ml' ? 0 : c.raw; // spreads/totals first; moneyline only when there's nothing else
-    const mk = c.type === 'spread' ? MK.sp : c.type === 'total' ? MK.tot : null;
-    c.hist = mk ? (star ? mk.topHit : mk.hit) : null;
+    c.hist = c.type === 'spread' ? MK.sp && MK.sp.hit : c.type === 'total' ? MK.tot && MK.tot.hit : null;
   });
-  const top = pickOptions(META, pr, L)[0];
-  let pick = top ? cands.find((c) => c.type === top.type) : null;
-  if (pick && top.type === 'ml') pick.raw = pick.side === g.h ? pr.pHome : pr.pAway;
+  let pick = cands.filter((c) => c.type !== 'ml').sort((a, b) => b.lean - a.lean)[0];
   if (!pick) { const fav = pr.pHome >= 0.5 ? g.h : g.a, p0 = Math.max(pr.pHome, pr.pAway);
     const c = cands.find((x) => x.type === 'ml' && x.side === fav);
     pick = c || { text: fav + ' to win', raw: p0, hist: null, ev: hasMl ? E.evPerUnit(E.blendWin(p0, fav === g.h ? vH : 1 - vH), fav === g.h ? L.hml : L.aml) : null }; }
@@ -541,8 +528,8 @@ function gameCard({ g, L, pr, star }) {
   const gapPill = (v, unit, p) => v == null ? '' : `<span class="pill ${Math.abs(v) >= S.edgeMin && p >= BE ? 'acc' : 'flat'}">${Math.abs(v).toFixed(1)} ${unit}</span>`;
   const past = (k) => MK[k] && MK[k].hit != null ? `<span class="small muted" title="Every past game where the model was ${MK.edgeMin}+ off the line">past edges won ${MK[k].hit}%</span>` : '';
   const sp0 = (v) => v == null ? '' : -v; // book style for the home team
-  return `<article class="game ${hot || star ? 'hot' : ''}">
-    <div class="gh"><div class="matchup">${g.a}<span class="at">@</span>${g.h}${star ? '<span class="starbadge">★ Best bet</span>' : ''}</div><div class="kick">${kickoff(g)}${g.neu ? '<br>Neutral site' : ''}</div></div>
+  return `<article class="game ${hot ? 'hot' : ''}">
+    <div class="gh"><div class="matchup">${g.a}<span class="at">@</span>${g.h}</div><div class="kick">${kickoff(g)}${g.neu ? '<br>Neutral site' : ''}</div></div>
     <div class="score"><b>${UNIT === 'pts' ? Math.round(pr.as) + '–' + Math.round(pr.hs) : fmt(pr.as) + '–' + fmt(pr.hs)}</b><span class="small muted">model score · ${fav} by ${fmt(Math.abs(pr.margin))}</span></div>
     <div class="wp" title="Model win probability"><div class="a" style="flex:${Math.max(ap, 12)}">${g.a} ${ap}%</div><div class="h" style="flex:${Math.max(hp, 12)}">${g.h} ${hp}%</div></div>
     ${pitchersRow(g, pr)}${goalieRow(g, pr)}${weatherRow(g, pr)}${injuryRow(g, pr)}
@@ -567,8 +554,8 @@ function gameCard({ g, L, pr, star }) {
       <span class="ec">${!hasMl ? '<span class="muted small">enter odds</span>' : `<span class="pill ${mlGap >= 0.05 && cands.some((x) => x.type === 'ml' && x.ev > 0) ? 'acc' : 'flat'}">${Math.round(mlGap * 100)}% gap</span><span class="small">→ ${mlTeam} ${odds(mlTeam === g.h ? L.hml : L.aml)}</span><span class="small muted">model is higher on ${mlTeam}</span>${(() => { const c = cands.find((x) => x.type === 'ml'); return c ? `<span class="small muted">honest ${pct(c.p)} · ${evPill(c.ev)}</span>` : ''; })()}<button class="logbtn" data-log="ml" data-g="${g.id}" data-side="${mlTeam}">Log</button>`}</span>
     </div>
     ${pick && cands.length ? `<div class="bestbet ${best && best.ev > 0 ? 'good' : ''}">
-      <span>${star ? '★ Best bet' : 'Model\'s pick'}: <b>${esc(pick.text)}</b> · model says ${pct(pick.raw)}</span>
-      <span class="small muted">${pick.hist != null ? `${star ? 'Top picks' : 'Picks'} like this have won ${pick.hist}% in past seasons · ` : ''}${best && best.ev > 0 ? `<b style="color:var(--good)">Value bet: ${esc(best.text)} ${evPill(best.ev)}</b>` : `${pick.ev != null ? `no proven edge over Vegas (${evPill(pick.ev)} at this price)` : 'enter lines to check value'}`}</span>
+      <span>Model's pick: <b>${esc(pick.text)}</b> · model says ${pct(pick.raw)}</span>
+      <span class="small muted">${pick.hist != null ? `Picks like this have won ${pick.hist}% in past seasons · ` : ''}${best && best.ev > 0 ? `<b style="color:var(--good)">Value bet: ${esc(best.text)} ${evPill(best.ev)}</b>` : `${pick.ev != null ? `no proven edge over Vegas (${evPill(pick.ev)} at this price)` : 'enter lines to check value'}`}</span>
     </div>` : ''}
   </article>`;
 }
@@ -979,20 +966,6 @@ document.getElementById('sports').addEventListener('click', (e) => {
 });
 
 // ---------- best edges across every sport ----------
-// Hockey and baseball spreads are fixed ±1.5 lines that aren't 50/50 bets, so there the
-// candidates are the total and the moneyline (strength = 50% + how far the model is above Vegas).
-function pickOptions(m, pr, L) {
-  const E = window.Engine;
-  const sig = m.sigma || 13.5, sigT = m.sigmaTot || sig, fixed = m.family === 'hockey' || m.family === 'baseball';
-  const out = [];
-  if (!fixed && pr.spEdge != null) out.push({ type: 'spread', s: E.phi(Math.abs(pr.spEdge) / sig) });
-  if (pr.totEdge != null) out.push({ type: 'total', s: E.phi(Math.abs(pr.totEdge) / sigT) });
-  if (fixed && L.hml != null && L.aml != null) {
-    const a = E.impliedProb(L.hml), b = E.impliedProb(L.aml), vH = a / (a + b);
-    out.push({ type: 'ml', s: 0.5 + Math.abs(pr.pHome - vH), home: pr.pHome >= vH });
-  }
-  return out.sort((x, y) => y.s - x.s);
-}
 async function bootEdges() {
   const E = window.Engine;
   const $ = (q) => document.querySelector(q);
@@ -1013,22 +986,13 @@ async function bootEdges() {
       const g2 = (k, d) => { try { const v = localStorage.getItem('gml:ufc:' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
       const res = E.ufc.walk(data, g2('weights2', { ...E.ufc.trainedWeights(data) })), over = g2('lines', {});
       const fair = (mine, theirs) => { const a = E.impliedProb(mine), b = E.impliedProb(theirs); return a / (a + b); };
-      // No saved UFC odds history yet to fit against, so use the same cautious mix as other
-      // sports without past lines: 20% model, 80% the odds. Best bets: the quarter of fights
-      // where the model disagrees with the odds the most.
-      const UW = 0.2, fights = [];
       res.upcoming.filter(({ f }) => f.d && f.d >= today && f.d <= plus(6)).forEach(({ f, p }) => {
         const o = over[f.id] || {}, aml = o.aml !== undefined ? o.aml : f.aml, bml = o.bml !== undefined ? o.bml : f.bml;
         if (aml == null || bml == null) return;
-        const va = fair(aml, bml); fights.push({ f, p, aml, bml, gap: Math.abs(p - va), side: p >= va ? 'a' : 'b' });
-      });
-      const ustars = new Set(fights.slice().sort((x, y) => y.gap - x.gap).slice(0, Math.max(1, Math.round(fights.length * 0.25))).map((x) => x.f.id));
-      fights.forEach(({ f, p, aml, bml, side }) => {
-        [[f.an, p, aml, bml, 'a'], [f.bn, 1 - p, bml, aml, 'b']].forEach(([nm, pm0, price, other, sd]) => {
-          const isStar = ustars.has(f.id) && sd === side;
-          if (price > 250 && !isStar) return;
-          const pm = fair(price, other), pb = UW * pm0 + (1 - UW) * pm, ev = E.evPerUnit(pb, price);
-          if (ev > 0.015 || isStar) rows.push({ sport: 'ufc', label: 'UFC', vs: true, g: { a: f.an, h: f.bn, d: f.d, tm: f.tm }, type: 'Moneyline', bet: nm + ' (' + (price > 0 ? '+' + price : price) + ')', p: pb, raw: pm0, pm, ev, star: isStar, rec: null, edge: Math.round(Math.abs(pm0 - pm) * 100) + '% vs odds' });
+        [[f.an, p, aml, bml], [f.bn, 1 - p, bml, aml]].forEach(([nm, pm0, price, other]) => {
+          if (price > 250) return;
+          const pm = fair(price, other), ev = E.evPerUnit((pm0 + pm) / 2, price);
+          if (ev > 0.015) rows.push({ sport: 'ufc', label: 'UFC', vs: true, g: { a: f.an, h: f.bn, d: f.d, tm: f.tm }, type: 'Moneyline', bet: nm + ' (' + (price > 0 ? '+' + price : price) + ')', p: pm0, pm, ev, edge: Math.round(pm0 * 100) + '% to win' });
         });
       });
       counts[key] = rows.filter((r) => r.sport === key).length;
@@ -1048,47 +1012,33 @@ async function bootEdges() {
     const unit = m.unit || 'pts', min = m.edgeDefault ?? 1.5;
     const book = (t, v) => t + ' ' + (v === 0 ? 'PK' : (v > 0 ? '−' : '+') + Math.abs(v));
     counts[key] = 0;
-    // Best bets: the quarter of this sport's slate where the model disagrees with Vegas most.
-    const sig = m.sigma || 13.5, sigT = m.sigmaTot || sig, MK = m.mkt || {};
-    const strength = (pr, L) => { const o = pickOptions(m, pr, L); return o.length ? o[0].s : 0; };
-    const preds = upcoming.map((g) => {
+    upcoming.forEach((g) => {
       const o = over[g.id] || {}; const L = {};
-      ['sp', 'tot', 'hml', 'aml', 'hg', 'ag', 'hspp', 'aspp', 'ovp', 'unp'].forEach((k) => { L[k] = o[k] !== undefined ? o[k] : g[k]; });
-      const pr = E.predict(g, P, R, settings, L, data); return { g, L, pr };
-    }).filter((x) => x.pr);
-    const ranked = preds.filter((x) => strength(x.pr, x.L) > 0).sort((a, b) => strength(b.pr, b.L) - strength(a.pr, a.L));
-    const stars = new Set(ranked.slice(0, Math.max(1, Math.round(ranked.length * 0.25))).map((x) => x.g.id));
-    preds.forEach(({ g, L, pr }) => {
-      const star = stars.has(g.id);
+      ['sp', 'tot', 'hml', 'aml', 'hg', 'ag'].forEach((k) => { L[k] = o[k] !== undefined ? o[k] : g[k]; });
+      const pr = E.predict(g, P, R, settings, L, data); if (!pr) return;
       const base = { sport: key, label: m.label, g, when: g.d + ' ' + (g.tm || '') };
       // Market chance with the bookmaker's cut removed, from both sides' prices.
       const fair = (mine, theirs) => { const a = E.impliedProb(mine ?? -110), b = E.impliedProb(theirs ?? -110); return a / (a + b); };
       const fixedLine = m.family === 'hockey' || m.family === 'baseball'; // puck/run lines are never priced at -110
-      const add = (type, bet, p, price, other, edge, isStar, raw) => {
-        if (type === 'Moneyline' && price > 250 && !isStar) return; // skip long shots
+      const add = (type, bet, p, price, other, edge) => {
+        if (type === 'Moneyline' && price > 250) return;      // skip long shots
         if (fixedLine && type !== 'Moneyline' && price == null) return;
         const pm = fair(price, other), pb = type === 'Moneyline' ? E.blendWin(p, pm) : p; // chances are already honest (see engine vsMarket / blendWin)
         const ev = E.evPerUnit(pb, price ?? -110);
-        const mk = type === 'Total' ? MK.tot : type === 'Moneyline' ? null : MK.sp;
-        if (ev > 0.015 || isStar) rows.push({ ...base, type, bet: bet + (price != null && price !== -110 ? ' (' + (price > 0 ? '+' + price : price) + ')' : ''),
-          p: pb, raw: raw ?? p, pm, ev, edge, star: !!isStar, rec: mk ? (isStar ? mk.topHit : mk.hit) : null });
+        if (ev > 0.015) rows.push({ ...base, type, bet: bet + (price != null && price !== -110 ? ' (' + (price > 0 ? '+' + price : price) + ')' : ''), p, pm, ev, edge });
       };
-      // The star pick is the stronger of the spread and total picks.
-      const spS = pr.spEdge != null ? E.phi(Math.abs(pr.spEdge) / sig) : 0, totS = pr.totEdge != null ? E.phi(Math.abs(pr.totEdge) / sigT) : 0;
-      const topOpt = star ? pickOptions(m, pr, L)[0] : null;
-      const starSp = !!topOpt && topOpt.type === 'spread', starTot = !!topOpt && topOpt.type === 'total', starMl = !!topOpt && topOpt.type === 'ml';
-      if (pr.spEdge != null && (Math.abs(pr.spEdge) >= min || starSp)) {
+      if (pr.spEdge != null && Math.abs(pr.spEdge) >= min) {
         const home = pr.spEdge > 0;
         add(m.spreadName || 'Spread', home ? book(g.h, L.sp) : book(g.a, -L.sp), home ? pr.pHomeCover : 1 - pr.pHomeCover,
-          home ? L.hspp : L.aspp, home ? L.aspp : L.hspp, Math.abs(pr.spEdge).toFixed(1) + ' ' + unit, starSp, spS);
+          home ? L.hspp : L.aspp, home ? L.aspp : L.hspp, Math.abs(pr.spEdge).toFixed(1) + ' ' + unit);
       }
-      if (pr.totEdge != null && (Math.abs(pr.totEdge) >= min || starTot)) {
+      if (pr.totEdge != null && Math.abs(pr.totEdge) >= min) {
         const ov = pr.totEdge > 0;
-        add('Total', (ov ? 'Over ' : 'Under ') + L.tot, ov ? pr.pOver : 1 - pr.pOver, ov ? L.ovp : L.unp, ov ? L.unp : L.ovp, Math.abs(pr.totEdge).toFixed(1) + ' ' + unit, starTot, totS);
+        add('Total', (ov ? 'Over ' : 'Under ') + L.tot, ov ? pr.pOver : 1 - pr.pOver, ov ? L.ovp : L.unp, ov ? L.unp : L.ovp, Math.abs(pr.totEdge).toFixed(1) + ' ' + unit);
       }
       if (L.hml != null && L.aml != null) {
-        add('Moneyline', g.h, pr.pHome, L.hml, L.aml, Math.round(pr.pHome * 100) + '% to win', starMl && topOpt.home, pr.pHome);
-        add('Moneyline', g.a, pr.pAway, L.aml, L.hml, Math.round(pr.pAway * 100) + '% to win', starMl && !topOpt.home, pr.pAway);
+        add('Moneyline', g.h, pr.pHome, L.hml, L.aml, Math.round(pr.pHome * 100) + '% to win');
+        add('Moneyline', g.a, pr.pAway, L.aml, L.hml, Math.round(pr.pAway * 100) + '% to win');
       }
     });
     counts[key] = rows.filter((r) => r.sport === key).length;
@@ -1096,36 +1046,34 @@ async function bootEdges() {
   const when = (r) => { const d = new Date(r.g.d + 'T12:00:00'); const day = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); if (!r.g.tm) return day; const [h, mi] = r.g.tm.split(':').map(Number); return day + ' · ' + ((h % 12) || 12) + ':' + String(mi).padStart(2, '0') + (h >= 12 ? 'p' : 'a'); };
   rows.forEach((r) => { r.kind = r.type === 'Moneyline' ? 'ml' : r.type === 'Total' ? 'tot' : 'sp'; r.start = r.g.d + ' ' + (r.g.tm || '99:99'); });
   // ---- filters (saved in this browser and synced)
-  const FKEY = 'gml:edges:filters2';
-  const F = Object.assign({ sports: [], kinds: [], show: 'all', day: 'all', minEv: -1, sort: 'best', q: '' }, (() => { try { return JSON.parse(localStorage.getItem(FKEY)) || {}; } catch (e) { return {}; } })());
+  const FKEY = 'gml:edges:filters';
+  const F = Object.assign({ sports: [], kinds: [], day: 'all', minEv: 0, sort: 'ev', q: '' }, (() => { try { return JSON.parse(localStorage.getItem(FKEY)) || {}; } catch (e) { return {}; } })());
   const saveF = () => { try { localStorage.setItem(FKEY, JSON.stringify(F)); } catch (e) {} if (window.Sync) Sync.changed(FKEY); };
   const KINDS = [['sp', 'Spread / puck / run line'], ['tot', 'Total'], ['ml', 'Moneyline']];
   const DAYS = [['all', 'Any day'], ['today', 'Today'], ['tomorrow', 'Tomorrow'], ['week', 'Next 7 days']];
-  const EVS = [[-1, 'Any'], [0, 'Positive EV only'], [0.03, 'EV +3% or more'], [0.05, 'EV +5% or more']];
-  const SHOWS = [['all', 'Best bets + value'], ['star', 'Best bets only'], ['value', 'Value bets only']];
-  const SORTS = [['best', 'Best bets first'], ['ev', 'Best value'], ['p', 'Model most sure'], ['start', 'Starting soonest']];
+  const EVS = [[0, 'Any value'], [0.03, 'EV +3% or more'], [0.05, 'EV +5% or more'], [0.1, 'EV +10% or more']];
+  const SORTS = [['ev', 'Best value'], ['p', 'Most likely to hit'], ['start', 'Starting soonest']];
   const present = Object.keys(counts).filter((k) => counts[k]);
   let showAll = false;
   function filtered() {
     const q = F.q.trim().toLowerCase();
     const out = rows.filter((r) => (!F.sports.length || F.sports.includes(r.sport)) && (!F.kinds.length || F.kinds.includes(r.kind))
-      && r.ev >= F.minEv && (F.show === 'all' || (F.show === 'star' ? r.star : r.ev > 0.015))
+      && r.ev >= F.minEv
       && (F.day === 'all' || (F.day === 'today' ? r.g.d === today : F.day === 'tomorrow' ? r.g.d === plus(1) : r.g.d <= plus(6)))
       && (!q || (r.g.a + ' ' + r.g.h + ' ' + r.bet).toLowerCase().includes(q)));
-    const by = { best: (x, y) => ((+!!y.star) - (+!!x.star)) || (x.star ? y.raw - x.raw : y.ev - x.ev), ev: (x, y) => y.ev - x.ev, p: (x, y) => y.raw - x.raw || y.ev - x.ev, start: (x, y) => x.start.localeCompare(y.start) || y.ev - x.ev }[F.sort] || ((x, y) => y.ev - x.ev);
+    const by = { ev: (x, y) => y.ev - x.ev, p: (x, y) => y.p - x.p || y.ev - x.ev, start: (x, y) => x.start.localeCompare(y.start) || y.ev - x.ev }[F.sort] || ((x, y) => y.ev - x.ev);
     return out.sort(by);
   }
   const chip = (group, val, label, on) => `<button type="button" class="fchip" data-f="${group}" data-v="${val}" aria-pressed="${on}">${esc(label)}</button>`;
   function render() {
     if (!rows.length) { $('#view').innerHTML = `<div class="empty">No bets with real value right now. That's normal: Vegas lines are sharp, and once the model's chances are checked against past seasons, most gaps turn out to be noise. Check back after the next refresh.</div>`; return; }
     const list = filtered(), shown = showAll ? list : list.slice(0, 25);
-    const active = F.sports.length || F.kinds.length || F.show !== 'all' || F.day !== 'all' || F.minEv !== -1 || F.q;
+    const active = F.sports.length || F.kinds.length || F.day !== 'all' || F.minEv || F.q;
     $('#view').innerHTML = `
     <div class="filters">
       <div class="frow"><span class="label">Sport</span>${chip('sports', '', 'All', !F.sports.length)}${present.map((k) => chip('sports', k, SPORTS.find((x) => x.key === k).label + ' ' + counts[k], F.sports.includes(k))).join('')}</div>
       <div class="frow"><span class="label">Bet</span>${chip('kinds', '', 'All', !F.kinds.length)}${KINDS.map(([k, n]) => chip('kinds', k, n, F.kinds.includes(k))).join('')}</div>
       <div class="frow selects">
-        <label><span class="label">Show</span><select data-sel="show">${SHOWS.map(([v, n]) => `<option value="${v}" ${F.show === v ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
         <label><span class="label">When</span><select data-sel="day">${DAYS.map(([v, n]) => `<option value="${v}" ${F.day === v ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
         <label><span class="label">Value</span><select data-sel="minEv">${EVS.map(([v, n]) => `<option value="${v}" ${F.minEv === v ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
         <label><span class="label">Sort</span><select data-sel="sort">${SORTS.map(([v, n]) => `<option value="${v}" ${F.sort === v ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
@@ -1133,20 +1081,20 @@ async function bootEdges() {
       </div>
       <div class="small muted">${list.length} of ${rows.length} bets${active ? ' · <button type="button" class="linkbtn" id="fclear">Clear filters</button>' : ''}</div>
     </div>
-    ${list.length ? `<div class="tblwrap"><table><thead><tr><th>Sport</th><th>Game</th><th>When</th><th>Bet</th><th class="num">Model says</th><th class="num">Past record</th><th class="num">Edge</th><th class="num">Value</th><th></th></tr></thead><tbody>
+    ${list.length ? `<div class="tblwrap"><table><thead><tr><th>Sport</th><th>Game</th><th>When</th><th>Bet</th><th class="num">Model vs market</th><th class="num">Edge</th><th class="num">Value</th><th></th></tr></thead><tbody>
     ${shown.map((r) => `<tr><td><span class="pill flat">${esc(r.label)}</span></td><td class="pname">${esc(r.g.a)} ${r.vs ? 'vs' : '@'} ${esc(r.g.h)}</td><td class="small">${when(r)}</td>
-      <td>${r.star ? '<span class="starbadge" style="margin:0 6px 0 0">★ Best bet</span>' : ''}<b>${esc(r.bet)}</b> <span class="muted small">${esc(r.type)}</span></td><td class="num">${Math.round(r.raw * 100)}%</td><td class="num">${r.rec != null ? r.rec + '%' : '<span class="muted">–</span>'}</td><td class="num">${esc(r.edge)}</td>
-      <td class="num"><span class="pill ${r.ev > 0.015 ? 'good' : 'flat'}">EV ${r.ev >= 0 ? '+' : '−'}${Math.abs(r.ev * 100).toFixed(0)}%</span></td>
+      <td><b>${esc(r.bet)}</b> <span class="muted small">${esc(r.type)}</span></td><td class="num">${Math.round(r.p * 100)}% <span class="muted small">vs ${Math.round(r.pm * 100)}%</span></td><td class="num">${esc(r.edge)}</td>
+      <td class="num"><span class="pill ${r.ev > 0.03 ? 'good' : 'flat'}">EV ${r.ev >= 0 ? '+' : '−'}${Math.abs(r.ev * 100).toFixed(0)}%</span></td>
       <td><button class="logbtn" data-open="${r.sport}">Open</button></td></tr>`).join('')}
     </tbody></table></div>
     ${list.length > shown.length ? `<p><button class="btn ghost" id="showAll">Show all ${list.length}</button></p>` : ''}`
     : '<div class="empty">No bets match these filters.</div>'}
-    <p class="note"><b>★ Best bets</b> are the quarter of each sport's games where the model disagrees with Vegas the most. <b>Past record</b> is how often picks like that have won in past seasons (52.4% breaks even at −110). <b>Value</b> uses honest chances, so a Best bet can still show negative EV when its past record is below break-even. Green value means the bet has paid off historically at this price. Moneylines longer than +250 are left out. Uses real prices when the feed has them (−110 otherwise), each sport's saved sliders, and any lines you typed in.</p>`;
+    <p class="note">Value uses honest chances: the model's gap from Vegas only counts as much as gaps like it actually paid off in past seasons. Moneylines longer than +250 are left out. Uses real prices when the feed has them (−110 otherwise), each sport's saved sliders, and any lines you typed in.</p>`;
   }
   render();
   $('#view').addEventListener('click', (e) => {
     if (e.target.id === 'showAll') { showAll = true; render(); return; }
-    if (e.target.id === 'fclear') { Object.assign(F, { sports: [], kinds: [], show: 'all', day: 'all', minEv: -1, q: '' }); saveF(); render(); return; }
+    if (e.target.id === 'fclear') { Object.assign(F, { sports: [], kinds: [], day: 'all', minEv: 0, q: '' }); saveF(); render(); return; }
     const c = e.target.closest('[data-f]');
     if (c) {
       const arr = F[c.dataset.f], v = c.dataset.v;
@@ -1350,16 +1298,9 @@ function bootUfc(DATA) {
     const events = []; up.forEach((u) => { let e = events.find((x) => x.eid === u.f.eid); if (!e) events.push(e = { eid: u.f.eid, name: u.f.ev, d: u.f.d, fights: [] }); e.fights.push(u); });
     if (!S.ev || !events.some((e) => e.eid === S.ev)) S.ev = events[0].eid;
     const ev = events.find((e) => e.eid === S.ev);
-    const gapOf = ({ f, p }) => { const L = linesFor(f); if (L.aml == null || L.bml == null) return -1; const a = E.impliedProb(L.aml), b = E.impliedProb(L.bml); return Math.abs(p - a / (a + b)); };
-    const priced = ev.fights.filter((x) => gapOf(x) >= 0).sort((x, y) => gapOf(y) - gapOf(x));
-    const ustar = new Set(priced.slice(0, Math.max(1, Math.round(priced.length * 0.25))).map((x) => x.f.id));
     const cards = ev.fights.slice().reverse().map(({ f, p }) => { // main event first
       const L = linesFor(f), pb = 1 - p;
-      // Honest chance: 20% model, 80% the odds (no saved UFC odds history to fit against yet).
-      const vA0 = L.aml != null && L.bml != null ? E.impliedProb(L.aml) / (E.impliedProb(L.aml) + E.impliedProb(L.bml)) : null;
-      const hA = vA0 == null ? p : 0.2 * p + 0.8 * vA0;
-      const evA = L.aml != null ? E.evPerUnit(hA, L.aml) : null, evB = L.bml != null ? E.evPerUnit(1 - hA, L.bml) : null;
-      const star = ustar.has(f.id);
+      const evA = L.aml != null ? E.evPerUnit(p, L.aml) : null, evB = L.bml != null ? E.evPerUnit(pb, L.bml) : null;
       const best = evA == null && evB == null ? null : (evA ?? -9) >= (evB ?? -9) ? { side: 'a', name: f.an, ev: evA, ml: L.aml, p } : { side: 'b', name: f.bn, ev: evB, ml: L.bml, p: pb };
       const ap = Math.round(p * 100);
       const lastA = f.an.split(' ').slice(-1)[0], lastB = f.bn.split(' ').slice(-1)[0];
@@ -1367,8 +1308,8 @@ function bootUfc(DATA) {
       const gap = vA == null ? null : Math.abs(p - vA);
       const gapSide = vA == null ? null : p >= vA ? { side: 'a', name: lastA, ml: L.aml, ev: evA } : { side: 'b', name: lastB, ml: L.bml, ev: evB };
       const move = f.oml && L.aml != null && f.oml[0] !== L.aml ? `<span class="move ${(p > 0.5) === (L.aml < f.oml[0]) ? 'yes' : 'no'}">opened ${odds(f.oml[0])} / ${odds(f.oml[1])}</span>` : '';
-      return `<article class="game ${star || (best && best.ev > 0.015) ? 'hot' : ''}">
-        <div class="gh"><div class="matchup" style="font-size:20px">${esc(f.an)}<span class="at">vs</span>${esc(f.bn)}${star ? '<span class="starbadge">★ Best bet</span>' : ''}</div><div class="kick">${esc(f.wc)}${f.sched === 5 ? ' · 5 rds' : ''}</div></div>
+      return `<article class="game ${best && best.ev > 0.05 ? 'hot' : ''}">
+        <div class="gh"><div class="matchup" style="font-size:20px">${esc(f.an)}<span class="at">vs</span>${esc(f.bn)}</div><div class="kick">${esc(f.wc)}${f.sched === 5 ? ' · 5 rds' : ''}</div></div>
         <div class="why">${esc(f.an)}: ${esc(f.ar)}${info(f.a, f.d) ? ' · ' + esc(info(f.a, f.d)) : ''}<br>${esc(f.bn)}: ${esc(f.br)}${info(f.b, f.d) ? ' · ' + esc(info(f.b, f.d)) : ''}</div>
         <div class="wp"><div class="a" style="flex:${Math.max(ap, 14)}">${esc(f.an.split(' ').slice(-1)[0])} ${ap}%</div><div class="h" style="flex:${Math.max(100 - ap, 14)}">${esc(f.bn.split(' ').slice(-1)[0])} ${100 - ap}%</div></div>
         <div class="cmp" role="table" aria-label="Vegas vs your model">
@@ -1492,8 +1433,7 @@ function bootGuide() {
       <li><b>The chance is honest, not just the gap:</b> Vegas lines are sharp, so a big gap doesn't automatically mean a good bet. The "% chance" under each edge is based on how often gaps like that actually won in past seasons, and "past edges won" shows that record. In the NFL, for example, the model's spread and total gaps have won about 49% of the time, so those bets show close to 50% no matter how big the gap looks.</li>
       <li><b>Win chance "honest" %:</b> the model's win chance blended with Vegas's, weighted by how well each predicted past games. So far Vegas alone has been the better predictor in every sport we could test, so this lands close to Vegas's number.</li>
       <li><b>Highlighted edge:</b> the gap is bigger than your "Flag edges of" threshold <i>and</i> the honest chance is above 52.4%, the break-even rate at normal −110 odds.</li>
-      <li><b>★ Best bet:</b> about a quarter of each week's (or day's) games get this badge: the ones where the model disagrees with Vegas the most. The box at the bottom names the pick, how sure the model is, and how often top picks like it have won in past seasons. Other games show the model's pick without the badge.</li>
-      <li><b>Value bet:</b> called out in green when a bet has actually paid off in past seasons at the current price. A Best bet without value isn't a predicted loss; it means picks like it have been close to a coin flip, and at −110 a coin flip loses about 4.5% over the long run.</li>
+      <li><b>Model's pick:</b> the bottom box always shows the model's strongest opinion on the game and how sure the model is, next to how often picks like it have actually won in past seasons. If any bet on the card has proven value at the current price, it's called out there as a <b>Value bet</b>; otherwise it says there's no proven edge over Vegas. A pick without proven value isn't a sure loser. It means picks like it have been close to a coin flip, and at −110 a coin flip loses about 4.5% over the long run.</li>
       <li><b>Log:</b> saves that pick to your Pick log so you can track how it does.</li>
       <li><b>Extras:</b> some cards show injuries (tap to open), kickoff weather, starting goalies or pitchers, and where the line opened ("moving toward you" means the market has moved in your model's direction, which is a good sign).</li>
     </ol>
@@ -1523,7 +1463,7 @@ function bootGuide() {
   </section>
 
   <section id="g-edges"><h3>Best edges</h3>
-    <p>The first button at the top. It scans every sport for the next couple of days and lists the bets where your model and the betting market disagree most, using the model you saved for each sport. Value is scored on a 50/50 blend of your model and the market price so long-shot underdogs don't flood the list, and moneylines longer than +250 are left out. It lists every sport's ★ Best bets plus any value bets. Use the filters to narrow it down by sport, bet type, Best bets or value only, day, minimum value or team, and sort by best value, most likely to hit, or start time (your filters are remembered). Tap <b>Open</b> to jump to that game.</p>
+    <p>The first button at the top. It scans every sport for the next couple of days and lists the bets where your model and the betting market disagree most, using the model you saved for each sport. Value is scored on a 50/50 blend of your model and the market price so long-shot underdogs don't flood the list, and moneylines longer than +250 are left out. Use the filters to narrow it down by sport, bet type, day, minimum value or team, and sort by best value, most likely to hit, or start time (your filters are remembered). Tap <b>Open</b> to jump to that game.</p>
   </section>
 
   <section id="g-accuracy"><h3>Accuracy</h3>
