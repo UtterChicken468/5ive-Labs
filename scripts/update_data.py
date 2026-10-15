@@ -780,6 +780,165 @@ def build_nba(_season):
     return build_bball('nba')
 
 
+# ---------------------------------------------------------------- UFC (ESPN + The Odds API)
+UFC_FIRST_YEAR = 2019
+ESPN_UFC = 'https://site.api.espn.com/apis/site/v2/sports/mma/ufc'
+CORE_MMA = 'https://sports.core.api.espn.com/v2/sports/mma'
+UFC_STAT_KEYS = ['kd', 'ssl', 'ssa', 'tdl', 'tda', 'sub', 'ctrl']
+
+
+def ufc_year(year):
+    sb = get_json(f'{ESPN_UFC}/scoreboard?dates={year}&limit=200')
+    out = []
+    for e in sb.get('events', []):
+        name = e.get('name') or ''
+        if 'Contender' in name or 'Road to UFC' in name:
+            continue
+        for c in e.get('competitions', []):
+            comps = sorted(c.get('competitors', []), key=lambda x: x.get('order', 9))
+            if len(comps) != 2:
+                continue
+            st = c.get('status') or {}
+            done = (st.get('type') or {}).get('completed', False)
+            a, b = comps
+            win = 'a' if a.get('winner') else 'b' if b.get('winner') else ('draw' if done else None)
+            period, clock = st.get('period') or 0, st.get('clock') or 0
+            dec = bool(a.get('linescores')) and done
+            sched = ((c.get('format') or {}).get('regulation') or {}).get('periods') or (5 if period == 5 else 3)
+            out.append(dict(id=c['id'], eid=e['id'], ev=name, date=c.get('date') or e.get('date'),
+                            wc=(c.get('type') or {}).get('abbreviation', ''), sched=sched,
+                            a=str(a['id']), b=str(b['id']), an=(a.get('athlete') or {}).get('displayName', ''),
+                            bn=(b.get('athlete') or {}).get('displayName', ''),
+                            ar=((a.get('records') or [{}])[0]).get('summary', ''), br=((b.get('records') or [{}])[0]).get('summary', ''),
+                            done=done, win=win, rnd=period if done else None,
+                            sec=int((period - 1) * 300 + clock) if done and period else None, dec=dec))
+    return out
+
+
+def ufc_fight_stats(fight):
+    """Per-fighter stats for one finished fight from ESPN's core feed."""
+    out = {}
+    for side in ('a', 'b'):
+        aid = fight[side]
+        d = get_json(f"{CORE_MMA}/leagues/ufc/events/{fight['eid']}/competitions/{fight['id']}/competitors/{aid}/statistics")
+        vals = {}
+        for cat in ((d.get('splits') or {}).get('categories') or []):
+            for x in cat.get('stats', []):
+                vals[x.get('name', '')] = x.get('value') or 0
+        find = lambda *words: next((v for k, v in vals.items() if all(w in k.lower() for w in words)), 0)
+        out[side] = [vals.get('knockDowns', 0), vals.get('sigStrikesLanded', 0), vals.get('sigStrikesAttempted', 0),
+                     find('takedown', 'landed') or find('takedowns', 'success'), find('takedown', 'attempt'),
+                     find('submission', 'attempt') or find('submission'), find('control')]
+    return out
+
+
+def ufc_fighter(aid):
+    a = get_json(f'{CORE_MMA}/athletes/{aid}')
+    dob = (a.get('dateOfBirth') or '')[:10]
+    return dict(n=a.get('displayName', ''), dob=dob, h=a.get('height'), r=a.get('reach'),
+                st=(a.get('stance') or {}).get('text', ''), wc=(a.get('weightClass') or {}).get('text', ''))
+
+
+def build_ufc(_season):
+    today = datetime.datetime.now(ET).date()
+    fights = []
+    for year in range(UFC_FIRST_YEAR, today.year + 1):
+        name = f'ufc_events_{year}.json'
+        cached = load_cache(name)
+        if year < today.year and cached.get('fights'):  # past years never change
+            fights += cached['fights']; continue
+        got = ufc_year(year)
+        save_cache(name, {'fights': got})
+        fights += got
+    if today.month == 12:
+        fights += ufc_year(today.year + 1)
+    seen, uniq = set(), []
+    for f in fights:
+        if f['id'] not in seen:
+            seen.add(f['id']); uniq.append(f)
+    fights = uniq
+
+    stats = load_cache('ufc_fight_stats.json')
+    need = [f for f in fights if f['done'] and f['win'] in ('a', 'b', 'draw') and (f['id'] not in stats or '_error' in stats[f['id']])]
+    if need:
+        fmap = {f['id']: f for f in need}
+        stats.update(parallel(lambda fid: ufc_fight_stats(fmap[fid]), list(fmap), workers=12))
+        save_cache('ufc_fight_stats.json', stats)
+
+    fighters = load_cache('ufc_fighters.json')
+    ids = {f[s] for f in fights for s in ('a', 'b')}
+    need = [i for i in ids if i not in fighters or '_error' in fighters[i]]
+    if need:
+        fighters.update(parallel(ufc_fighter, need, workers=12))
+        save_cache('ufc_fighters.json', fighters)
+
+    out = []
+    for f in sorted(fights, key=lambda x: x['date'] or ''):
+        d, tm = et_parts(f['date'])
+        st = stats.get(f['id']) or {}
+        row = dict(id=f['id'], eid=f['eid'], ev=f['ev'], d=d, tm=tm, wc=f['wc'], sched=f['sched'], a=f['a'], b=f['b'],
+                   an=f['an'], bn=f['bn'], ar=f['ar'], br=f['br'], win=f['win'] if f['done'] else None,
+                   rnd=f['rnd'], sec=f['sec'], dec=f['dec'])
+        if 'a' in st and 'b' in st and '_error' not in st:
+            row['sa'], row['sb'] = st['a'], st['b']
+        out.append(row)
+
+    # Moneylines for upcoming fights (The Odds API), last known line kept per fight.
+    names = {}
+    for f in out:
+        names[norm_name(f['an'])] = f['a']; names[norm_name(f['bn'])] = f['b']
+    odds = load_cache('odds_ufc.json')
+    key = os.environ.get('ODDS_API_KEY')
+    soon = [f for f in out if f['win'] is None and f['d'] and 0 <= (datetime.date.fromisoformat(f['d']) - today).days <= 8]
+    note = None
+    if not key:
+        note = 'ODDS_API_KEY not set'
+    elif not soon:
+        note = 'no fights in the next 8 days'
+    elif odds.get('_remaining') is not None and odds['_remaining'] < 40:
+        note = 'saving odds requests'
+    else:
+        url = (f'https://api.the-odds-api.com/v4/sports/mma_mixed_martial_arts/odds?apiKey={key}&regions=us&markets=h2h'
+               f'&oddsFormat=american&bookmakers={",".join(ODDS_PREF)}')
+        req = urllib.request.Request(url, headers=UA)
+        with urllib.request.urlopen(req, timeout=60) as r:
+            events = json.loads(r.read().decode('utf-8')); rem = r.headers.get('x-requests-remaining')
+        odds['_remaining'] = int(float(rem)) if rem else None
+        now = datetime.datetime.now(datetime.timezone.utc)
+        by_pair = {}
+        for f in soon:
+            by_pair[frozenset((f['a'], f['b']))] = f
+        for ev in events:
+            start = datetime.datetime.fromisoformat((ev.get('commence_time') or '1970-01-01T00:00:00Z').replace('Z', '+00:00'))
+            if start <= now:
+                continue
+            x, y = names.get(norm_name(ev.get('home_team'))), names.get(norm_name(ev.get('away_team')))
+            f = by_pair.get(frozenset((x, y))) if x and y else None
+            if not f:
+                continue
+            for bk in sorted(ev.get('bookmakers', []), key=lambda b: ODDS_PREF.index(b['key']) if b['key'] in ODDS_PREF else 99):
+                m = next((m for m in bk.get('markets', []) if m['key'] == 'h2h'), None)
+                if not m:
+                    continue
+                pr = {names.get(norm_name(o.get('name'))): int(o['price']) for o in m.get('outcomes', [])}
+                if f['a'] in pr and f['b'] in pr:
+                    old = odds.get(f['id'])
+                    odds[f['id']] = {'aml': pr[f['a']], 'bml': pr[f['b']], 'open': (old or {}).get('open') or [pr[f['a']], pr[f['b']]]}
+                    break
+    save_cache('odds_ufc.json', odds)
+    for f in out:
+        o = odds.get(f['id'])
+        if o:
+            f['aml'], f['bml'], f['oml'] = o['aml'], o['bml'], o.get('open')
+
+    used = {f[s] for f in out for s in ('a', 'b')}
+    meta = dict(sport='ufc', label='UFC', family='fight', period='Event', unit='', source='ESPN · lines from The Odds API',
+                oddsNote=note, oddsRemaining=odds.get('_remaining'), firstYear=UFC_FIRST_YEAR, props=False)
+    games = [dict(id=f['id'], d=f['d'], w=0, h=f['b'], a=f['a'], hs=None if f['win'] is None else 1, as_=0) for f in out]
+    return dict(meta=meta, season=today.year, fights=out, fighters={k: v for k, v in fighters.items() if k in used and '_error' not in v},
+                games=games, teamGames=[])
+
+
 # ---------------------------------------------------------------- NFL (nflverse)
 NFL_GAMES = 'https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv'
 NFL_TEAM = 'https://github.com/nflverse/nflverse-data/releases/download/stats_team/stats_team_week_{season}.csv'
@@ -1029,7 +1188,7 @@ def build_cfb(season):
 
 
 # ---------------------------------------------------------------- main
-SPORTS = {'nfl': build_nfl, 'cfb': build_cfb, 'nhl': build_nhl, 'cbb': build_cbb, 'nba': build_nba, 'mlb': build_mlb}
+SPORTS = {'nfl': build_nfl, 'cfb': build_cfb, 'nhl': build_nhl, 'cbb': build_cbb, 'nba': build_nba, 'mlb': build_mlb, 'ufc': build_ufc}
 
 
 def main():
@@ -1054,7 +1213,7 @@ def main():
             nxt = min((g['d'] for g in data['games'] if g['hs'] is None and g.get('d') and g['d'] >= today), default=None)
             status[sport] = dict(ok=True, season=data['season'], finals=len(done), next=nxt,
                                  through=max((g['d'] for g in done), default=''),
-                                 upcoming=len(data['games']) - len(done), rows=len(data['teamGames']))
+                                 upcoming=len(data['games']) - len(done), rows=len(data.get('teamGames', [])))
             print(f"{sport}: {'updated' if changed else 'no change'} - {status[sport]}")
         except Exception as e:  # keep going: one feed failing shouldn't stop the others
             status[sport] = dict(ok=False, error=f'{type(e).__name__}: {e}',
@@ -1133,7 +1292,7 @@ def add_priors(status, args):
 
 def history_seasons(sport, cur):
     """Past seasons the trainer learns from, relative to the season currently on the site."""
-    back = {'nfl': 5, 'cfb': 3, 'nhl': 3, 'mlb': 2, 'cbb': 2, 'nba': 3}[sport]
+    back = {'nfl': 5, 'cfb': 3, 'nhl': 3, 'mlb': 2, 'cbb': 2, 'nba': 3}.get(sport, 0)
     return [cur - i for i in range(back, 0, -1)]
 
 
