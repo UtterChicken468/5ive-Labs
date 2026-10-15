@@ -892,6 +892,7 @@ def build_ufc(_season):
     odds = load_cache('odds_ufc.json')
     key = os.environ.get('ODDS_API_KEY')
     soon = [f for f in out if f['win'] is None and f['d'] and 0 <= (datetime.date.fromisoformat(f['d']) - today).days <= 8]
+    upcoming = [f for f in out if f['win'] is None and f['d'] and (datetime.date.fromisoformat(f['d']) - today).days >= 0]
     note = None
     if not key:
         note = 'ODDS_API_KEY not set'
@@ -900,22 +901,33 @@ def build_ufc(_season):
     elif odds.get('_remaining') is not None and odds['_remaining'] < 40:
         note = 'saving odds requests'
     else:
+        # One request returns every posted MMA fight from all US books (same cost as a few books).
         url = (f'https://api.the-odds-api.com/v4/sports/mma_mixed_martial_arts/odds?apiKey={key}&regions=us&markets=h2h'
-               f'&oddsFormat=american&bookmakers={",".join(ODDS_PREF)}')
+               f'&oddsFormat=american')
         req = urllib.request.Request(url, headers=UA)
         with urllib.request.urlopen(req, timeout=60) as r:
             events = json.loads(r.read().decode('utf-8')); rem = r.headers.get('x-requests-remaining')
         odds['_remaining'] = int(float(rem)) if rem else None
         now = datetime.datetime.now(datetime.timezone.utc)
-        by_pair = {}
-        for f in soon:
-            by_pair[frozenset((f['a'], f['b']))] = f
+        by_pair = {frozenset((f['a'], f['b'])): f for f in upcoming}
+        last = lambda n: norm_name((n or '').split()[-1] if n else '')
+        by_last = {}
+        for f in upcoming:  # fallback when the two feeds spell a name differently
+            by_last.setdefault(frozenset((last(f['an']), last(f['bn']))), []).append(f)
         for ev in events:
             start = datetime.datetime.fromisoformat((ev.get('commence_time') or '1970-01-01T00:00:00Z').replace('Z', '+00:00'))
             if start <= now:
                 continue
             x, y = names.get(norm_name(ev.get('home_team'))), names.get(norm_name(ev.get('away_team')))
             f = by_pair.get(frozenset((x, y))) if x and y else None
+            if not f:
+                d_ev = start.astimezone(ET).date()
+                cands = [c for c in by_last.get(frozenset((last(ev.get('home_team')), last(ev.get('away_team')))), [])
+                         if abs((datetime.date.fromisoformat(c['d']) - d_ev).days) <= 2]
+                if len(cands) == 1:
+                    f = cands[0]
+                    names[norm_name(ev.get('home_team'))] = f['a'] if last(f['an']) == last(ev.get('home_team')) else f['b']
+                    names[norm_name(ev.get('away_team'))] = f['b'] if names[norm_name(ev.get('home_team'))] == f['a'] else f['a']
             if not f:
                 continue
             for bk in sorted(ev.get('bookmakers', []), key=lambda b: ODDS_PREF.index(b['key']) if b['key'] in ODDS_PREF else 99):
