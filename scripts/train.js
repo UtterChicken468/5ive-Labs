@@ -17,7 +17,7 @@ const E = globalThis.Engine;
 
 const DATA = path.join(__dirname, '..', 'data');
 const HIST = path.join(DATA, 'history');
-const SPORTS = ['nfl', 'cfb', 'nhl', 'mlb', 'cbb'];
+const SPORTS = ['nfl', 'cfb', 'nhl', 'mlb', 'cbb', 'nba'];
 
 const mean = (a) => (a.length ? a.reduce((s, v) => s + v, 0) / a.length : 0);
 const sd = (a) => { const m = mean(a); return Math.sqrt(mean(a.map((v) => (v - m) ** 2))); };
