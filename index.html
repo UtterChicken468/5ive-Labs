@@ -128,7 +128,7 @@ aside h2 { font-size: 22px; text-transform: uppercase }
 .group { display: grid; gap: 12px; padding-top: 14px; border-top: 1px dashed var(--line) }
 .saverow { display: flex; gap: 6px }
 .saverow input { flex: 1; min-width: 0 }
-input[type=text], input[type=number], select { background: var(--surface-2); border: 1px solid var(--line); border-radius: 7px; padding: 6px 9px; min-width: 0 }
+input[type=text], input[type=number], input[type=search], select { background: var(--surface-2); border: 1px solid var(--line); border-radius: 7px; padding: 6px 9px; min-width: 0 }
 .btn { border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); border-radius: 7px; padding: 6px 12px; font-weight: 600; font-size: 14px }
 .btn.ghost { background: transparent; color: var(--ink); border-color: var(--line) }
 .btn.accent { background: var(--accent); border-color: var(--accent); color: var(--accent-ink) }
@@ -204,6 +204,19 @@ details.inj > div { margin-top: 4px }
 .bestbet { border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); padding: 8px 10px; font-size: 13.5px }
 .bestbet.good { border-color: var(--good); }
 @media (max-width: 520px) { .cmp { grid-template-columns: 58px minmax(0, 1.1fr) minmax(0, 0.8fr) minmax(0, 1.1fr); gap: 6px 6px; font-size: 13px } .cmp .vc input { width: 62px } .cmp .rl { font-size: 13px } }
+
+/* best edges filters */
+.filters { display: grid; gap: 10px; margin: 0 0 14px; padding: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px }
+.frow { display: flex; flex-wrap: wrap; gap: 6px; align-items: center }
+.frow > .label { width: 46px; flex: none }
+.fchip { font: inherit; font-size: 13px; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); cursor: pointer }
+.fchip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600 }
+.frow.selects { gap: 10px }
+.frow.selects label { display: flex; flex-direction: column; gap: 3px; min-width: 0 }
+.frow.selects label.grow { flex: 1 1 180px }
+.frow.selects input { width: 100%; color: var(--ink); font: inherit }
+.linkbtn { font: inherit; background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; text-decoration: underline }
+@media (max-width: 520px) { .frow.selects label:not(.grow) { flex: 1 1 30% } .frow.selects select { width: 100% } }
 
 /* tables */
 .tblwrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r) }
@@ -1003,25 +1016,76 @@ async function bootEdges() {
     });
     counts[key] = rows.filter((r) => r.sport === key).length;
   }
-  rows.sort((a, b) => b.ev - a.ev);
   const when = (r) => { const d = new Date(r.g.d + 'T12:00:00'); const day = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); if (!r.g.tm) return day; const [h, mi] = r.g.tm.split(':').map(Number); return day + ' · ' + ((h % 12) || 12) + ':' + String(mi).padStart(2, '0') + (h >= 12 ? 'p' : 'a'); };
-  const chips = Object.entries(counts).map(([k, n]) => `<span class="pill flat">${esc(SPORTS.find((x) => x.key === k).label)} ${n}</span>`).join(' ');
-  $('#view').innerHTML = rows.length ? `
-    <div class="toolbar"><div class="small muted">${chips || ''}</div></div>
-    <div class="tblwrap"><table><thead><tr><th>Sport</th><th>Game</th><th>When</th><th>Bet</th><th class="num">Model vs market</th><th class="num">Edge</th><th class="num">Value</th><th></th></tr></thead><tbody>
-    ${rows.map((r, i) => `<tr ${i >= 25 ? 'class="more" hidden' : ''}><td><span class="pill flat">${esc(r.label)}</span></td><td class="pname">${esc(r.g.a)} ${r.vs ? 'vs' : '@'} ${esc(r.g.h)}</td><td class="small">${when(r)}</td>
+  rows.forEach((r) => { r.kind = r.type === 'Moneyline' ? 'ml' : r.type === 'Total' ? 'tot' : 'sp'; r.start = r.g.d + ' ' + (r.g.tm || '99:99'); });
+  // ---- filters (saved in this browser and synced)
+  const FKEY = 'gml:edges:filters';
+  const F = Object.assign({ sports: [], kinds: [], day: 'all', minEv: 0, sort: 'ev', q: '' }, (() => { try { return JSON.parse(localStorage.getItem(FKEY)) || {}; } catch (e) { return {}; } })());
+  const saveF = () => { try { localStorage.setItem(FKEY, JSON.stringify(F)); } catch (e) {} if (window.Sync) Sync.changed(FKEY); };
+  const KINDS = [['sp', 'Spread / puck / run line'], ['tot', 'Total'], ['ml', 'Moneyline']];
+  const DAYS = [['all', 'Any day'], ['today', 'Today'], ['tomorrow', 'Tomorrow'], ['week', 'Next 7 days']];
+  const EVS = [[0, 'Any value'], [0.03, 'EV +3% or more'], [0.05, 'EV +5% or more'], [0.1, 'EV +10% or more']];
+  const SORTS = [['ev', 'Best value'], ['p', 'Most likely to hit'], ['start', 'Starting soonest']];
+  const present = Object.keys(counts).filter((k) => counts[k]);
+  let showAll = false;
+  function filtered() {
+    const q = F.q.trim().toLowerCase();
+    const out = rows.filter((r) => (!F.sports.length || F.sports.includes(r.sport)) && (!F.kinds.length || F.kinds.includes(r.kind))
+      && r.ev >= F.minEv
+      && (F.day === 'all' || (F.day === 'today' ? r.g.d === today : F.day === 'tomorrow' ? r.g.d === plus(1) : r.g.d <= plus(6)))
+      && (!q || (r.g.a + ' ' + r.g.h + ' ' + r.bet).toLowerCase().includes(q)));
+    const by = { ev: (x, y) => y.ev - x.ev, p: (x, y) => y.p - x.p || y.ev - x.ev, start: (x, y) => x.start.localeCompare(y.start) || y.ev - x.ev }[F.sort] || ((x, y) => y.ev - x.ev);
+    return out.sort(by);
+  }
+  const chip = (group, val, label, on) => `<button type="button" class="fchip" data-f="${group}" data-v="${val}" aria-pressed="${on}">${esc(label)}</button>`;
+  function render() {
+    if (!rows.length) { $('#view').innerHTML = `<div class="empty">No edges in the next couple of days with your current models. Try lowering the edge threshold in a sport, or check back after the next data refresh.</div>`; return; }
+    const list = filtered(), shown = showAll ? list : list.slice(0, 25);
+    const active = F.sports.length || F.kinds.length || F.day !== 'all' || F.minEv || F.q;
+    $('#view').innerHTML = `
+    <div class="filters">
+      <div class="frow"><span class="label">Sport</span>${chip('sports', '', 'All', !F.sports.length)}${present.map((k) => chip('sports', k, SPORTS.find((x) => x.key === k).label + ' ' + counts[k], F.sports.includes(k))).join('')}</div>
+      <div class="frow"><span class="label">Bet</span>${chip('kinds', '', 'All', !F.kinds.length)}${KINDS.map(([k, n]) => chip('kinds', k, n, F.kinds.includes(k))).join('')}</div>
+      <div class="frow selects">
+        <label><span class="label">When</span><select data-sel="day">${DAYS.map(([v, n]) => `<option value="${v}" ${F.day === v ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+        <label><span class="label">Value</span><select data-sel="minEv">${EVS.map(([v, n]) => `<option value="${v}" ${F.minEv === v ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+        <label><span class="label">Sort</span><select data-sel="sort">${SORTS.map(([v, n]) => `<option value="${v}" ${F.sort === v ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+        <label class="grow"><span class="label">Team</span><input type="search" id="fq" placeholder="Search a team or fighter" value="${esc(F.q)}"></label>
+      </div>
+      <div class="small muted">${list.length} of ${rows.length} bets${active ? ' · <button type="button" class="linkbtn" id="fclear">Clear filters</button>' : ''}</div>
+    </div>
+    ${list.length ? `<div class="tblwrap"><table><thead><tr><th>Sport</th><th>Game</th><th>When</th><th>Bet</th><th class="num">Model vs market</th><th class="num">Edge</th><th class="num">Value</th><th></th></tr></thead><tbody>
+    ${shown.map((r) => `<tr><td><span class="pill flat">${esc(r.label)}</span></td><td class="pname">${esc(r.g.a)} ${r.vs ? 'vs' : '@'} ${esc(r.g.h)}</td><td class="small">${when(r)}</td>
       <td><b>${esc(r.bet)}</b> <span class="muted small">${esc(r.type)}</span></td><td class="num">${Math.round(r.p * 100)}% <span class="muted small">vs ${Math.round(r.pm * 100)}%</span></td><td class="num">${esc(r.edge)}</td>
       <td class="num"><span class="pill ${r.ev > 0.03 ? 'good' : 'flat'}">EV ${r.ev >= 0 ? '+' : '−'}${Math.abs(r.ev * 100).toFixed(0)}%</span></td>
       <td><button class="logbtn" data-open="${r.sport}">Open</button></td></tr>`).join('')}
     </tbody></table></div>
-    ${rows.length > 25 ? `<p><button class="btn ghost" id="showAll">Show all ${rows.length}</button></p>` : ''}
-    <p class="note">Value uses a 50/50 blend of your model and the market's fair price, so long-shot underdogs don't flood the list just because the model is less extreme than the odds. Moneylines longer than +250 are left out. Uses real prices when the feed has them (−110 otherwise), each sport's saved sliders, and any lines you typed in.</p>`
-    : `<div class="empty">No edges in the next couple of days with your current models. Try lowering the edge threshold in a sport, or check back after the next data refresh.</div>`;
+    ${list.length > shown.length ? `<p><button class="btn ghost" id="showAll">Show all ${list.length}</button></p>` : ''}`
+    : '<div class="empty">No bets match these filters.</div>'}
+    <p class="note">Value uses a 50/50 blend of your model and the market's fair price, so long-shot underdogs don't flood the list just because the model is less extreme than the odds. Moneylines longer than +250 are left out. Uses real prices when the feed has them (−110 otherwise), each sport's saved sliders, and any lines you typed in.</p>`;
+  }
+  render();
   $('#view').addEventListener('click', (e) => {
-    if (e.target.id === 'showAll') { document.querySelectorAll('tr.more').forEach((r) => { r.hidden = false; }); e.target.remove(); return; }
+    if (e.target.id === 'showAll') { showAll = true; render(); return; }
+    if (e.target.id === 'fclear') { Object.assign(F, { sports: [], kinds: [], day: 'all', minEv: 0, q: '' }); saveF(); render(); return; }
+    const c = e.target.closest('[data-f]');
+    if (c) {
+      const arr = F[c.dataset.f], v = c.dataset.v;
+      if (!v) arr.length = 0; else { const i = arr.indexOf(v); if (i >= 0) arr.splice(i, 1); else arr.push(v); }
+      showAll = false; saveF(); render(); return;
+    }
     const b = e.target.closest('[data-open]'); if (!b) return;
     try { localStorage.setItem('gml:sport', b.dataset.open); } catch (err) {}
     location.hash = b.dataset.open; location.reload();
+  });
+  $('#view').addEventListener('change', (e) => {
+    const k = e.target.dataset.sel; if (!k) return;
+    F[k] = k === 'minEv' ? +e.target.value : e.target.value; showAll = false; saveF(); render();
+  });
+  let qt = 0;
+  $('#view').addEventListener('input', (e) => {
+    if (e.target.id !== 'fq') return;
+    clearTimeout(qt); qt = setTimeout(() => { F.q = e.target.value; saveF(); const pos = e.target.selectionStart; render(); const el = $('#fq'); el.focus(); el.setSelectionRange(pos, pos); }, 200);
   });
 }
 
@@ -1370,7 +1434,7 @@ function bootGuide() {
   </section>
 
   <section id="g-edges"><h3>Best edges</h3>
-    <p>The first button at the top. It scans every sport for the next couple of days and lists the bets where your model and the betting market disagree most, using the model you saved for each sport. Value is scored on a 50/50 blend of your model and the market price so long-shot underdogs don't flood the list, and moneylines longer than +250 are left out. Tap <b>Open</b> to jump to that game.</p>
+    <p>The first button at the top. It scans every sport for the next couple of days and lists the bets where your model and the betting market disagree most, using the model you saved for each sport. Value is scored on a 50/50 blend of your model and the market price so long-shot underdogs don't flood the list, and moneylines longer than +250 are left out. Use the filters to narrow it down by sport, bet type, day, minimum value or team, and sort by best value, most likely to hit, or start time (your filters are remembered). Tap <b>Open</b> to jump to that game.</p>
   </section>
 
   <section id="g-accuracy"><h3>Accuracy</h3>
