@@ -196,7 +196,11 @@ def odds_lines(sport_key, sched, names, cache_name):
         for g in sched:
             if g['hs'] is None:
                 by.setdefault((g['h'], g['a']), []).append(g)
+        now = datetime.datetime.now(datetime.timezone.utc)
         for ev in events:
+            start = datetime.datetime.fromisoformat((ev.get('commence_time') or '1970-01-01T00:00:00Z').replace('Z', '+00:00'))
+            if start <= now:
+                continue  # already started: these are live in-game odds, keep the pregame line
             h, a = names.get(norm_name(ev.get('home_team'))), names.get(norm_name(ev.get('away_team')))
             if not h or not a or (h, a) not in by:
                 continue
@@ -366,6 +370,8 @@ def build_mlb(_season):
                           hs=th.get('score') if fin else None, as_=ta.get('score') if fin else None,
                           sp=None, tot=None, hml=None, aml=None, neu=False,
                           hp=str(hp['id']) if hp.get('id') else None, ap=str(ap['id']) if ap.get('id') else None))
+    if not note and not any(g['hs'] is None and g['d'] >= today.isoformat() for g in sched):
+        note = f'the {y} regular season is over · next season starts in the spring'
     first = day_index(sched)
     rest_days(sched)
 

@@ -109,33 +109,39 @@
   const rowKey = (r) => (r.g != null ? r.g : r.w) + '|' + r.t;
   const gameKey = (g, t) => (g.gk != null ? g.gk : g.w) + '|' + t;
 
-  // Season-to-date team profiles using only games before `before` (week or day index).
-  function teamProfiles(data, before) {
+  // Season-to-date team profiles. Built from an accumulator so the backtest can add one
+  // day's games at a time instead of re-summing the whole season for every day.
+  function indexRows(data) {
     const byKey = {};
-    data.teamGames.forEach((r) => { if (r.w < before) byKey[rowKey(r)] = r; });
-    const P = {};
-    data.games.forEach((g) => {
-      if (!(g.w < before) || g.hs == null) return;
-      [[g.h, g.a, g.hs, g.as_], [g.a, g.h, g.as_, g.hs]].forEach(([t, o, pf, pa]) => {
-        const me = byKey[gameKey(g, t)], op = byKey[gameKey(g, o)];
-        if (!me || !op) return;
-        (P[t] || (P[t] = [])).push({ w: g.w, opp: o, pf, pa, me, op });
-      });
+    data.teamGames.forEach((r) => { byKey[rowKey(r)] = r; });
+    return byKey;
+  }
+  function addGame(acc, g, byKey) {
+    const sides = [[g.h, g.a, g.hs, g.as_], [g.a, g.h, g.as_, g.hs]];
+    const rows = sides.map(([t, o]) => [byKey[gameKey(g, t)], byKey[gameKey(g, o)]]);
+    if (rows.some(([me, op]) => !me || !op)) return;
+    sides.forEach(([t, o, pf, pa], i) => {
+      const [me, op] = rows[i];
+      const a = acc[t] || (acc[t] = { n: 0, S: {}, pf: 0, pa: 0, hist: [], opps: [], lastWeek: -1 });
+      a.n++; a.pf += pf; a.pa += pa; a.hist.push(pf - pa); a.opps.push(o); a.lastWeek = Math.max(a.lastWeek, g.w);
+      for (const k in me) if (typeof me[k] === 'number' && k !== 'w' && k !== 'g') a.S[k] = (a.S[k] || 0) + me[k];
+      for (const k in op) if (typeof op[k] === 'number' && k !== 'w' && k !== 'g') a.S['o_' + k] = (a.S['o_' + k] || 0) + op[k];
     });
+  }
+  function finalizeProfiles(acc) {
     const out = {};
-    Object.entries(P).forEach(([team, gs]) => {
-      const n = gs.length, S = {};
-      gs.forEach(({ me, op }) => {
-        for (const k in me) if (typeof me[k] === 'number' && k !== 'w' && k !== 'g') S[k] = (S[k] || 0) + me[k];
-        for (const k in op) if (typeof op[k] === 'number' && k !== 'w' && k !== 'g') S['o_' + k] = (S['o_' + k] || 0) + op[k];
-      });
-      const last = [...gs].sort((a, b) => b.w - a.w).slice(0, FORM_N);
-      const pf = gs.reduce((s, x) => s + x.pf, 0) / n, pa = gs.reduce((s, x) => s + x.pa, 0) / n;
-      out[team] = { team, n, S, pf, pa, margin: pf - pa, form: mean(last.map((x) => x.pf - x.pa)),
-        opps: gs.map((x) => x.opp), lastWeek: Math.max(...gs.map((x) => x.w)) };
-    });
+    for (const team in acc) {
+      const a = acc[team], n = a.n;
+      out[team] = { team, n, S: a.S, pf: a.pf / n, pa: a.pa / n, margin: (a.pf - a.pa) / n,
+        form: mean(a.hist.slice(-FORM_N)), opps: a.opps, lastWeek: a.lastWeek };
+    }
     Object.values(out).forEach((t) => { t.sos = mean(t.opps.map((o) => (out[o] ? out[o].margin : 0))); });
     return out;
+  }
+  function teamProfiles(data, before) {
+    const byKey = indexRows(data), acc = {};
+    data.games.filter((g) => g.w < before && g.hs != null).sort((a, b) => a.w - b.w).forEach((g) => addGame(acc, g, byKey));
+    return finalizeProfiles(acc);
   }
 
   // Ratings in points (goals, runs) vs an average team.
@@ -214,12 +220,18 @@
 
   // Walk-forward backtest: each week predicted only with earlier weeks.
   function backtest(data, weights, settings, edgeMin) {
-    const weeks = [...new Set(data.games.filter((g) => g.hs != null).map((g) => g.w))].sort((a, b) => a - b);
+    const done = data.games.filter((g) => g.hs != null).sort((a, b) => a.w - b.w);
+    const byW = {}; done.forEach((g) => { (byW[g.w] || (byW[g.w] = [])).push(g); });
+    const weeks = Object.keys(byW).map(Number).sort((a, b) => a - b);
+    const byKey = indexRows(data), acc = {};
+    let added = 0;
     const per = []; let su = 0, n = 0, vegasSu = 0, vegasN = 0, ats = [0, 0, 0], mae = 0, vegasMae = 0, ou = [0, 0, 0];
-    weeks.slice(BT_SKIP).forEach((w) => {
-      const P = teamProfiles(data, w); const R = ratings(P, weights, settings);
+    weeks.forEach((w, wi) => {
+      while (added < done.length && done[added].w < w) addGame(acc, done[added++], byKey);
+      if (wi < BT_SKIP) return;
+      const P = finalizeProfiles(acc); const R = ratings(P, weights, settings);
       const wk = { w, su: 0, n: 0, atsW: 0, atsL: 0 };
-      data.games.filter((g) => g.w === w && g.hs != null).forEach((g) => {
+      byW[w].forEach((g) => {
         const pr = predict(g, P, R, settings, { sp: g.sp, tot: g.tot }, data); if (!pr) return;
         const res = g.hs - g.as_;
         if (res !== 0) { n++; wk.n++; if ((pr.margin > 0) === (res > 0)) { su++; wk.su++; } }

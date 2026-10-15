@@ -560,12 +560,12 @@ function accuracyView() {
   <div class="toolbar"><div class="f"><label class="label" for="btEdge">Only count spread and total plays with an edge of</label>
     <select id="btEdge">${[0, ...EDGE_STEPS].map((v) => `<option value="${v}" ${v === S.btEdge ? 'selected' : ''}>${v ? v + '+ ' + UNIT : 'Any edge'}</option>`).join('')}</select></div></div>
   <div class="wk">
-    <h3 style="font-size:20px;text-transform:uppercase;margin-bottom:8px">Winners picked by week</h3>${per.length > 12 ? '<div class="note" style="margin:-4px 0 8px">Latest 12 weeks</div>' : ''}
-    <div class="legend"><span><i style="background:var(--accent)"></i>Your model</span><span><i style="background:var(--vegas)"></i>Vegas favorite</span></div>
-    <div class="wkrows">${per.slice(-12).map((p) => `<div class="wkr"><span class="label">${DAILY ? 'Wk of ' + shortDate(dateOfW[p.w]) : 'Week ' + p.w}</span>
+    <h3 style="font-size:20px;text-transform:uppercase;margin-bottom:8px">Winners picked by week${DAILY ? ' (week starting)' : ''}</h3>${per.length > 12 ? '<div class="note" style="margin:-4px 0 8px">Latest 12 weeks</div>' : ''}
+    <div class="legend"><span><i style="background:var(--accent)"></i>Your model</span>${per.some((p) => p.vn) ? '<span><i style="background:var(--vegas)"></i>Vegas favorite</span>' : ''}</div>
+    <div class="wkrows">${per.slice(-12).map((p) => `<div class="wkr"><span class="label">${DAILY ? shortDate(dateOfW[p.w]) : 'Week ' + p.w}</span>
       <div class="wkbars" style="padding-right:88px">
         <div style="width:${p.mp * 100}%;background:var(--accent)" title="Model: ${p.su} of ${p.n}"><span>${pct(p.mp)} · ${p.su}/${p.n}</span></div>
-        <div style="width:${p.vp * 100}%;background:var(--vegas)" title="Vegas: ${p.vr} of ${p.vn}"><span>${pct(p.vp)}</span></div>
+        ${p.vn ? `<div style="width:${p.vp * 100}%;background:var(--vegas)" title="Vegas: ${p.vr} of ${p.vn}"><span>${pct(p.vp)}</span></div>` : ''}
       </div></div>`).join('')}</div>
   </div>
   <h3 style="font-size:20px;text-transform:uppercase;margin-bottom:8px">Saved models compared</h3>
