@@ -90,11 +90,12 @@
   function poss(S, p) { return S[p + 'fga'] - S[p + 'orb'] + S[p + 'tov'] + 0.475 * S[p + 'fta']; }
 
   // Per-sport settings; set with configure() once the sport's data loads.
-  let SIGMA = 13.5, SIGMA_TOT = 13, BT_SKIP = 1, FORM_N = 3, REST = 'bye', FAMILY = 'football', PRIORS = null, LG_SV = 0.9, HFA0 = 1.5, CAP = 28, LG_PTS = null;
+  let MKT = null, SIGMA = 13.5, SIGMA_TOT = 13, BT_SKIP = 1, FORM_N = 3, REST = 'bye', FAMILY = 'football', PRIORS = null, LG_SV = 0.9, HFA0 = 1.5, CAP = 28, LG_PTS = null;
   const api = {};
   function configure(cfg) {
     if (cfg.sigma) SIGMA = cfg.sigma;
     if (cfg.sigmaTot) SIGMA_TOT = cfg.sigmaTot;
+    MKT = cfg.mkt || null;
     if (cfg.btSkip != null) BT_SKIP = cfg.btSkip;
     if (cfg.formN) FORM_N = cfg.formN;
     if (cfg.rest) REST = cfg.rest;
@@ -300,16 +301,25 @@
     const out = { margin, total, hs, as, pHome, pAway: 1 - pHome, starter, qb, goalie, weather };
     if (lines.sp != null) {
       out.spEdge = margin - lines.sp; // + means model likes home vs the line
-      out.pHomeCover = phi((margin - lines.sp) / SIGMA);
+      out.pHomeCover = vsMarket('sp', margin - lines.sp, SIGMA);
     }
     // Totals need each team's own scoring; before both have played, skip the total edge.
-    if (lines.tot != null && h.n && a.n) { out.totEdge = total - lines.tot; out.pOver = phi((total - lines.tot) / SIGMA_TOT); }
+    if (lines.tot != null && h.n && a.n) { out.totEdge = total - lines.tot; out.pOver = vsMarket('tot', total - lines.tot, SIGMA_TOT); }
     if (lines.hml != null) out.evHome = evPerUnit(pHome, lines.hml);
     if (lines.aml != null) out.evAway = evPerUnit(1 - pHome, lines.aml);
     return out;
   }
 
   // Walk-forward backtest: each week predicted only with earlier weeks.
+  // Chance a spread or total bet wins. Vegas lines are sharp, so the model's gap from the line is
+  // only worth what past seasons showed it was worth: MKT[k].s is the fitted share of the gap that
+  // actually showed up in results (0 = none, 1 = all of it) and MKT[k].sd how far results land
+  // from the line. Sports without past lines use a cautious default.
+  function vsMarket(k, gap, sigma) {
+    const m = MKT && MKT[k];
+    return m ? phi(m.s * gap / m.sd) : phi(0.2 * gap / sigma);
+  }
+
   function backtest(data, weights, settings, edgeMin, collect) {
     const picks = collect ? [] : null;
     const done = data.games.filter((g) => g.hs != null).sort((a, b) => a.w - b.w);
@@ -326,7 +336,7 @@
       byW[w].forEach((g) => {
         const pr = predict(g, P, R, settings, { sp: g.sp, tot: g.tot }, data); if (!pr) return;
         const res = g.hs - g.as_;
-        if (picks) picks.push({ id: g.id, w, m: pr.margin, res, sp: g.sp });
+        if (picks) picks.push({ id: g.id, w, m: pr.margin, res, sp: g.sp, t: pr.total, tot: g.tot, at: g.hs + g.as_, pOver: pr.pOver });
         if (res !== 0) { n++; wk.n++; if ((pr.margin > 0) === (res > 0)) { su++; wk.su++; } }
         mae += Math.abs(pr.margin - res);
         if (g.sp != null) {

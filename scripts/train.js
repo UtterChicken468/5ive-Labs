@@ -133,6 +133,29 @@ function calibration(picks, sigma) {
   return bins.filter((q) => q.n).map((q) => [Math.round(q.p / q.n * 100), Math.round(q.won / q.n * 100), q.n]);
 }
 
+// How much of the model's gap from the Vegas line actually shows up in results, per market.
+// Regress (result - line) on (model - line) over every past game with a line; slope kept in 0..1.
+function marketTrust(past, cur, model) {
+  const sp = [], tot = [];
+  past.forEach((ds) => {
+    E.configure({ ...cur.meta, mkt: null, priors: ds.meta.priors || null });
+    E.backtest(ds, model.weights, { ...model.settings, qbOut: 0, weather: 0, goalie: 0 }, 0, true).picks.forEach((p) => {
+      if (p.sp != null) sp.push([p.m - p.sp, p.res - p.sp]);
+      if (p.tot != null && p.pOver != null) tot.push([p.t - p.tot, p.at - p.tot]);
+    });
+  });
+  const fit = (rows, min) => {
+    if (rows.length < 150) return undefined;
+    const sxy = rows.reduce((s, [x, y]) => s + x * y, 0), sxx = rows.reduce((s, [x]) => s + x * x, 0) || 1;
+    const big = rows.filter(([x, y]) => Math.abs(x) >= min && y !== 0), won = big.filter(([x, y]) => (x > 0) === (y > 0)).length;
+    return { s: round(Math.min(1, Math.max(0, sxy / sxx)), 3), sd: round(Math.sqrt(rows.reduce((s, [, y]) => s + y * y, 0) / rows.length), 2),
+      n: rows.length, hitN: big.length, hit: big.length ? round(won / big.length * 100, 1) : null };
+  };
+  const min = cur.meta.edgeDefault ?? 1.5;
+  const out = { sp: fit(sp, min), tot: fit(tot, min), edgeMin: min };
+  return out.sp || out.tot ? out : null;
+}
+
 for (const sport of SPORTS) {
   const curFile = path.join(DATA, sport + '.json');
   if (!fs.existsSync(curFile)) continue;
@@ -173,6 +196,7 @@ for (const sport of SPORTS) {
       ats: tb.ats, atsPct: pct(tb.ats[0], tb.ats[0] + tb.ats[1]), balancedSu: pct(bb.su, bb.n), balancedMae: round(bb.mae, 2),
       calibration: calibration(tb.picks, sigma) },
   };
+  cur.meta.trained.mkt = cur.meta.mkt = marketTrust(past, cur, final);
   cur.meta.sigma = sigma;            // win chances are spread to match the trained model's real misses
   cur.meta.sigmaTot = final.sigmaTot;
   fs.writeFileSync(curFile, JSON.stringify(cur));
@@ -180,6 +204,7 @@ for (const sport of SPORTS) {
   console.log(`${sport}: trained on ${cur.meta.trained.games} games (${cur.meta.trained.seasons.join(', ')}), prior=${best.k}; ` +
     `test ${test.ds.season}: winners ${t.su}% (Balanced ${t.balancedSu}%, Vegas ${t.vegasSu ?? '-'}%), miss ${t.mae} (Balanced ${t.balancedMae}, Vegas ${t.vegasMae ?? '-'}), ` +
     `ATS ${t.atsPct ?? '-'}% · ${Date.now() - t0}ms`);
+  console.log('   vs Vegas', JSON.stringify(cur.meta.mkt));
   console.log('   weights', JSON.stringify(final.weights), 'settings', JSON.stringify(final.settings), 'sigma', sigma);
 }
 
