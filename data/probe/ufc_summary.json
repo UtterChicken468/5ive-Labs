@@ -1,0 +1,5 @@
+{
+ "url": "https://site.api.espn.com/apis/site/v2/sports/mma/ufc/summary?event=600053165",
+ "status": 404,
+ "error": "{\"code\":404,\"message\":\"Error invoking GET: http://sports.core.api.espn.pvt/v2/sports/mma/leagues/ufc/events/600053165/competitions/600053165/status, status=404, duration=10 ms, message=null, cache=CACHE_MISS\"}"
+}

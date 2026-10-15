@@ -1,0 +1,26 @@
+{
+ "url": "https://sports.core.api.espn.com/v2/sports/mma/leagues/ufc/events/600053165/competitions/401757863/status",
+ "status": 200,
+ "sample": {
+  "$ref": "http://sports.core.api.espn.com/v2/sports/mma/leagues/ufc/events/600053165/competitions/401757863/status?lang=en&region=us",
+  "clock": 300.0,
+  "displayClock": "5:00",
+  "period": 5,
+  "type": {
+   "id": "3",
+   "name": "STATUS_FINAL",
+   "state": "post",
+   "completed": true,
+   "description": "Final",
+   "detail": "Final",
+   "shortDetail": "Final"
+  },
+  "result": {
+   "id": 263,
+   "name": "decision---unanimous",
+   "displayName": "Decision - Unanimous",
+   "shortDisplayName": "U Dec"
+  },
+  "featured": true
+ }
+}
