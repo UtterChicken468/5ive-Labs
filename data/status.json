@@ -27,17 +27,17 @@
   "upcoming": 428
  },
  "mlb": {
-  "finals": 2429,
+  "finals": 2460,
   "history": [
    2024,
    2025
   ],
-  "next": null,
+  "next": "2026-10-15",
   "ok": true,
-  "rows": 4858,
+  "rows": 4920,
   "season": 2026,
-  "through": "2026-09-27",
-  "upcoming": 0
+  "through": "2026-10-15",
+  "upcoming": 15
  },
  "nba": {
   "finals": 0,
