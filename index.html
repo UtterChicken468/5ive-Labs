@@ -180,7 +180,7 @@ td input { width: 70px }
 .legend { display: flex; gap: 14px; font-size: 13px; color: var(--muted); margin-bottom: 10px }
 .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px }
 .wkrows { display: grid; gap: 8px }
-.wkr { display: grid; grid-template-columns: 62px minmax(0,1fr); gap: 10px; align-items: center; font-size: 13.5px }
+.wkr { display: grid; grid-template-columns: 84px minmax(0,1fr); gap: 10px; align-items: center; font-size: 13.5px }
 .wkbars { display: grid; gap: 2px }
 .wkbars div { height: 12px; border-radius: 0 4px 4px 0; display: flex; align-items: center; justify-content: flex-end; min-width: 2px }
 .wkbars div span { font-size: 11px; font-weight: 600; padding: 0 0 0 6px; transform: translateX(100%); color: var(--ink); white-space: nowrap }
@@ -245,10 +245,19 @@ const store = {
   set(k, v) { try { localStorage.setItem(pre + k, JSON.stringify(v)); } catch (e) {} },
 };
 const SPORT_DEFAULTS = { hfa: META.hfa ?? 1.5, trust: META.trust ?? 60, bye: META.bye ?? 1 };
+const DAILY = META.period === 'Day';
+const UNIT = META.unit || 'pts';
+const EDGE_STEPS = META.edgeSteps || [1, 1.5, 2, 3, 4];
+const dateOfW = {}; DATA.games.forEach((g) => { if (g.d && !(g.w in dateOfW)) dateOfW[g.w] = g.d; });
+const shortDate = (iso, wd) => iso ? new Date(iso + 'T12:00:00').toLocaleDateString('en-US', wd ? { weekday: 'short', month: 'short', day: 'numeric' } : { month: 'short', day: 'numeric' }) : '';
+const periodLabel = (w) => DAILY ? shortDate(dateOfW[w], true) : 'Week ' + w;
+const todayISO = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 
 const completed = DATA.games.filter((g) => g.hs != null);
 const lastDone = completed.length ? Math.max(...completed.map((g) => g.w)) : 0;
-let upcomingWeeks = [...new Set(DATA.games.filter((g) => g.hs == null).map((g) => g.w))].sort((a, b) => a - b);
+let upcomingWeeks = [...new Set(DATA.games.filter((g) => g.hs == null && (!DAILY || !g.d || g.d >= todayISO)).map((g) => g.w))].sort((a, b) => a - b);
+if (DAILY) upcomingWeeks = upcomingWeeks.slice(0, 10);
+const seasonOver = !upcomingWeeks.length;
 if (!upcomingWeeks.length) upcomingWeeks = [lastDone]; // season over: show the final week
 
 const S = {
@@ -260,7 +269,7 @@ const S = {
   picks: store.get('picks', []),
   tab: store.get('tab', 'games'),
   week: upcomingWeeks[0],
-  sort: 'time', edgeMin: 1.5, onlyEdges: false, teamQ: '',
+  sort: 'time', edgeMin: META.edgeDefault ?? 1.5, onlyEdges: false, teamQ: '',
   propKey: 'py', propPos: 'all', propQ: '', recent: 40, matchup: 60,
   btEdge: 0, confirmClear: false,
 };
@@ -280,7 +289,7 @@ function updatedText(iso) {
   const d = new Date(iso);
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' at ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
-$('#stamp').innerHTML = `${META.label} · ${DATA.season} regular season · stats through <b>Week ${lastDone}</b> (${completed.length} games) · stats, schedule and lines from ${esc(META.source)}, updated ${updatedText(DATA.updated)}. Lines move, so check your book before you trust an edge.`;
+$('#stamp').innerHTML = `${META.label} · ${META.seasonLabel || DATA.season} regular season · stats through <b>${DAILY ? shortDate(dateOfW[lastDone]) : 'Week ' + lastDone}</b> (${completed.length} games)${META.note ? ' · ' + esc(META.note) : ''} · stats, schedule and lines from ${esc(META.source)}, updated ${updatedText(DATA.updated)}. Lines move, so check your book before you trust an edge.`;
 
 // ---------- builder ----------
 function renderBuilder() {
@@ -293,10 +302,10 @@ function renderBuilder() {
       <span class="hint">${f.hint}</span>
       <input type="range" id="w-${f.key}" data-w="${f.key}" min="0" max="10" step="1" value="${S.weights[f.key]}"></label>`).join('');
   const st = [
-    { k: 'hfa', nm: 'Home-field edge', hint: 'Points given to the home team', min: 0, max: 4, step: 0.5, show: (v) => v + ' pts' },
+    { k: 'hfa', nm: META.family === 'hockey' ? 'Home-ice edge' : META.family === 'basketball' ? 'Home-court edge' : 'Home-field edge', hint: 'Added to the home team, in ' + UNIT, min: 0, max: META.hfaMax ?? 4, step: META.hfaStep ?? 0.5, show: (v) => v + ' ' + UNIT },
     { k: 'trust', nm: 'Trust in this season', hint: 'Lower pulls everyone toward average; early-season stats are noisy', min: 20, max: 100, step: 5, show: (v) => v + '%' },
-    { k: 'bye', nm: 'Off-a-bye bonus', hint: 'Points for a team with 10+ days of rest', min: 0, max: 3, step: 0.5, show: (v) => v + ' pts' },
-  ];
+    { k: 'bye', nm: META.rest === 'b2b' ? 'Back-to-back penalty' : 'Off-a-bye bonus', hint: META.rest === 'b2b' ? 'Taken from a team playing its second game in two days' : 'Points for a team with 10+ days of rest', min: 0, max: META.byeMax ?? 3, step: META.byeStep ?? 0.5, show: (v) => v + ' ' + UNIT },
+  ].filter((x) => x.k !== 'bye' || META.rest !== 'none');
   $('#settings').innerHTML = st.map((s) => `
     <label class="sl" for="s-${s.k}"><span class="nm">${s.nm}</span><span class="val" id="sv-${s.k}" style="font-size:16px">${s.show(S.settings[s.k])}</span>
       <span class="hint">${s.hint}</span>
@@ -368,10 +377,11 @@ function evPill(ev) {
 
 // ---------- games view ----------
 function gamesView() {
+  if (seasonOver) return `<div class="empty"><b>No upcoming ${esc(META.label)} games right now.</b> ${META.note ? esc(META.note) + '.' : 'The season is over.'} The model is still here: tune it on <b>Power ratings</b> and see how it would have done on <b>Accuracy</b>.</div>`;
   const { P, R } = model();
   const weekGames = DATA.games.filter((g) => g.w === S.week);
   const played = weekGames.filter((g) => g.hs != null).length;
-  const items = weekGames.filter((g) => g.hs == null).map((g) => ({ g, L: linesFor(g), pr: null })).map((x) => { x.pr = E.predict(x.g, P, R, S.settings, x.L); return x; });
+  const items = weekGames.filter((g) => g.hs == null).map((g) => ({ g, L: linesFor(g), pr: null })).map((x) => { x.pr = E.predict(x.g, P, R, S.settings, x.L, DATA); return x; });
   const maxEdge = (x) => Math.max(Math.abs(x.pr?.spEdge || 0), Math.abs(x.pr?.totEdge || 0));
   let list = items.filter((x) => x.pr);
   if (S.onlyEdges) list = list.filter((x) => maxEdge(x) >= S.edgeMin);
@@ -381,14 +391,14 @@ function gamesView() {
   const byes = Object.keys(P).filter((t) => !teamsPlaying.has(t)).sort();
   return `
   <div class="toolbar">
-    <div class="f"><label class="label" for="weekSel">Week</label><select id="weekSel">${upcomingWeeks.map((w) => `<option value="${w}" ${w === S.week ? 'selected' : ''}>Week ${w}</option>`).join('')}</select></div>
+    <div class="f"><label class="label" for="weekSel">${DAILY ? 'Date' : 'Week'}</label><select id="weekSel">${upcomingWeeks.map((w) => `<option value="${w}" ${w === S.week ? 'selected' : ''}>${periodLabel(w)}</option>`).join('')}</select></div>
     <div class="f"><label class="label" for="sortSel">Sort</label><select id="sortSel"><option value="time" ${S.sort === 'time' ? 'selected' : ''}>Kickoff</option><option value="edge" ${S.sort === 'edge' ? 'selected' : ''}>Biggest edge</option></select></div>
-    <div class="f"><label class="label" for="edgeMin">Flag edges of</label><select id="edgeMin">${[1, 1.5, 2, 3, 4].map((v) => `<option value="${v}" ${v === S.edgeMin ? 'selected' : ''}>${v}+ pts</option>`).join('')}</select></div>
+    <div class="f"><label class="label" for="edgeMin">Flag edges of</label><select id="edgeMin">${EDGE_STEPS.map((v) => `<option value="${v}" ${v === S.edgeMin ? 'selected' : ''}>${v}+ ${UNIT}</option>`).join('')}</select></div>
     <div class="f"><label class="label" for="teamQ">Team${META.sport === 'cfb' ? ' or conference' : ''}</label><input type="text" id="teamQ" placeholder="Search" value="${esc(S.teamQ)}" style="width:150px"></div>
     <label class="small" style="display:flex;gap:6px;align-items:center;padding-bottom:6px"><input type="checkbox" id="onlyEdges" ${S.onlyEdges ? 'checked' : ''}> Only games with an edge</label>
   </div>
-  <p class="note" style="margin:0 0 14px">Lines are editable: type in what your book shows and the edge updates. Spreads use book style (favorite is negative). ${byes.length ? (byes.length > 8 ? `${byes.length} teams on bye.` : 'On bye: ' + byes.join(', ') + '.') : ''} ${played ? `${played} game${played > 1 ? 's' : ''} this week already played (graded in Accuracy).` : ''}</p>
-  <div class="games">${list.map(gameCard).join('') || `<div class="empty">No games match${S.teamQ ? ' "' + esc(S.teamQ) + '"' : ''}${S.onlyEdges ? ' with an edge of ' + S.edgeMin + '+ points' : ''}.</div>`}</div>`;
+  <p class="note" style="margin:0 0 14px">Lines are editable: type in what your book shows and the edge updates. ${META.spreadName || 'Spread'}s use book style (favorite is negative). ${byes.length ? (byes.length > 8 ? `${byes.length} teams on bye.` : 'On bye: ' + byes.join(', ') + '.') : ''} ${played ? `${played} game${played > 1 ? 's' : ''} ${DAILY ? 'on this date' : 'this week'} already played (graded in Accuracy).` : ''}</p>
+  <div class="games">${list.map(gameCard).join('') || `<div class="empty">No games match${S.teamQ ? ' "' + esc(S.teamQ) + '"' : ''}${S.onlyEdges ? ' with an edge of ' + S.edgeMin + '+ ' + UNIT : ''}.</div>`}</div>`;
 }
 function gameCard({ g, L, pr }) {
   const homeLine = L.sp != null ? -L.sp : '';
@@ -404,9 +414,10 @@ function gameCard({ g, L, pr }) {
   const ap = Math.round(pr.pAway * 100), hp = 100 - ap;
   return `<article class="game ${hot ? 'hot' : ''}">
     <div class="gh"><div class="matchup">${g.a}<span class="at">@</span>${g.h}</div><div class="kick">${kickoff(g)}${g.neu ? '<br>Neutral site' : ''}</div></div>
-    <div class="score"><b>${Math.round(pr.as)}–${Math.round(pr.hs)}</b><span class="small muted">model score · ${fav} by ${fmt(Math.abs(pr.margin))}</span></div>
+    <div class="score"><b>${UNIT === 'pts' ? Math.round(pr.as) + '–' + Math.round(pr.hs) : fmt(pr.as) + '–' + fmt(pr.hs)}</b><span class="small muted">model score · ${fav} by ${fmt(Math.abs(pr.margin))}</span></div>
     <div class="wp" title="Model win probability"><div class="a" style="flex:${Math.max(ap, 12)}">${g.a} ${ap}%</div><div class="h" style="flex:${Math.max(hp, 12)}">${g.h} ${hp}%</div></div>
-    <div class="mk"><span class="k">Spread</span>
+    ${pitchersRow(g, pr)}
+    <div class="mk"><span class="k">${(META.spreadName || 'Spread').replace(' ', '&nbsp;')}</span>
       <span class="ins"><label class="small muted" for="sp-${g.id}">${g.h}</label><input type="number" step="0.5" id="sp-${g.id}" data-line="sp" data-g="${g.id}" value="${homeLine}" placeholder="line"><span class="small muted">model ${modelLine}</span></span>
       <span class="out">${pr.spEdge == null ? '<span class="muted">enter line</span>' : `${edgePill(pr.spEdge, S.edgeMin)}<br><span class="small">${esc(spSideLine)} · ${pct(coverP)}</span> <button class="logbtn" data-log="spread" data-g="${g.id}" data-side="${spSide}">Log</button>`}</span></div>
     <div class="mk"><span class="k">Total</span>
@@ -416,6 +427,13 @@ function gameCard({ g, L, pr }) {
       <span class="ins"><label class="small muted" for="aml-${g.id}">${g.a}</label><input type="number" step="5" id="aml-${g.id}" data-line="aml" data-g="${g.id}" value="${L.aml ?? ''}"><label class="small muted" for="hml-${g.id}">${g.h}</label><input type="number" step="5" id="hml-${g.id}" data-line="hml" data-g="${g.id}" value="${L.hml ?? ''}"></span>
       <span class="out">${mlBest ? `${evPill(mlBest.ev)}<br><span class="small">${mlBest.t} ${odds(mlBest.ml)} · ${pct(mlBest.p)}</span> <button class="logbtn" data-log="ml" data-g="${g.id}" data-side="${mlBest.t}">Log</button>` : '<span class="muted">enter odds</span>'}</span></div>
   </article>`;
+}
+
+function pitchersRow(g, pr) {
+  if (META.family !== 'baseball') return '';
+  const n = (id) => (id && DATA.pnames && DATA.pnames[id]) || 'TBD';
+  const adj = pr.starter == null ? '' : ` · pitching edge ${g.h} ${sgn(pr.starter, 2)} runs`;
+  return `<div class="why">Starters: ${esc(n(g.ap))} (${g.a}) vs ${esc(n(g.hp))} (${g.h})${adj}</div>`;
 }
 
 // ---------- props ----------
@@ -518,26 +536,33 @@ function accuracyView() {
   const bt = E.backtest(DATA, S.weights, S.settings, S.btEdge);
   const atsN = bt.ats[0] + bt.ats[1], ouN = bt.ou[0] + bt.ou[1];
   const rec = (a) => `${a[0]}–${a[1]}${a[2] ? '–' + a[2] : ''}`;
-  const per = bt.per.map((p) => {
+  const perRaw = bt.per.map((p) => {
     const vg = DATA.games.filter((g) => g.w === p.w && g.hs != null && g.sp && g.hs !== g.as_);
     const vegasRight = vg.filter((g) => (g.sp > 0) === (g.hs > g.as_)).length;
-    return { ...p, mp: p.n ? p.su / p.n : 0, vp: vg.length ? vegasRight / vg.length : 0, vr: vegasRight, vn: vg.length };
+    return { ...p, vr: vegasRight, vn: vg.length };
   });
+  let per = perRaw;
+  if (DAILY) { // group days into weeks
+    const wk = {};
+    perRaw.forEach((p) => { const k = Math.floor(p.w / 7); const o = wk[k] || (wk[k] = { w: p.w, su: 0, n: 0, vr: 0, vn: 0 }); o.su += p.su; o.n += p.n; o.vr += p.vr; o.vn += p.vn; });
+    per = Object.values(wk);
+  }
+  per = per.map((p) => ({ ...p, mp: p.n ? p.su / p.n : 0, vp: p.vn ? p.vr / p.vn : 0 }));
   const savedRows = S.saved.map((m) => { const b = E.backtest(DATA, m.weights, m.settings, S.btEdge); return { m, b }; });
   return `
-  <p class="note" style="margin:0 0 14px">Each week from Week 2 on is predicted using only the games before it, so the model never sees the answer. Compared against the Vegas closing line for the same games. ${completed.length} games is a small sample: a few lucky weeks can swing these a lot.</p>
+  <p class="note" style="margin:0 0 14px">${DAILY ? 'Each day' : 'Each week'} is predicted using only the games before it, so the model never sees the answer. Compared against the closing line for the same games${META.family === 'hockey' || META.family === 'baseball' ? ' (lines are only on file from when this site started saving them)' : ''}. ${completed.length < 400 ? completed.length + ' games is a small sample: a few lucky ' + (DAILY ? 'days' : 'weeks') + ' can swing these a lot.' : ''}</p>
   <div class="tiles">
     <div class="tile"><span class="label">Winners picked</span><b>${bt.n ? pct(bt.su / bt.n) : '–'}</b><span class="sub">${bt.su} of ${bt.n} · Vegas favorite ${bt.vegasN ? pct(bt.vegasSu / bt.vegasN) : '–'}</span></div>
     <div class="tile"><span class="label">Against the spread</span><b>${atsN ? pct(bt.ats[0] / atsN) : '–'}</b><span class="sub">${rec(bt.ats)} · 52.4% breaks even at −110</span></div>
     <div class="tile"><span class="label">Over / under</span><b>${ouN ? pct(bt.ou[0] / ouN) : '–'}</b><span class="sub">${rec(bt.ou)}</span></div>
-    <div class="tile"><span class="label">Average miss</span><b>${fmt(bt.mae)}</b><span class="sub">points off the final margin · Vegas ${fmt(bt.vegasMae)}</span></div>
+    <div class="tile"><span class="label">Average miss</span><b>${fmt(bt.mae)}</b><span class="sub">${UNIT === 'pts' ? 'points' : UNIT} off the final margin${bt.vegasN ? ' · Vegas ' + fmt(bt.vegasMae) : ''}</span></div>
   </div>
   <div class="toolbar"><div class="f"><label class="label" for="btEdge">Only count spread and total plays with an edge of</label>
-    <select id="btEdge">${[0, 1, 2, 3, 4].map((v) => `<option value="${v}" ${v === S.btEdge ? 'selected' : ''}>${v ? v + '+ pts' : 'Any edge'}</option>`).join('')}</select></div></div>
+    <select id="btEdge">${[0, ...EDGE_STEPS].map((v) => `<option value="${v}" ${v === S.btEdge ? 'selected' : ''}>${v ? v + '+ ' + UNIT : 'Any edge'}</option>`).join('')}</select></div></div>
   <div class="wk">
-    <h3 style="font-size:20px;text-transform:uppercase;margin-bottom:8px">Winners picked by week</h3>
+    <h3 style="font-size:20px;text-transform:uppercase;margin-bottom:8px">Winners picked by week</h3>${per.length > 12 ? '<div class="note" style="margin:-4px 0 8px">Latest 12 weeks</div>' : ''}
     <div class="legend"><span><i style="background:var(--accent)"></i>Your model</span><span><i style="background:var(--vegas)"></i>Vegas favorite</span></div>
-    <div class="wkrows">${per.map((p) => `<div class="wkr"><span class="label">Week ${p.w}</span>
+    <div class="wkrows">${per.slice(-12).map((p) => `<div class="wkr"><span class="label">${DAILY ? 'Wk of ' + shortDate(dateOfW[p.w]) : 'Week ' + p.w}</span>
       <div class="wkbars" style="padding-right:88px">
         <div style="width:${p.mp * 100}%;background:var(--accent)" title="Model: ${p.su} of ${p.n}"><span>${pct(p.mp)} · ${p.su}/${p.n}</span></div>
         <div style="width:${p.vp * 100}%;background:var(--vegas)" title="Vegas: ${p.vr} of ${p.vn}"><span>${pct(p.vp)}</span></div>
@@ -579,8 +604,8 @@ function logView() {
     <div class="tile"><span class="label">Record</span><b>${w}–${l}${pu ? '–' + pu : ''}</b><span class="sub">${g.length - done.length} pending</span></div>
     <div class="tile"><span class="label">Units</span><b style="color:${u > 0 ? 'var(--good)' : u < 0 ? 'var(--bad)' : 'inherit'}">${u >= 0 ? '+' : '−'}${Math.abs(u).toFixed(2)}</b><span class="sub">1 unit risked per pick</span></div>
   </div>
-  <div class="tblwrap"><table><thead><tr><th>Wk</th><th>Pick</th><th>Odds</th><th>Model said</th><th>Model</th><th>Result</th><th></th></tr></thead><tbody>
-  ${g.slice().reverse().map(({ p, gr }) => `<tr><td>${p.w}</td><td class="pname">${esc(p.desc)}</td><td>${odds(p.odds)}</td><td class="small">${esc(p.why)}</td><td class="small muted">${esc(p.model)}</td>
+  <div class="tblwrap"><table><thead><tr><th>${DAILY ? 'Date' : 'Wk'}</th><th>Pick</th><th>Odds</th><th>Model said</th><th>Model</th><th>Result</th><th></th></tr></thead><tbody>
+  ${g.slice().reverse().map(({ p, gr }) => `<tr><td>${DAILY ? shortDate(dateOfW[p.w]) : p.w}</td><td class="pname">${esc(p.desc)}</td><td>${odds(p.odds)}</td><td class="small">${esc(p.why)}</td><td class="small muted">${esc(p.model)}</td>
     <td>${gr ? `<span class="pill ${gr.res === 'win' ? 'good' : gr.res === 'loss' ? 'bad' : 'flat'}">${gr.res}</span> <span class="small muted">${esc(gr.note)}</span>` : '<span class="pill flat">pending</span>'}</td>
     <td><button class="x logbtn" data-unlog="${p.ts}" aria-label="Remove pick">✕</button></td></tr>`).join('')}
   </tbody></table></div>
@@ -594,7 +619,7 @@ function currentModelName() {
 }
 function logGamePick(type, gid, side) {
   const g = DATA.games.find((x) => x.id === gid); const L = linesFor(g);
-  const { P, R } = model(); const pr = E.predict(g, P, R, S.settings, L);
+  const { P, R } = model(); const pr = E.predict(g, P, R, S.settings, L, DATA);
   let desc, line, o, why;
   if (type === 'spread') { line = L.sp; desc = side === g.h ? bookSpread(g.h, L.sp) : bookSpread(g.a, -L.sp); o = -110; why = `model ${bookSpread(g.h, half(pr.margin))}`; }
   if (type === 'total') { line = L.tot; desc = `${g.a}/${g.h} ${side} ${L.tot}`; o = -110; why = `model total ${fmt(pr.total)}`; }
@@ -668,9 +693,9 @@ renderBuilder(); renderTabs(); renderView();
 const SPORTS = [
   { key: 'nfl', label: 'NFL' },
   { key: 'cfb', label: 'College football' },
-  { key: 'nhl', label: 'NHL', soon: true },
-  { key: 'cbb', label: 'College basketball', soon: true },
-  { key: 'mlb', label: 'MLB', soon: true },
+  { key: 'nhl', label: 'NHL' },
+  { key: 'cbb', label: 'College basketball' },
+  { key: 'mlb', label: 'MLB' },
 ];
 function chosenSport() {
   const h = location.hash.slice(1);
