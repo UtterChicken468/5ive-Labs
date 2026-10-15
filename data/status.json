@@ -1,6 +1,7 @@
 {
  "cbb": {
   "finals": 5529,
+  "next": null,
   "ok": true,
   "rows": 11058,
   "season": 2026,
@@ -9,6 +10,7 @@
  },
  "cfb": {
   "finals": 331,
+  "next": "2026-10-14",
   "ok": true,
   "rows": 662,
   "season": 2026,
@@ -17,6 +19,7 @@
  },
  "mlb": {
   "finals": 2429,
+  "next": null,
   "ok": true,
   "rows": 4858,
   "season": 2026,
@@ -25,6 +28,7 @@
  },
  "nfl": {
   "finals": 79,
+  "next": "2026-10-15",
   "ok": true,
   "rows": 158,
   "season": 2026,
@@ -33,6 +37,7 @@
  },
  "nhl": {
   "finals": 105,
+  "next": "2026-10-14",
   "ok": true,
   "rows": 210,
   "season": 2026,
