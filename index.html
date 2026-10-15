@@ -515,7 +515,7 @@ function gameCard({ g, L, pr }) {
   const gapPill = (v, unit) => v == null ? '' : `<span class="pill ${Math.abs(v) >= S.edgeMin ? 'acc' : 'flat'}">${Math.abs(v).toFixed(1)} ${unit}</span>`;
   const sp0 = (v) => v == null ? '' : -v; // book style for the home team
   return `<article class="game ${hot ? 'hot' : ''}">
-    <div class="gh"><div class="matchup">${g.a}<span class="at">@</span>${g.h}</div><div class="kick">${kickoff(g)}${g.neu ? '<br>Neutral site' : ''}</div></div>
+    <div class="gh"><div class="matchup">${g.a}<span class="at">@</span>${g.h}</div><div class="kick">${kickoff(g)}${g.neu ? '<br>Neutral site' : ''}${g.rd ? '<br><b style="color:var(--accent)">' + esc(g.rd) + '</b>' : ''}</div></div>
     <div class="score"><b>${UNIT === 'pts' ? Math.round(pr.as) + '–' + Math.round(pr.hs) : fmt(pr.as) + '–' + fmt(pr.hs)}</b><span class="small muted">model score · ${fav} by ${fmt(Math.abs(pr.margin))}</span></div>
     <div class="wp" title="Model win probability"><div class="a" style="flex:${Math.max(ap, 12)}">${g.a} ${ap}%</div><div class="h" style="flex:${Math.max(hp, 12)}">${g.h} ${hp}%</div></div>
     ${pitchersRow(g, pr)}${goalieRow(g, pr)}${weatherRow(g, pr)}${injuryRow(g, pr)}

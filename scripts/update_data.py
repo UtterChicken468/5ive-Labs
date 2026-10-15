@@ -492,9 +492,20 @@ def mlb_box(pk):
     return out
 
 
+MLB_GAME_TYPES = ('R', 'F', 'D', 'L', 'W')  # regular season, wild card, division series, LCS, World Series
+MLB_ROUND = {'F': 'Wild Card', 'D': 'Division Series', 'L': 'LCS', 'W': 'World Series'}
+
+
 def mlb_schedule(y):
-    data = get_json(f'https://statsapi.mlb.com/api/v1/schedule?sportId=1&gameType=R&season={y}&hydrate=probablePitcher,team')
-    return [g for d in data.get('dates', []) for g in d.get('games', [])]
+    out = []
+    for t in MLB_GAME_TYPES:
+        try:
+            data = get_json(f'https://statsapi.mlb.com/api/v1/schedule?sportId=1&gameType={t}&season={y}&hydrate=probablePitcher,team')
+        except Exception as e:  # a missing postseason round shouldn't sink the whole sport
+            print(f'  mlb schedule {y} {t}: {e}')
+            continue
+        out += [g for d in data.get('dates', []) for g in d.get('games', [])]
+    return out
 
 
 def build_mlb(_season):
@@ -528,8 +539,14 @@ def build_mlb(_season):
                           hs=th.get('score') if fin else None, as_=ta.get('score') if fin else None,
                           sp=None, tot=None, hml=None, aml=None, neu=False,
                           hp=str(hp['id']) if hp.get('id') else None, ap=str(ap['id']) if ap.get('id') else None))
+        if g.get('gameType') in MLB_ROUND:
+            sched[-1]['rd'] = MLB_ROUND[g['gameType']]
+            if g.get('seriesGameNumber'):
+                sched[-1]['rd'] += f" · Game {g['seriesGameNumber']}"
+            if g.get('ifNecessary') == 'Y' and not fin:
+                sched[-1]['rd'] += ' (if necessary)'
     if not HIST and not note and not any(g['hs'] is None and g['d'] >= today.isoformat() for g in sched):
-        note = f'the {y} regular season is over · next season starts in the spring'
+        note = f'the {y} season is over · next season starts in the spring'
     first = day_index(sched)
     rest_days(sched)
 
