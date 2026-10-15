@@ -96,6 +96,7 @@ aside.builder > *, .sliders > *, .sl > *, .group > *, .saverow > * { min-width: 
 aside h2 { font-size: 22px; text-transform: uppercase }
 .presets { display: flex; flex-wrap: wrap; gap: 6px }
 .chip { border: 1px solid var(--line); background: var(--surface-2); border-radius: 999px; padding: 4px 11px; font-size: 13px; font-weight: 500 }
+.chip.trained { border-color: var(--accent); color: var(--accent) }
 .chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent) }
 .sliders { display: grid; gap: 12px }
 .sl { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center }
@@ -264,6 +265,8 @@ const store = {
   set(k, v) { try { localStorage.setItem(pre + k, JSON.stringify(v)); } catch (e) {} window.Sync && Sync.changed(pre + k); },
 };
 const SPORT_DEFAULTS = sportDefaults(META);
+const TRAINED = META.trained || null;
+const isTrained = () => TRAINED && S.settings.ppw === TRAINED.settings.ppw && E.FACTORS.every((f) => (S.weights[f.key] || 0) === (TRAINED.weights[f.key] || 0));
 const DAILY = META.period === 'Day';
 const UNIT = META.unit || 'pts';
 const EDGE_STEPS = META.edgeSteps || [1, 1.5, 2, 3, 4];
@@ -280,8 +283,8 @@ const seasonOver = !upcomingWeeks.length;
 if (!upcomingWeeks.length) upcomingWeeks = [lastDone]; // season over: show the final week
 
 const S = {
-  weights: store.get('weights', { ...E.PRESETS.Balanced }),
-  settings: { ...SPORT_DEFAULTS, ...store.get('settings', {}) },
+  weights: store.get('weights', TRAINED ? { ...TRAINED.weights } : { ...E.PRESETS.Balanced }),
+  settings: { ...SPORT_DEFAULTS, ...store.get('settings', TRAINED ? { ...TRAINED.settings } : {}) },
   saved: store.get('saved', []),
   lines: store.get('lines', {}),        // gameId -> {sp, tot, hml, aml} user overrides
   props: store.get('props', {}),        // playerId|key -> {line, odds}
@@ -312,8 +315,8 @@ $('#stamp').innerHTML = `${META.label} · ${META.seasonLabel || DATA.season} reg
 
 // ---------- builder ----------
 function renderBuilder() {
-  $('#presets').innerHTML = Object.keys(E.PRESETS).map((n) => {
-    const on = E.FACTORS.every((f) => E.PRESETS[n][f.key] === S.weights[f.key]);
+  $('#presets').innerHTML = (TRAINED ? `<button class="chip trained" data-preset="__trained" aria-pressed="${isTrained()}" title="Learned from ${TRAINED.games} past games">Trained</button>` : '') + Object.keys(E.PRESETS).map((n) => {
+    const on = !S.settings.ppw && E.FACTORS.every((f) => (E.PRESETS[n][f.key] || 0) === (S.weights[f.key] || 0));
     return `<button class="chip" data-preset="${esc(n)}" aria-pressed="${on}">${esc(n)}</button>`;
   }).join('');
   $('#sliders').innerHTML = E.FACTORS.map((f) => `
@@ -322,7 +325,7 @@ function renderBuilder() {
       <input type="range" id="w-${f.key}" data-w="${f.key}" min="0" max="10" step="1" value="${S.weights[f.key]}"></label>`).join('');
   const st = [
     { k: 'hfa', nm: META.family === 'hockey' ? 'Home-ice edge' : META.family === 'basketball' ? 'Home-court edge' : 'Home-field edge', hint: 'Added to the home team, in ' + UNIT, min: 0, max: META.hfaMax ?? 4, step: META.hfaStep ?? 0.5, show: (v) => v + ' ' + UNIT },
-    { k: 'trust', nm: 'Trust in this season', hint: 'Lower pulls everyone toward average; early-season stats are noisy', min: 20, max: 100, step: 5, show: (v) => v + '%' },
+    { k: 'trust', nm: 'Trust in this season', hint: 'Lower pulls everyone toward average; early-season stats are noisy', min: 20, max: 150, step: 5, show: (v) => v + '%' },
     { k: 'bye', nm: META.rest === 'b2b' ? 'Back-to-back penalty' : 'Off-a-bye bonus', hint: META.rest === 'b2b' ? 'Taken from a team playing its second game in two days' : 'Points for a team with 10+ days of rest', min: 0, max: META.byeMax ?? 3, step: META.byeStep ?? 0.5, show: (v) => v + ' ' + UNIT },
     { k: 'prior', nm: 'Preseason ratings', hint: `How many games' worth of weight ${META.priorLabel || 'last season'} gets; fades as games are played`, min: 0, max: 10, step: 1, show: (v) => v + (v === 1 ? ' game' : ' games'), on: !!META.priors },
     { k: 'qbOut', nm: 'Starting QB out', hint: 'Points taken from a team whose starting QB is listed out or doubtful', min: 0, max: 10, step: 0.5, show: (v) => v + ' pts', on: !!META.qbOut },
@@ -344,7 +347,7 @@ function renderSaved() {
 }
 let raf = 0;
 function changed() { store.set('weights', S.weights); store.set('settings', S.settings); cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { renderPresetsOnly(); renderView(); }); }
-function renderPresetsOnly() { document.querySelectorAll('[data-preset]').forEach((b) => { const n = b.dataset.preset; b.setAttribute('aria-pressed', E.FACTORS.every((f) => E.PRESETS[n][f.key] === S.weights[f.key])); }); }
+function renderPresetsOnly() { document.querySelectorAll('[data-preset]').forEach((b) => { const n = b.dataset.preset; b.setAttribute('aria-pressed', n === '__trained' ? !!isTrained() : !S.settings.ppw && E.FACTORS.every((f) => (E.PRESETS[n][f.key] || 0) === (S.weights[f.key] || 0))); }); }
 document.querySelector('aside').addEventListener('input', (e) => {
   const t = e.target;
   if (t.dataset.w) { S.weights[t.dataset.w] = +t.value; $('#wv-' + t.dataset.w).textContent = t.value; changed(); }
@@ -352,7 +355,12 @@ document.querySelector('aside').addEventListener('input', (e) => {
 });
 document.querySelector('aside').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;
-  if (b.dataset.preset) { S.weights = { ...E.PRESETS[b.dataset.preset] }; renderBuilder(); changed(); }
+  if (b.dataset.preset === '__trained') { S.weights = { ...TRAINED.weights }; S.settings = { ...SPORT_DEFAULTS, ...TRAINED.settings }; renderBuilder(); changed(); }
+  else if (b.dataset.preset) { // hand-made presets use the original scaling, not the trained one
+    S.weights = { ...E.PRESETS[b.dataset.preset] };
+    const keep = { qbOut: S.settings.qbOut, weather: S.settings.weather, goalie: S.settings.goalie };
+    S.settings = { ...SPORT_DEFAULTS, ...keep }; renderBuilder(); changed();
+  }
   if (b.id === 'saveBtn') {
     const name = $('#saveName').value.trim() || 'Model ' + (S.saved.length + 1);
     const bt = E.backtest(DATA, S.weights, S.settings, 0);
@@ -631,6 +639,7 @@ function accuracyView() {
         ${p.vn ? `<div style="width:${p.vp * 100}%;background:var(--vegas)" title="Vegas: ${p.vr} of ${p.vn}"><span>${pct(p.vp)}</span></div>` : ''}
       </div></div>`).join('')}</div>
   </div>
+  ${trainedView()}
   ${battleView()}
   <h3 style="font-size:20px;text-transform:uppercase;margin-bottom:8px">Saved models compared</h3>
   ${savedRows.length ? `<div class="tblwrap"><table><thead><tr><th>Model</th><th class="num">Winners</th><th class="num">ATS</th><th class="num">O/U</th><th class="num">Avg miss</th></tr></thead><tbody>
@@ -638,10 +647,30 @@ function accuracyView() {
   </tbody></table></div>` : `<div class="empty">Save a model from the panel on the left to compare versions here.</div>`}`;
 }
 
+// ---------- trained model results ----------
+function trainedView() {
+  if (!TRAINED) return '';
+  const t = TRAINED.test, seasons = TRAINED.seasons;
+  const label = (y) => META.family === 'hockey' ? y + '-' + String(y + 1).slice(2) : META.family === 'basketball' ? (y - 1) + '-' + String(y).slice(2) : String(y);
+  const cal = (t.calibration || []).map(([p, w, n]) => `<span class="pill flat" title="${n} games">said ${p}% → won ${w}%</span>`).join(' ');
+  return `<div class="wk"><h3 style="font-size:20px;text-transform:uppercase;margin-bottom:6px">Trained model</h3>
+    <p class="note" style="margin:0 0 10px">Learned from ${TRAINED.games.toLocaleString()} games (${label(seasons[0])} to now) and re-trained after every data refresh. The test below is on the ${label(TRAINED.testSeason)} season, which was left out of training, so it's a fair preview of how it should do going forward.</p>
+    <div class="tiles" style="margin-bottom:10px">
+      <div class="tile"><span class="label">Winners picked</span><b>${t.su}%</b><span class="sub">Vegas favorite ${t.vegasSu ?? '–'}% · Balanced preset ${t.balancedSu}%</span></div>
+      <div class="tile"><span class="label">Average miss</span><b>${t.mae}</b><span class="sub">${UNIT === 'pts' ? 'points' : UNIT} · Vegas ${t.vegasMae ?? '–'} · Balanced ${t.balancedMae}</span></div>
+      <div class="tile"><span class="label">Against the spread</span><b>${t.atsPct != null ? t.atsPct + '%' : '–'}</b><span class="sub">${t.atsPct != null ? t.ats[0] + '–' + t.ats[1] + ' · 52.4% breaks even' : 'no saved lines for that season'}</span></div>
+      <div class="tile"><span class="label">Test games</span><b>${t.n.toLocaleString()}</b><span class="sub">${label(TRAINED.testSeason)} season</span></div>
+    </div>
+    ${cal ? `<div class="small muted">Honesty check, favorites by how sure the model was: ${cal}</div>` : ''}
+    ${isTrained() ? '' : '<p class="note" style="margin:10px 0 0">You\'re not using it right now. Tap <b>Trained</b> at the top of the model panel to switch.</p>'}
+  </div>`;
+}
+
 // ---------- model battles ----------
 function battleModels() {
-  return [{ id: 'current', name: 'Current sliders', weights: S.weights, settings: S.settings }, ...S.saved.map((m, i) => ({ id: 's' + i, name: m.name, weights: m.weights, settings: { ...SPORT_DEFAULTS, ...m.settings } })),
-    ...Object.keys(E.PRESETS).map((n) => ({ id: 'p:' + n, name: n + ' (preset)', weights: E.PRESETS[n], settings: S.settings }))];
+  return [{ id: 'current', name: 'Current sliders', weights: S.weights, settings: S.settings },
+    ...(TRAINED ? [{ id: 'trained', name: 'Trained model', weights: TRAINED.weights, settings: { ...SPORT_DEFAULTS, ...TRAINED.settings } }] : []), ...S.saved.map((m, i) => ({ id: 's' + i, name: m.name, weights: m.weights, settings: { ...SPORT_DEFAULTS, ...m.settings } })),
+    ...Object.keys(E.PRESETS).map((n) => ({ id: 'p:' + n, name: n + ' (preset)', weights: E.PRESETS[n], settings: { ...SPORT_DEFAULTS } }))];
 }
 function battleView() {
   const ms = battleModels();
@@ -713,7 +742,8 @@ function logView() {
 function currentModelName() {
   const m = S.saved.find((x) => E.FACTORS.every((f) => x.weights[f.key] === S.weights[f.key]));
   if (m) return m.name;
-  const p = Object.keys(E.PRESETS).find((n) => E.FACTORS.every((f) => E.PRESETS[n][f.key] === S.weights[f.key]));
+  if (isTrained()) return 'Trained';
+  const p = Object.keys(E.PRESETS).find((n) => E.FACTORS.every((f) => (E.PRESETS[n][f.key] || 0) === (S.weights[f.key] || 0)));
   return p || 'Custom';
 }
 function logGamePick(type, gid, side) {
@@ -841,7 +871,8 @@ async function bootEdges() {
     const m = data.meta; E.configure(m);
     const pre = key === 'nfl' ? 'gml:' : 'gml:' + key + ':';
     const get = (k, d) => { try { const v = localStorage.getItem(pre + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
-    const weights = get('weights', { ...E.PRESETS.Balanced }), settings = { ...sportDefaults(m), ...get('settings', {}) }, over = get('lines', {});
+    const tr = m.trained;
+    const weights = get('weights', tr ? { ...tr.weights } : { ...E.PRESETS.Balanced }), settings = { ...sportDefaults(m), ...get('settings', tr ? { ...tr.settings } : {}) }, over = get('lines', {});
     const done = data.games.filter((g) => g.hs != null), lastDone = done.length ? Math.max(...done.map((g) => g.w)) : 0;
     let upcoming = data.games.filter((g) => g.hs == null && g.d && g.d >= today);
     if (m.period === 'Day') upcoming = upcoming.filter((g) => g.d <= plus(1));

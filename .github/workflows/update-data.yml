@@ -11,6 +11,7 @@ on:
     paths:                # also run right after the data scripts change
       - 'scripts/**'
       - '.github/workflows/update-data.yml'
+      - 'engine.js'
 
 permissions:
   contents: write
@@ -22,6 +23,7 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
 
@@ -29,11 +31,18 @@ jobs:
         with:
           python-version: '3.12'
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Pull latest stats, scores and lines
         env:
           CFBD_API_KEY: ${{ secrets.CFBD_API_KEY }}
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         run: python scripts/update_data.py
+
+      - name: Re-train each sport's model on past seasons plus this season
+        run: node scripts/train.js
 
       - name: Save changes
         run: |

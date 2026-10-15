@@ -11,6 +11,7 @@
     football: {
       factors: [
         { key: 'margin', label: 'Scoring margin', hint: 'Points scored minus allowed, per game', fn: (t) => t.margin },
+        { key: 'adjMargin', label: 'Opponent-adjusted margin', hint: 'Margin after accounting for who they played (like KenPom or SP+)', fn: (t) => t.adj },
         { key: 'offEpa', label: 'Offensive efficiency', hint: 'EPA per play on offense', fn: (t) => div(t.S.epa, t.S.pl) },
         { key: 'defEpa', label: 'Defensive efficiency', hint: 'EPA per play allowed (lower is better)', fn: (t) => -div(t.S.o_epa, t.S.o_pl) },
         { key: 'ypp', label: 'Yards per play edge', hint: 'Offense YPP minus defense YPP', fn: (t) => div(t.S.py + t.S.ry, t.S.pl) - div(t.S.o_py + t.S.o_ry, t.S.o_pl) },
@@ -21,15 +22,16 @@
         { key: 'sos', label: 'Schedule strength', hint: 'Credit for tougher past opponents', fn: (t) => t.sos },
       ],
       presets: {
-        Balanced: { margin: 5, offEpa: 6, defEpa: 6, ypp: 4, turnovers: 3, passRush: 2, form: 3, discipline: 1, sos: 3 },
-        'Efficiency first': { margin: 2, offEpa: 9, defEpa: 8, ypp: 6, turnovers: 1, passRush: 2, form: 1, discipline: 0, sos: 3 },
-        Scoreboard: { margin: 10, offEpa: 2, defEpa: 2, ypp: 1, turnovers: 2, passRush: 0, form: 6, discipline: 0, sos: 2 },
-        'Defense wins': { margin: 3, offEpa: 3, defEpa: 10, ypp: 3, turnovers: 7, passRush: 7, form: 2, discipline: 2, sos: 2 },
+        Balanced: { margin: 3, adjMargin: 6, offEpa: 6, defEpa: 6, ypp: 4, turnovers: 3, passRush: 2, form: 3, discipline: 1, sos: 3 },
+        'Efficiency first': { margin: 1, adjMargin: 3, offEpa: 9, defEpa: 8, ypp: 6, turnovers: 1, passRush: 2, form: 1, discipline: 0, sos: 3 },
+        Scoreboard: { margin: 6, adjMargin: 8, offEpa: 2, defEpa: 2, ypp: 1, turnovers: 2, passRush: 0, form: 6, discipline: 0, sos: 2 },
+        'Defense wins': { margin: 2, adjMargin: 3, offEpa: 3, defEpa: 10, ypp: 3, turnovers: 7, passRush: 7, form: 2, discipline: 2, sos: 2 },
       },
     },
     hockey: {
       factors: [
         { key: 'margin', label: 'Goal differential', hint: 'Goals for minus against, per game', fn: (t) => t.margin },
+        { key: 'adjMargin', label: 'Opponent-adjusted margin', hint: 'Margin after accounting for who they played (like KenPom or SP+)', fn: (t) => t.adj },
         { key: 'shotShare', label: 'Shot share', hint: 'Share of all shots on goal taken by this team', fn: (t) => div(t.S.sf, t.S.sf + t.S.o_sf) },
         { key: 'finishing', label: 'Finishing', hint: 'Goals per shot on goal', fn: (t) => div(t.S.gf, t.S.sf) },
         { key: 'goaltending', label: 'Goaltending', hint: 'Save percentage', fn: (t) => 1 - div(t.S.o_gf, t.S.o_sf) },
@@ -39,15 +41,16 @@
         { key: 'sos', label: 'Schedule strength', hint: 'Credit for tougher past opponents', fn: (t) => t.sos },
       ],
       presets: {
-        Balanced: { margin: 5, shotShare: 6, finishing: 3, goaltending: 5, specialTeams: 3, faceoffs: 1, form: 3, sos: 2 },
-        'Shot share': { margin: 2, shotShare: 10, finishing: 1, goaltending: 3, specialTeams: 2, faceoffs: 2, form: 1, sos: 2 },
-        'Hot goalie': { margin: 4, shotShare: 3, finishing: 2, goaltending: 10, specialTeams: 2, faceoffs: 0, form: 5, sos: 1 },
-        Scoreboard: { margin: 10, shotShare: 2, finishing: 2, goaltending: 2, specialTeams: 2, faceoffs: 0, form: 6, sos: 2 },
+        Balanced: { margin: 3, adjMargin: 5, shotShare: 6, finishing: 3, goaltending: 5, specialTeams: 3, faceoffs: 1, form: 3, sos: 2 },
+        'Shot share': { margin: 1, adjMargin: 2, shotShare: 10, finishing: 1, goaltending: 3, specialTeams: 2, faceoffs: 2, form: 1, sos: 2 },
+        'Hot goalie': { margin: 3, adjMargin: 3, shotShare: 3, finishing: 2, goaltending: 10, specialTeams: 2, faceoffs: 0, form: 5, sos: 1 },
+        Scoreboard: { margin: 6, adjMargin: 8, shotShare: 2, finishing: 2, goaltending: 2, specialTeams: 2, faceoffs: 0, form: 6, sos: 2 },
       },
     },
     basketball: {
       factors: [
         { key: 'margin', label: 'Scoring margin', hint: 'Points scored minus allowed, per game', fn: (t) => t.margin },
+        { key: 'adjMargin', label: 'Opponent-adjusted margin', hint: 'Margin after accounting for who they played (like KenPom or SP+)', fn: (t) => t.adj },
         { key: 'offEff', label: 'Offensive efficiency', hint: 'Points per 100 possessions', fn: (t) => 100 * div(t.S.pts, poss(t.S, '')) },
         { key: 'defEff', label: 'Defensive efficiency', hint: 'Points allowed per 100 possessions', fn: (t) => -100 * div(t.S.o_pts, poss(t.S, 'o_')) },
         { key: 'shooting', label: 'Shooting edge', hint: 'Effective FG% minus opponents\' effective FG%', fn: (t) => div(t.S.fgm + 0.5 * t.S.tpm, t.S.fga) - div(t.S.o_fgm + 0.5 * t.S.o_tpm, t.S.o_fga) },
@@ -58,15 +61,16 @@
         { key: 'sos', label: 'Schedule strength', hint: 'Credit for tougher past opponents', fn: (t) => t.sos },
       ],
       presets: {
-        Balanced: { margin: 5, offEff: 6, defEff: 6, shooting: 4, ballSecurity: 3, rebounding: 3, freeThrows: 1, form: 2, sos: 5 },
-        'Four factors': { margin: 1, offEff: 3, defEff: 3, shooting: 10, ballSecurity: 6, rebounding: 5, freeThrows: 3, form: 1, sos: 5 },
-        Scoreboard: { margin: 10, offEff: 3, defEff: 3, shooting: 1, ballSecurity: 1, rebounding: 1, freeThrows: 0, form: 5, sos: 4 },
-        'Defense wins': { margin: 3, offEff: 3, defEff: 10, shooting: 3, ballSecurity: 6, rebounding: 4, freeThrows: 1, form: 2, sos: 4 },
+        Balanced: { margin: 2, adjMargin: 8, offEff: 6, defEff: 6, shooting: 4, ballSecurity: 3, rebounding: 3, freeThrows: 1, form: 2, sos: 5 },
+        'Four factors': { margin: 1, adjMargin: 3, offEff: 3, defEff: 3, shooting: 10, ballSecurity: 6, rebounding: 5, freeThrows: 3, form: 1, sos: 5 },
+        Scoreboard: { margin: 6, adjMargin: 10, offEff: 3, defEff: 3, shooting: 1, ballSecurity: 1, rebounding: 1, freeThrows: 0, form: 5, sos: 4 },
+        'Defense wins': { margin: 2, adjMargin: 4, offEff: 3, defEff: 10, shooting: 3, ballSecurity: 6, rebounding: 4, freeThrows: 1, form: 2, sos: 4 },
       },
     },
     baseball: {
       factors: [
         { key: 'margin', label: 'Run differential', hint: 'Runs scored minus allowed, per game', fn: (t) => t.margin },
+        { key: 'adjMargin', label: 'Opponent-adjusted margin', hint: 'Margin after accounting for who they played (like KenPom or SP+)', fn: (t) => t.adj },
         { key: 'hitting', label: 'Hitting', hint: 'On-base plus slugging (OPS)', fn: (t) => div(t.S.h + t.S.bb + t.S.hbp, t.S.pa) + div(t.S.tb, t.S.pa - t.S.bb - t.S.hbp - t.S.sf) },
         { key: 'discipline', label: 'Plate discipline', hint: 'Walk rate minus strikeout rate', fn: (t) => div(t.S.bb - t.S.so, t.S.pa) },
         { key: 'rotation', label: 'Starting rotation', hint: 'Starters\' earned runs per 9 innings (lower is better)', fn: (t) => -9 * div(t.S.sp_er, t.S.sp_ip) },
@@ -76,17 +80,17 @@
         { key: 'starter', label: 'Today\'s starting pitcher', hint: 'Adjusts each game for who is pitching (5 = full effect)', game: true },
       ],
       presets: {
-        Balanced: { margin: 6, hitting: 4, discipline: 2, rotation: 3, bullpen: 3, form: 2, sos: 1, starter: 5 },
-        'Pitching first': { margin: 3, hitting: 2, discipline: 1, rotation: 6, bullpen: 6, form: 1, sos: 1, starter: 8 },
-        'Bats first': { margin: 4, hitting: 9, discipline: 5, rotation: 2, bullpen: 2, form: 2, sos: 1, starter: 4 },
-        Scoreboard: { margin: 10, hitting: 1, discipline: 0, rotation: 1, bullpen: 1, form: 6, sos: 1, starter: 3 },
+        Balanced: { margin: 3, adjMargin: 5, hitting: 4, discipline: 2, rotation: 3, bullpen: 3, form: 2, sos: 1, starter: 5 },
+        'Pitching first': { margin: 2, adjMargin: 2, hitting: 2, discipline: 1, rotation: 6, bullpen: 6, form: 1, sos: 1, starter: 8 },
+        'Bats first': { margin: 2, adjMargin: 3, hitting: 9, discipline: 5, rotation: 2, bullpen: 2, form: 2, sos: 1, starter: 4 },
+        Scoreboard: { margin: 6, adjMargin: 8, hitting: 1, discipline: 0, rotation: 1, bullpen: 1, form: 6, sos: 1, starter: 3 },
       },
     },
   };
   function poss(S, p) { return S[p + 'fga'] - S[p + 'orb'] + S[p + 'tov'] + 0.475 * S[p + 'fta']; }
 
   // Per-sport settings; set with configure() once the sport's data loads.
-  let SIGMA = 13.5, SIGMA_TOT = 13, BT_SKIP = 1, FORM_N = 3, REST = 'bye', FAMILY = 'football', PRIORS = null, LG_SV = 0.9;
+  let SIGMA = 13.5, SIGMA_TOT = 13, BT_SKIP = 1, FORM_N = 3, REST = 'bye', FAMILY = 'football', PRIORS = null, LG_SV = 0.9, HFA0 = 1.5, CAP = 28;
   const api = {};
   function configure(cfg) {
     if (cfg.sigma) SIGMA = cfg.sigma;
@@ -100,6 +104,8 @@
     PROPS = PROP_SETS[FAMILY] || []; api.PROPS = PROPS;
     PRIORS = cfg.priors || null;
     LG_SV = cfg.lgSv || 0.9;
+    HFA0 = cfg.hfa ?? 1.5;
+    CAP = cfg.marginCap || ({ football: 28, hockey: 5, basketball: 30, baseball: 8 })[FAMILY];
   }
 
   const phi = (x) => { // standard normal CDF
@@ -125,8 +131,10 @@
     if (rows.some(([me, op]) => !me || !op)) return;
     sides.forEach(([t, o, pf, pa], i) => {
       const [me, op] = rows[i];
-      const a = acc[t] || (acc[t] = { n: 0, S: {}, pf: 0, pa: 0, hist: [], opps: [], lastWeek: -1 });
+      const a = acc[t] || (acc[t] = { n: 0, S: {}, pf: 0, pa: 0, hist: [], opps: [], adjSum: 0, lastWeek: -1 });
       a.n++; a.pf += pf; a.pa += pa; a.hist.push(pf - pa); a.opps.push(o); a.lastWeek = Math.max(a.lastWeek, g.w);
+      const m = Math.max(-CAP, Math.min(CAP, pf - pa));
+      a.adjSum += m - (g.neu ? 0 : (i === 0 ? HFA0 : -HFA0));
       for (const k in me) if (typeof me[k] === 'number' && k !== 'w' && k !== 'g') a.S[k] = (a.S[k] || 0) + me[k];
       for (const k in op) if (typeof op[k] === 'number' && k !== 'w' && k !== 'g') a.S['o_' + k] = (a.S['o_' + k] || 0) + op[k];
     });
@@ -139,6 +147,24 @@
         form: mean(a.hist.slice(-FORM_N)), opps: a.opps, lastWeek: a.lastWeek };
     }
     Object.values(out).forEach((t) => { t.sos = mean(t.opps.map((o) => (out[o] ? out[o].margin : 0))); });
+    // Opponent-adjusted margin (simple rating system): rating = average neutral-site margin
+    // + average opponent rating, solved by iteration. Blowouts are capped.
+    // Warm-started from the previous call so a day-by-day walk needs only a few passes.
+    const teams = Object.keys(acc);
+    const r = acc.__srs || (Object.defineProperty(acc, '__srs', { value: {}, enumerable: false }), acc.__srs);
+    const fresh = teams.some((t) => r[t] === undefined);
+    teams.forEach((t) => { if (r[t] === undefined) r[t] = acc[t].adjSum / acc[t].n; });
+    const ids = {}; teams.forEach((t, i) => { ids[t] = i; });
+    const base = teams.map((t) => acc[t].adjSum / acc[t].n);
+    const opp = teams.map((t) => acc[t].opps.map((o) => ids[o]).filter((i) => i !== undefined));
+    let cur = teams.map((t) => r[t]);
+    for (let it = 0, n = fresh ? 40 : 12; it < n; it++) {
+      const nx = new Array(teams.length); let mu = 0;
+      for (let i = 0; i < teams.length; i++) { let so = 0; const os = opp[i]; for (let j = 0; j < os.length; j++) so += cur[os[j]]; nx[i] = base[i] + (os.length ? so / os.length : 0); mu += nx[i]; }
+      mu /= teams.length;
+      for (let i = 0; i < teams.length; i++) cur[i] = 0.5 * cur[i] + 0.5 * (nx[i] - mu);
+    }
+    teams.forEach((t, i) => { r[t] = cur[i]; out[t].adj = cur[i]; });
     return out;
   }
   function teamProfiles(data, before) {
@@ -162,15 +188,19 @@
     const comp = {};
     teams.forEach((t) => { comp[t.team] = F.reduce((s, f) => s + (weights[f.key] || 0) * z[t.team][f.key], 0) / wsum; });
     const cs = sd(Object.values(comp)) || 1;
-    const scale = sd(teams.map((t) => t.margin)) * (settings.trust / 100);
+    // Two modes: the default turns the weighted blend into points by matching the spread of
+    // scoring margins; a trained model (settings.ppw) says exactly how many points each
+    // weight unit is worth, learned from past seasons.
+    const per = settings.ppw ? settings.ppw * (settings.trust / 100) * wsum : sd(teams.map((t) => t.margin)) * (settings.trust / 100) / cs;
     const rating = {}, contrib = {};
     const k = PRIORS ? (settings.prior ?? 4) : 0;
     teams.forEach((t) => {
-      const r = comp[t.team] / cs * scale;
+      const r = comp[t.team] * per;
       const pr = PRIORS ? (PRIORS[t.team] ?? -8) : 0; // teams with no prior rating start below average
-      rating[t.team] = k ? (t.n * r + k * pr) / (t.n + k) : r;
-      contrib[t.team] = k ? { prior: rating[t.team] - r } : {};
-      F.forEach((f) => { contrib[t.team][f.key] = (weights[f.key] || 0) * z[t.team][f.key] / wsum / cs * scale; });
+      const keep = k ? t.n / (t.n + k) : 1;
+      rating[t.team] = r * keep + (k ? k * pr / (t.n + k) : 0);
+      contrib[t.team] = k ? { prior: k * pr / (t.n + k) } : {};
+      F.forEach((f) => { contrib[t.team][f.key] = (weights[f.key] || 0) * z[t.team][f.key] / wsum * per * keep; });
     });
     const league = { ppg: mean(teams.map((t) => t.pf)) };
     return { rating, contrib, z, league, weights };
@@ -245,7 +275,7 @@
       const hp = starterRuns(data, game.hp, game.w), ap = starterRuns(data, game.ap, game.w);
       starter = (hp - ap) * k; margin += starter;
     }
-    const k = settings.trust / 100, L = R.league.ppg;
+    const k = (settings.totTrust ?? settings.trust) / 100, L = R.league.ppg;
     const homePts = L + k * (((h.pf + a.pa) / 2) - L);
     const awayPts = L + k * (((a.pf + h.pa) / 2) - L);
     let total = homePts + awayPts;
@@ -397,7 +427,21 @@
   }
 
   const DEFAULT_SETTINGS = { hfa: 1.5, trust: 60, bye: 1.0 };
-  Object.assign(api, { configure, DEFAULT_SETTINGS, teamProfiles, ratings, predict, backtest, propOf,
+  // Walk a season in order, handing over each period's finished games with ratings built
+  // only from earlier games (the same walk the backtest uses). Used by the trainer.
+  function walk(data, cb, skip) {
+    const done = data.games.filter((g) => g.hs != null).sort((a, b) => a.w - b.w);
+    const byW = {}; done.forEach((g) => { (byW[g.w] || (byW[g.w] = [])).push(g); });
+    const weeks = Object.keys(byW).map(Number).sort((a, b) => a - b);
+    const byKey = indexRows(data), acc = {};
+    let added = 0;
+    weeks.forEach((w, wi) => {
+      while (added < done.length && done[added].w < w) addGame(acc, done[added++], byKey);
+      if (wi < (skip ?? BT_SKIP)) return;
+      cb(w, byW[w], finalizeProfiles(acc));
+    });
+  }
+  Object.assign(api, { configure, DEFAULT_SETTINGS, teamProfiles, ratings, predict, backtest, propOf, walk, starterRuns, priors: () => PRIORS,
     defenseAllowed, projectProp, overProb, impliedProb, evPerUnit, profitPerUnit, phi, statOf });
   configure({ family: 'football' });
   root.Engine = api;

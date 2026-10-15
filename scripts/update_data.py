@@ -18,6 +18,8 @@ DATA_DIR = os.path.join(ROOT, 'data')
 CACHE_DIR = os.path.join(DATA_DIR, 'cache')
 ET = ZoneInfo('America/New_York')
 UA = {'User-Agent': '5ive-lab (personal sports model)'}
+HIST = False   # True while building a past season (skips live-only extras)
+YEAR = None    # season to build when HIST is on
 
 
 # ---------------------------------------------------------------- helpers
@@ -33,7 +35,7 @@ def http_get(url, headers=None, timeout=120):
 
 
 def load_csv(url, env_name):
-    local = os.environ.get(env_name)
+    local = os.environ.get(env_name) if env_name else None
     if local:
         with open(local, newline='', encoding='utf-8') as f:
             return list(csv.DictReader(f))
@@ -173,6 +175,8 @@ NFL_STADIUMS = {  # home team -> (lat, lon); roof comes from the schedule
 
 def add_weather(sched, where, days=6):
     """Forecast at kickoff for upcoming outdoor games. where(g) -> (lat, lon) or None."""
+    if HIST:
+        return
     today = datetime.datetime.now(ET).date()
     todo = {}
     for g in sched:
@@ -208,6 +212,8 @@ INJ_KEEP = {'Out', 'Doubtful', 'Questionable', 'Day-To-Day', 'Suspension'}
 
 def espn_injuries(path, team_key):
     """ESPN injury report -> {our team code: [{n, pos, st}]}. team_key(espn_team) -> our code."""
+    if HIST:
+        return {}
     try:
         data = get_json(f'https://site.api.espn.com/apis/site/v2/sports/{path}/injuries')
     except Exception:
@@ -233,6 +239,8 @@ def espn_injuries(path, team_key):
 def track_open(sport, season, sched, true_open=None):
     """Remember the first line seen for every game; attach it as g['o'] for line movement.
     true_open(g) can supply the real opening number when the source has one (CFBD does)."""
+    if HIST:
+        return
     name = f'open_{sport}_{season}.json'
     cache = load_cache(name)
     for g in sched:
@@ -259,6 +267,8 @@ def odds_lines(sport_key, sched, names, cache_name):
     """Fetch current lines for upcoming games and merge them into a cache that keeps each
     game's last known line, so finished games keep their closing number for the backtest.
     names: normalized full team name -> team code used in sched."""
+    if HIST:
+        return 'past season', None
     cache = load_cache(cache_name)
     key = os.environ.get('ODDS_API_KEY')
     today = datetime.datetime.now(ET).date()
@@ -351,7 +361,7 @@ def nhl_box(gid):
 
 def build_nhl(_season):
     today = datetime.datetime.now(ET).date()
-    y = today.year if today.month >= 9 else today.year - 1
+    y = YEAR if HIST else (today.year if today.month >= 9 else today.year - 1)
     sid = int(f'{y}{y + 1}')
     games, date, seen = {}, f'{y}-09-20', set()
     for _ in range(60):  # walk the season a week at a time
@@ -418,9 +428,10 @@ def build_nhl(_season):
     # Box scores: starting goalies (for the goalie adjustment) and skater lines (for props).
     box_name = f'nhl_box_{sid}.json'
     box = load_cache(box_name)
-    need = [str(g['id']) for g in sched if g['hs'] is not None and (str(g['id']) not in box or '_error' in box[str(g['id'])])]
-    box.update(parallel(nhl_box, need, workers=8))
-    save_cache(box_name, box)
+    need = [] if HIST else [str(g['id']) for g in sched if g['hs'] is not None and (str(g['id']) not in box or '_error' in box[str(g['id'])])]
+    if need:
+        box.update(parallel(nhl_box, need, workers=8))
+        save_cache(box_name, box)
     goalies, gnames, team_goalies, last_start, players = {}, {}, {}, {}, []
     for g in sched:
         b = box.get(str(g['id']))
@@ -488,12 +499,12 @@ def mlb_schedule(y):
 
 def build_mlb(_season):
     today = datetime.datetime.now(ET).date()
-    y = today.year
+    y = YEAR if HIST else today.year
     raw = mlb_schedule(y)
     final = lambda g: g.get('status', {}).get('abstractGameState') == 'Final' and g['teams']['home'].get('score') is not None \
         and 'Postponed' not in g['status'].get('detailedState', '') and 'Cancel' not in g['status'].get('detailedState', '')
     note = None
-    if not any(final(g) for g in raw):
+    if not HIST and not any(final(g) for g in raw):
         y -= 1; raw = mlb_schedule(y)
         note = f'{y} season · the {y + 1} season starts in the spring'
     names, sched, pnames = {}, [], {}
@@ -517,7 +528,7 @@ def build_mlb(_season):
                           hs=th.get('score') if fin else None, as_=ta.get('score') if fin else None,
                           sp=None, tot=None, hml=None, aml=None, neu=False,
                           hp=str(hp['id']) if hp.get('id') else None, ap=str(ap['id']) if ap.get('id') else None))
-    if not note and not any(g['hs'] is None and g['d'] >= today.isoformat() for g in sched):
+    if not HIST and not note and not any(g['hs'] is None and g['d'] >= today.isoformat() for g in sched):
         note = f'the {y} regular season is over · next season starts in the spring'
     first = day_index(sched)
     rest_days(sched)
@@ -656,7 +667,7 @@ def cbb_day(day):
 
 def build_cbb(_season):
     today = datetime.datetime.now(ET).date()
-    y = today.year + 1 if today.month >= 8 else today.year  # season named for the spring it ends in
+    y = YEAR if HIST else (today.year + 1 if today.month >= 8 else today.year)  # season named for the spring it ends in
 
     def season_days(y):
         d, end = datetime.date(y - 1, 11, 1), datetime.date(y, 3, 16)
@@ -665,7 +676,7 @@ def build_cbb(_season):
             d += datetime.timedelta(days=1)
 
     note = None
-    if today < datetime.date(y - 1, 11, 1):
+    if not HIST and today < datetime.date(y - 1, 11, 1):
         y -= 1
         note = f'{y - 1}-{str(y)[2:]} season · the new season starts in November'
 
@@ -723,7 +734,7 @@ def build_cbb(_season):
         for me, op, t, o, pts in ((g['hid'], g['aid'], g['h'], g['a'], g['hs']), (g['aid'], g['hid'], g['a'], g['h'], g['as_'])):
             team_games.append(dict(w=g['w'], g=g['id'], t=t, o=o, pts=float(pts), **tb[me]))
     players = []
-    if not note:  # player props only for the season in progress
+    if not note and not HIST:  # player props only for the season in progress
         for g in sched:
             b = box.get(g['id']) or {}
             pl = b.get('players') or {}
@@ -752,12 +763,15 @@ NFL_PLAYER = 'https://github.com/nflverse/nflverse-data/releases/download/stats_
 
 
 def build_nfl(season):
-    games = [g for g in load_csv(NFL_GAMES, 'GAMES_CSV') if g['season'] == str(season) and g['game_type'] == 'REG']
+    global _NFL_GAMES
+    if '_NFL_GAMES' not in globals() or _NFL_GAMES is None:
+        _NFL_GAMES = load_csv(NFL_GAMES, 'GAMES_CSV')
+    games = [g for g in _NFL_GAMES if g['season'] == str(season) and g['game_type'] == 'REG']
     if not games:
         raise RuntimeError(f'No {season} NFL schedule found yet.')
     try:
-        team_raw = load_csv(NFL_TEAM.format(season=season), 'TEAM_CSV')
-        player_raw = load_csv(NFL_PLAYER.format(season=season), 'PLAYER_CSV')
+        team_raw = load_csv(NFL_TEAM.format(season=season), '' if HIST else 'TEAM_CSV')
+        player_raw = [] if HIST else load_csv(NFL_PLAYER.format(season=season), 'PLAYER_CSV')
     except urllib.error.HTTPError as e:
         if e.code != 404:
             raise
@@ -961,7 +975,7 @@ def build_cfb(season):
 
     # Stadiums (cached; they rarely change) for weather at kickoff.
     venues = load_cache('cfb_venues.json')
-    if not venues:
+    if not venues and not HIST:
         for v in cfbd('/venues'):
             if v.get('latitude') is not None:
                 venues[str(v['id'])] = [round(v['latitude'], 4), round(v['longitude'], 4), bool(v.get('dome'))]
@@ -1023,8 +1037,53 @@ def main():
                                  trace=traceback.format_exc().splitlines()[-6:])
             print(f'{sport}: FAILED - {e}', file=sys.stderr)
 
+    build_history(status, args)
     with open(status_path, 'w', encoding='utf-8') as f:
         json.dump(status, f, indent=1, sort_keys=True)
+
+
+HIST_DIR = os.path.join(DATA_DIR, 'history')
+
+
+def history_seasons(sport, cur):
+    """Past seasons the trainer learns from, relative to the season currently on the site."""
+    back = {'nfl': 5, 'cfb': 3, 'nhl': 3, 'mlb': 2, 'cbb': 2}[sport]
+    return [cur - i for i in range(back, 0, -1)]
+
+
+def build_history(status, args):
+    """Build each past season once; they never change, so later runs skip them."""
+    global HIST, YEAR
+    os.makedirs(HIST_DIR, exist_ok=True)
+    for sport in [s for s in args.only.split(',') if s in SPORTS]:
+        if not (status.get(sport) or {}).get('ok'):
+            continue
+        done, failed = [], {}
+        for season in history_seasons(sport, status[sport]['season']):
+            path = os.path.join(HIST_DIR, f'{sport}_{season}.json')
+            if os.path.exists(path):
+                done.append(season); continue
+            HIST, YEAR = True, season
+            try:
+                data = SPORTS[sport](season)
+                for k in ('players', 'injuries', 'pnames'):
+                    data.pop(k, None)
+                if sum(1 for g in data['games'] if g['hs'] is not None) < 50:
+                    raise RuntimeError('too few finished games')
+                with open(path, 'w', encoding='utf-8') as f:
+                    json.dump(data, f, separators=(',', ':'))
+                done.append(season)
+                print(f'{sport} {season}: history built')
+            except Exception as e:
+                failed[season] = f'{type(e).__name__}: {e}'[:200]
+                print(f'{sport} {season}: history FAILED - {e}', file=sys.stderr)
+            finally:
+                HIST, YEAR = False, None
+        status[sport]['history'] = done
+        if failed:
+            status[sport]['historyErrors'] = failed
+        else:
+            status[sport].pop('historyErrors', None)
 
 
 if __name__ == '__main__':
