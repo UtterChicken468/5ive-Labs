@@ -1,0 +1,297 @@
+{
+ "url": "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401810433",
+ "status": 200,
+ "sample": {
+  "teamstats": [
+   [
+    "fieldGoalsMade-fieldGoalsAttempted",
+    "fieldGoalPct",
+    "threePointFieldGoalsMade-threePointFieldGoalsAttempted",
+    "threePointFieldGoalPct",
+    "freeThrowsMade-freeThrowsAttempted",
+    "freeThrowPct",
+    "... 19 more"
+   ]
+  ],
+  "players_names": [
+   [
+    "MIN",
+    "PTS",
+    "FG",
+    "3PT",
+    "FT",
+    "REB",
+    "... 8 more"
+   ]
+  ],
+  "athlete0": {
+   "active": true,
+   "athlete": {
+    "id": "4277961",
+    "uid": "s:40~l:46~a:4277961",
+    "guid": "dbe0e9e5-0046-c414-000b-f4e629b08f5d",
+    "displayName": "Jaren Jackson Jr.",
+    "shortName": "J. Jackson Jr.",
+    "links": [
+     {
+      "rel": [
+       "playercard",
+       "desktop",
+       "athlete"
+      ],
+      "href": "https://www.espn.com/nba/player/_/id/4277961/jaren-jackson-jr",
+      "text": "Player Card"
+     }
+    ],
+    "headshot": {
+     "href": "https://a.espncdn.com/i/headshots/nba/players/full/4277961.png",
+     "alt": "Jaren Jackson Jr."
+    },
+    "jersey": "8",
+    "position": {
+     "name": "Forward",
+     "displayName": "Forward",
+     "abbreviation": "F"
+    }
+   },
+   "starter": true,
+   "didNotPlay": false,
+   "reason": "COACH'S DECISION",
+   "ejected": false,
+   "stats": [
+    "33",
+    "30",
+    "12-22",
+    "3-5",
+    "3-3",
+    "3",
+    "... 8 more"
+   ]
+  },
+  "pickcenter": [
+   {
+    "provider": {
+     "id": "100",
+     "name": "DraftKings",
+     "priority": 1,
+     "logos": [
+      {
+       "href": "https://a.espncdn.com/i/betting/Draftkings_Light.svg",
+       "rel": [
+        "light"
+       ]
+      },
+      {
+       "href": "https://a.espncdn.com/i/betting/Draftkings_Dark.svg",
+       "rel": [
+        "dark"
+       ]
+      }
+     ]
+    },
+    "details": "ORL -5.5",
+    "overUnder": 227.5,
+    "spread": -5.5,
+    "overOdds": -108.0,
+    "underOdds": -112.0,
+    "awayTeamOdds": {
+     "favorite": false,
+     "underdog": true,
+     "moneyLine": 190,
+     "spreadOdds": -112.0,
+     "team": {
+      "$ref": "http://sports.core.api.espn.pvt/v2/sports/basketball/leagues/nba/seasons/2026/teams/29?lang=en&region=us"
+     },
+     "teamId": "29",
+     "favoriteAtOpen": false
+    },
+    "homeTeamOdds": {
+     "favorite": true,
+     "underdog": false,
+     "moneyLine": -230,
+     "spreadOdds": -108.0,
+     "team": {
+      "$ref": "http://sports.core.api.espn.pvt/v2/sports/basketball/leagues/nba/seasons/2026/teams/19?lang=en&region=us"
+     },
+     "teamId": "19",
+     "favoriteAtOpen": true
+    },
+    "links": [
+     {
+      "language": "en-US",
+      "rel": [
+       "home",
+       "desktop",
+       "bets",
+       "draftkings"
+      ],
+      "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=http...",
+      "text": "Home Bet",
+      "shortText": "Home Bet",
+      "isExternal": true,
+      "isPremium": false
+     },
+     {
+      "language": "en-US",
+      "rel": [
+       "away",
+       "desktop",
+       "bets",
+       "draftkings"
+      ],
+      "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=http...",
+      "text": "Away Bet",
+      "shortText": "Away Bet",
+      "isExternal": true,
+      "isPremium": false
+     },
+     {
+      "language": "en-US",
+      "rel": [
+       "homeSpread",
+       "desktop",
+       "bets"
+      ],
+      "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=http...",
+      "text": "Home Point Spread",
+      "shortText": "Home Point Spread",
+      "isExternal": true,
+      "isPremium": false
+     },
+     {
+      "language": "en-US",
+      "rel": [
+       "awaySpread",
+       "desktop",
+       "bets"
+      ],
+      "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=http...",
+      "text": "Away Point Spread",
+      "shortText": "Away Point Spread",
+      "isExternal": true,
+      "isPremium": false
+     },
+     {
+      "language": "en-US",
+      "rel": [
+       "over",
+       "desktop",
+       "bets"
+      ],
+      "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=http...",
+      "text": "Over Odds",
+      "shortText": "Over Odds",
+      "isExternal": true,
+      "isPremium": false
+     },
+     {
+      "language": "en-US",
+      "rel": [
+       "under",
+       "desktop",
+       "bets"
+      ],
+      "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=http...",
+      "text": "Under Odds",
+      "shortText": "Under Odds",
+      "isExternal": true,
+      "isPremium": false
+     },
+     "... 1 more"
+    ],
+    "moneyline": {
+     "displayName": "Moneyline",
+     "shortDisplayName": "ML",
+     "home": {
+      "close": {
+       "odds": "-230"
+      },
+      "open": {
+       "odds": "-180"
+      }
+     },
+     "away": {
+      "close": {
+       "odds": "+190"
+      },
+      "open": {
+       "odds": "+150"
+      }
+     }
+    },
+    "pointSpread": {
+     "displayName": "Spread",
+     "shortDisplayName": "Spread",
+     "home": {
+      "close": {
+       "line": "-5.5",
+       "odds": "-108"
+      },
+      "open": {
+       "line": "-4.5",
+       "odds": "-112"
+      }
+     },
+     "away": {
+      "close": {
+       "line": "+5.5",
+       "odds": "-112"
+      },
+      "open": {
+       "line": "+4.5",
+       "odds": "-108"
+      }
+     }
+    },
+    "total": {
+     "displayName": "Total",
+     "shortDisplayName": "Total",
+     "over": {
+      "close": {
+       "line": "o227.5",
+       "odds": "-108"
+      },
+      "open": {
+       "line": "o230.5",
+       "odds": "-110"
+      }
+     },
+     "under": {
+      "close": {
+       "line": "u227.5",
+       "odds": "-112"
+      },
+      "open": {
+       "line": "u230.5",
+       "odds": "-110"
+      }
+     }
+    },
+    "link": {
+     "text": "See More Odds",
+     "language": "en-US",
+     "rel": [
+      "main",
+      "desktop",
+      "bets"
+     ],
+     "href": "https://sportsbook.draftkings.com",
+     "isExternal": true,
+     "isPremium": false
+    },
+    "header": {
+     "logo": {
+      "dark": "https://a.espncdn.com/i/espnbet/dark/espn-bet-square-off.svg",
+      "light": "https://a.espncdn.com/i/espnbet/espn-bet-square-off.svg",
+      "exclusivesLogoDark": "https://a.espncdn.com/i/espnbet/espn-bet-square-mint.svg",
+      "exclusivesLogoLight": "https://a.espncdn.com/i/espnbet/espn-bet-square-mint.svg"
+     },
+     "text": "Game Odds"
+    },
+    "footer": {
+     "disclaimer": "GAMBLING PROBLEM? CALL 1-800-GAMBLER or 1-800-MY-RESET, (800) 327-5050 or visit gamblinghelplinema.org (MA). Call 877-8-HOPENY/text HOPENY (467369) (NY). Call 8..."
+    }
+   }
+  ]
+ }
+}

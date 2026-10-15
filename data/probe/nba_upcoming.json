@@ -1,0 +1,306 @@
+{
+ "url": "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20261021",
+ "status": 200,
+ "sample": {
+  "count": 11,
+  "season": null,
+  "odds": [
+   {
+    "provider": {
+     "id": "100",
+     "name": "DraftKings",
+     "priority": 1,
+     "logos": [
+      {
+       "href": "https://a.espncdn.com/i/betting/Draftkings_Light.svg",
+       "rel": [
+        "light"
+       ]
+      },
+      {
+       "href": "https://a.espncdn.com/i/betting/Draftkings_Dark.svg",
+       "rel": [
+        "dark"
+       ]
+      }
+     ],
+     "displayName": "DraftKings"
+    },
+    "details": "ORL -2.5",
+    "overUnder": 233.5,
+    "spread": -2.5,
+    "awayTeamOdds": {
+     "favorite": false,
+     "underdog": true,
+     "team": {
+      "id": "1",
+      "uid": "s:40~l:46~t:1",
+      "abbreviation": "ATL",
+      "name": "Hawks",
+      "displayName": "Atlanta Hawks",
+      "logo": "https://a.espncdn.com/i/teamlogos/nba/500/scoreboard/atl.png"
+     },
+     "favoriteAtOpen": false
+    },
+    "homeTeamOdds": {
+     "favorite": true,
+     "underdog": false,
+     "team": {
+      "id": "19",
+      "uid": "s:40~l:46~t:19",
+      "abbreviation": "ORL",
+      "name": "Magic",
+      "displayName": "Orlando Magic",
+      "logo": "https://a.espncdn.com/i/teamlogos/nba/500/scoreboard/orl.png"
+     },
+     "favoriteAtOpen": true
+    },
+    "moneyline": {
+     "displayName": "Moneyline",
+     "shortDisplayName": "ML",
+     "home": {
+      "close": {
+       "odds": "-130",
+       "link": {
+        "language": "en-US",
+        "rel": [
+         "home",
+         "desktop",
+         "... 2 more"
+        ],
+        "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=http...",
+        "text": "Home Bet",
+        "shortText": "Home Bet",
+        "isExternal": true,
+        "isPremium": false,
+        "tracking": {
+         "campaign": "betting-integrations",
+         "tags": {
+          "league": "nba",
+          "sport": "basketball",
+          "gameId": 401909834,
+          "betSide": "home",
+          "betType": "straight"
+         }
+        }
+       }
+      },
+      "open": {
+       "odds": "-135"
+      }
+     },
+     "away": {
+      "close": {
+       "odds": "+110",
+       "link": {
+        "language": "en-US",
+        "rel": [
+         "away",
+         "desktop",
+         "... 2 more"
+        ],
+        "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=http...",
+        "text": "Away Bet",
+        "shortText": "Away Bet",
+        "isExternal": true,
+        "isPremium": false,
+        "tracking": {
+         "campaign": "betting-integrations",
+         "tags": {
+          "league": "nba",
+          "sport": "basketball",
+          "gameId": 401909834,
+          "betSide": "away",
+          "betType": "straight"
+         }
+        }
+       }
+      },
+      "open": {
+       "odds": "+114"
+      }
+     }
+    },
+    "pointSpread": {
+     "displayName": "Spread",
+     "shortDisplayName": "Spread",
+     "home": {
+      "close": {
+       "line": "-2.5",
+       "odds": "-110",
+       "link": {
+        "language": "en-US",
+        "rel": [
+         "homeSpread",
+         "desktop",
+         "... 1 more"
+        ],
+        "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=http...",
+        "text": "Home Point Spread",
+        "shortText": "Home Point Spread",
+        "isExternal": true,
+        "isPremium": false,
+        "tracking": {
+         "campaign": "betting-integrations",
+         "tags": {
+          "league": "nba",
+          "sport": "basketball",
+          "gameId": 401909834,
+          "betSide": "none",
+          "betType": "straight",
+          "betDetails": "Spread:ORL-2.5"
+         }
+        }
+       }
+      },
+      "open": {
+       "line": "-2.5",
+       "odds": "-110"
+      }
+     },
+     "away": {
+      "close": {
+       "line": "+2.5",
+       "odds": "-110",
+       "link": {
+        "language": "en-US",
+        "rel": [
+         "awaySpread",
+         "desktop",
+         "... 1 more"
+        ],
+        "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=http...",
+        "text": "Away Point Spread",
+        "shortText": "Away Point Spread",
+        "isExternal": true,
+        "isPremium": false,
+        "tracking": {
+         "campaign": "betting-integrations",
+         "tags": {
+          "league": "nba",
+          "sport": "basketball",
+          "gameId": 401909834,
+          "betSide": "none",
+          "betType": "straight",
+          "betDetails": "Spread:ATL+2.5"
+         }
+        }
+       }
+      },
+      "open": {
+       "line": "+2.5",
+       "odds": "-110"
+      }
+     }
+    },
+    "total": {
+     "displayName": "Total",
+     "shortDisplayName": "Total",
+     "over": {
+      "close": {
+       "line": "o233.5",
+       "odds": "-110",
+       "link": {
+        "language": "en-US",
+        "rel": [
+         "over",
+         "desktop",
+         "... 1 more"
+        ],
+        "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=http...",
+        "text": "Over Odds",
+        "shortText": "Over Odds",
+        "isExternal": true,
+        "isPremium": false,
+        "tracking": {
+         "campaign": "betting-integrations",
+         "tags": {
+          "league": "nba",
+          "sport": "basketball",
+          "gameId": 401909834,
+          "betSide": "over",
+          "betType": "straight",
+          "betDetails": "Over:233.5"
+         }
+        }
+       }
+      },
+      "open": {
+       "line": "o232.5",
+       "odds": "-110"
+      }
+     },
+     "under": {
+      "close": {
+       "line": "u233.5",
+       "odds": "-110",
+       "link": {
+        "language": "en-US",
+        "rel": [
+         "under",
+         "desktop",
+         "... 1 more"
+        ],
+        "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=http...",
+        "text": "Under Odds",
+        "shortText": "Under Odds",
+        "isExternal": true,
+        "isPremium": false,
+        "tracking": {
+         "campaign": "betting-integrations",
+         "tags": {
+          "league": "nba",
+          "sport": "basketball",
+          "gameId": 401909834,
+          "betSide": "under",
+          "betType": "straight",
+          "betDetails": "Under:233.5"
+         }
+        }
+       }
+      },
+      "open": {
+       "line": "u232.5",
+       "odds": "-110"
+      }
+     }
+    },
+    "link": {
+     "language": "en-US",
+     "rel": [
+      "game",
+      "desktop",
+      "... 1 more"
+     ],
+     "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=http...",
+     "text": "See More Odds",
+     "shortText": "Game",
+     "isExternal": true,
+     "isPremium": false,
+     "tracking": {
+      "campaign": "betting-integrations",
+      "tags": {
+       "league": "nba",
+       "sport": "basketball",
+       "gameId": 401909834,
+       "betSide": "none",
+       "betType": "straight"
+      }
+     }
+    },
+    "header": {
+     "logo": {
+      "dark": "https://a.espncdn.com/i/espnbet/dark/espn-bet-square-off.svg",
+      "light": "https://a.espncdn.com/i/espnbet/espn-bet-square-off.svg",
+      "exclusivesLogoDark": "https://a.espncdn.com/i/espnbet/espn-bet-square-mint.svg",
+      "exclusivesLogoLight": "https://a.espncdn.com/i/espnbet/espn-bet-square-mint.svg"
+     },
+     "text": "Game Odds"
+    },
+    "footer": {
+     "disclaimer": "GAMBLING PROBLEM? CALL 1-800-GAMBLER or 1-800-MY-RESET, (800) 327-5050 or visit gamblinghelplinema.org (MA). Call 877-8-HOPENY/text HOPENY (467369) (NY). Call 8..."
+    }
+   }
+  ]
+ }
+}

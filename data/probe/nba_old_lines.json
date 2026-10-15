@@ -1,0 +1,7 @@
+{
+ "url": "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20240115",
+ "status": 200,
+ "sample": {
+  "count": 11
+ }
+}

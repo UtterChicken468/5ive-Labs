@@ -1,0 +1,712 @@
+{
+ "url": "https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard?dates=20250412",
+ "status": 200,
+ "sample": {
+  "count": 1,
+  "event": {
+   "id": "600053165",
+   "uid": "s:3301~l:3321~e:600053165",
+   "date": "2025-04-12T22:00Z",
+   "name": "UFC 314: Volkanovski vs. Lopes",
+   "shortName": "UFC 314",
+   "season": {
+    "year": 2025,
+    "type": 2,
+    "slug": "regular-season"
+   },
+   "competitions": [
+    {
+     "id": "401762882",
+     "uid": "s:3301~l:3321~e:600053165~c:401762882",
+     "date": "2025-04-12T22:00Z",
+     "endDate": "2025-04-12T22:00Z",
+     "type": {
+      "id": "1003",
+      "abbreviation": "W Bantamweight"
+     },
+     "timeValid": true,
+     "neutralSite": false,
+     "playByPlayAvailable": false,
+     "recent": false,
+     "venue": {
+      "id": "3438",
+      "fullName": "Kaseya Center",
+      "address": {
+       "city": "Miami",
+       "state": "FL",
+       "address1": "AMERICAN AIRLINES ARENA,  601 BISCAYNE BLVD.",
+       "country": "USA"
+      },
+      "indoor": true
+     },
+     "competitors": [
+      {
+       "id": "4374742",
+       "uid": "s:3301~a:4374742",
+       "type": "athlete",
+       "order": 2,
+       "winner": false,
+       "athlete": {
+        "fullName": "Hailey Cowan",
+        "displayName": "Hailey Cowan",
+        "shortName": "H. Cowan",
+        "flag": {
+         "href": "https://a.espncdn.com/i/teamlogos/countries/500/usa.png",
+         "alt": "USA",
+         "rel": [
+          "country-flag"
+         ]
+        }
+       },
+       "statistics": [],
+       "records": [
+        {
+         "name": "overall",
+         "abbreviation": "TOT",
+         "type": "total",
+         "summary": "7-6-0"
+        }
+       ]
+      },
+      {
+       "id": "4916974",
+       "uid": "s:3301~a:4916974",
+       "type": "athlete",
+       "order": 1,
+       "winner": true,
+       "athlete": {
+        "fullName": "Nora Cornolle",
+        "displayName": "Nora Cornolle",
+        "shortName": "N. Cornolle",
+        "flag": {
+         "href": "https://a.espncdn.com/i/teamlogos/countries/500/fra.png",
+         "alt": "France",
+         "rel": [
+          "country-flag"
+         ]
+        }
+       },
+       "statistics": [],
+       "records": [
+        {
+         "name": "overall",
+         "abbreviation": "TOT",
+         "type": "total",
+         "summary": "10-4-0"
+        }
+       ]
+      }
+     ],
+     "status": {
+      "clock": 112.0,
+      "displayClock": "1:52",
+      "period": 2,
+      "type": {
+       "id": "3",
+       "name": "STATUS_FINAL",
+       "state": "post",
+       "completed": true,
+       "description": "Final",
+       "detail": "Final",
+       "shortDetail": "Final"
+      },
+      "featured": false
+     },
+     "broadcasts": [
+      {
+       "market": "national",
+       "names": [
+        "ESPN+",
+        "Disney+"
+       ]
+      }
+     ],
+     "format": {
+      "regulation": {
+       "periods": 3
+      }
+     },
+     "startDate": "2025-04-12T22:00Z",
+     "broadcast": "ESPN+/Disney+",
+     "geoBroadcasts": [
+      {
+       "type": {
+        "id": "4",
+        "shortName": "Streaming"
+       },
+       "market": {
+        "id": "1",
+        "type": "National"
+       },
+       "media": {
+        "shortName": "ESPN+",
+        "logo": "https://a.espncdn.com/guid/322a7e47-3cdb-3b5c-ab1b-678e1f2c27e5/logos/default.png",
+        "darkLogo": "https://a.espncdn.com/guid/322a7e47-3cdb-3b5c-ab1b-678e1f2c27e5/logos/default-dark.png"
+       },
+       "lang": "en",
+       "region": "us"
+      },
+      {
+       "type": {
+        "id": "4",
+        "shortName": "Streaming"
+       },
+       "market": {
+        "id": "1",
+        "type": "National"
+       },
+       "media": {
+        "shortName": "Disney+",
+        "logo": "https://a.espncdn.com/guid/2f3d8704-2682-3195-9920-bb3e38d3e845/logos/default.png",
+        "darkLogo": "https://a.espncdn.com/guid/2f3d8704-2682-3195-9920-bb3e38d3e845/logos/default-dark.png"
+       },
+       "lang": "en",
+       "region": "us"
+      }
+     ],
+     "highlights": []
+    },
+    {
+     "id": "401760883",
+     "uid": "s:3301~l:3321~e:600053165~c:401760883",
+     "date": "2025-04-12T22:00Z",
+     "endDate": "2025-04-12T22:00Z",
+     "type": {
+      "id": "972",
+      "abbreviation": "Middleweight"
+     },
+     "timeValid": true,
+     "neutralSite": false,
+     "playByPlayAvailable": false,
+     "recent": false,
+     "venue": {
+      "id": "3438",
+      "fullName": "Kaseya Center",
+      "address": {
+       "city": "Miami",
+       "state": "FL",
+       "address1": "AMERICAN AIRLINES ARENA,  601 BISCAYNE BLVD.",
+       "country": "USA"
+      },
+      "indoor": true
+     },
+     "competitors": [
+      {
+       "id": "4815999",
+       "uid": "s:3301~a:4815999",
+       "type": "athlete",
+       "order": 1,
+       "winner": false,
+       "athlete": {
+        "fullName": "Tresean Gore",
+        "displayName": "Tresean Gore",
+        "shortName": "T. Gore",
+        "flag": {
+         "href": "https://a.espncdn.com/i/teamlogos/countries/500/usa.png",
+         "alt": "USA",
+         "rel": [
+          "country-flag"
+         ]
+        }
+       },
+       "statistics": [],
+       "records": [
+        {
+         "name": "overall",
+         "abbreviation": "TOT",
+         "type": "total",
+         "summary": "8-4-0"
+        }
+       ]
+      },
+      {
+       "id": "5138111",
+       "uid": "s:3301~a:5138111",
+       "type": "athlete",
+       "order": 2,
+       "winner": true,
+       "athlete": {
+        "fullName": "Marco Tulio",
+        "displayName": "Marco Tulio",
+        "shortName": "M. Tulio",
+        "flag": {
+         "href": "https://a.espncdn.com/i/teamlogos/countries/500/bra.png",
+         "alt": "Brazil",
+         "rel": [
+          "country-flag"
+         ]
+        }
+       },
+       "statistics": [],
+       "records": [
+        {
+         "name": "overall",
+         "abbreviation": "TOT",
+         "type": "total",
+         "summary": "14-3-0"
+        }
+       ]
+      }
+     ],
+     "status": {
+      "clock": 196.0,
+      "displayClock": "3:16",
+      "period": 2,
+      "type": {
+       "id": "3",
+       "name": "STATUS_FINAL",
+       "state": "post",
+       "completed": true,
+       "description": "Final",
+       "detail": "Final",
+       "shortDetail": "Final"
+      },
+      "featured": false
+     },
+     "broadcasts": [
+      {
+       "market": "national",
+       "names": [
+        "ESPN+",
+        "Disney+"
+       ]
+      }
+     ],
+     "format": {
+      "regulation": {
+       "periods": 3
+      }
+     },
+     "startDate": "2025-04-12T22:00Z",
+     "broadcast": "ESPN+/Disney+",
+     "geoBroadcasts": [
+      {
+       "type": {
+        "id": "4",
+        "shortName": "Streaming"
+       },
+       "market": {
+        "id": "1",
+        "type": "National"
+       },
+       "media": {
+        "shortName": "ESPN+",
+        "logo": "https://a.espncdn.com/guid/322a7e47-3cdb-3b5c-ab1b-678e1f2c27e5/logos/default.png",
+        "darkLogo": "https://a.espncdn.com/guid/322a7e47-3cdb-3b5c-ab1b-678e1f2c27e5/logos/default-dark.png"
+       },
+       "lang": "en",
+       "region": "us"
+      },
+      {
+       "type": {
+        "id": "4",
+        "shortName": "Streaming"
+       },
+       "market": {
+        "id": "1",
+        "type": "National"
+       },
+       "media": {
+        "shortName": "Disney+",
+        "logo": "https://a.espncdn.com/guid/2f3d8704-2682-3195-9920-bb3e38d3e845/logos/default.png",
+        "darkLogo": "https://a.espncdn.com/guid/2f3d8704-2682-3195-9920-bb3e38d3e845/logos/default-dark.png"
+       },
+       "lang": "en",
+       "region": "us"
+      }
+     ],
+     "highlights": []
+    },
+    {
+     "id": "401760317",
+     "uid": "s:3301~l:3321~e:600053165~c:401760317",
+     "date": "2025-04-12T22:00Z",
+     "endDate": "2025-04-12T22:00Z",
+     "type": {
+      "id": "956",
+      "abbreviation": "Flyweight"
+     },
+     "timeValid": true,
+     "neutralSite": false,
+     "playByPlayAvailable": false,
+     "recent": false,
+     "venue": {
+      "id": "3438",
+      "fullName": "Kaseya Center",
+      "address": {
+       "city": "Miami",
+       "state": "FL",
+       "address1": "AMERICAN AIRLINES ARENA,  601 BISCAYNE BLVD.",
+       "country": "USA"
+      },
+      "indoor": true
+     },
+     "competitors": [
+      {
+       "id": "4405109",
+       "uid": "s:3301~a:4405109",
+       "type": "athlete",
+       "order": 1,
+       "winner": true,
+       "athlete": {
+        "fullName": "Sumudaerji",
+        "displayName": "Sumudaerji",
+        "shortName": "Sumudaerji",
+        "flag": {
+         "href": "https://a.espncdn.com/i/teamlogos/countries/500/chn.png",
+         "alt": "China",
+         "rel": [
+          "country-flag"
+         ]
+        }
+       },
+       "linescores": [
+        {
+         "value": 86.0,
+         "displayValue": "86.0",
+         "period": 0,
+         "linescores": [
+          {
+           "value": 29.0,
+           "displayValue": "29",
+           "period": 0
+          },
+          {
+           "value": 28.0,
+           "displayValue": "28",
+           "period": 0
+          },
+          {
+           "value": 29.0,
+           "displayValue": "29",
+           "period": 0
+          }
+         ]
+        }
+       ],
+       "statistics": [],
+       "records": [
+        {
+         "name": "overall",
+         "abbreviation": "TOT",
+         "type": "total",
+         "summary": "20-7-0"
+        }
+       ]
+      },
+      {
+       "id": "4815978",
+       "uid": "s:3301~a:4815978",
+       "type": "athlete",
+       "order": 2,
+       "winner": false,
+       "athlete": {
+        "fullName": "Mitch Raposo",
+        "displayName": "Mitch Raposo",
+        "shortName": "M. Raposo",
+        "flag": {
+         "href": "https://a.espncdn.com/i/teamlogos/countries/500/usa.png",
+         "alt": "USA",
+         "rel": [
+          "country-flag"
+         ]
+        }
+       },
+       "linescores": [
+        {
+         "value": 85.0,
+         "displayValue": "85.0",
+         "period": 0,
+         "linescores": [
+          {
+           "value": 28.0,
+           "displayValue": "28",
+           "period": 0
+          },
+          {
+           "value": 29.0,
+           "displayValue": "29",
+           "period": 0
+          },
+          {
+           "value": 28.0,
+           "displayValue": "28",
+           "period": 0
+          }
+         ]
+        }
+       ],
+       "statistics": [],
+       "records": [
+        {
+         "name": "overall",
+         "abbreviation": "TOT",
+         "type": "total",
+         "summary": "11-3-0"
+        }
+       ]
+      }
+     ],
+     "status": {
+      "clock": 300.0,
+      "displayClock": "5:00",
+      "period": 3,
+      "type": {
+       "id": "3",
+       "name": "STATUS_FINAL",
+       "state": "post",
+       "completed": true,
+       "description": "Final",
+       "detail": "Final",
+       "shortDetail": "Final"
+      },
+      "featured": false
+     },
+     "broadcasts": [
+      {
+       "market": "national",
+       "names": [
+        "ESPN+",
+        "Disney+"
+       ]
+      }
+     ],
+     "format": {
+      "regulation": {
+       "periods": 3
+      }
+     },
+     "startDate": "2025-04-12T22:00Z",
+     "broadcast": "ESPN+/Disney+",
+     "geoBroadcasts": [
+      {
+       "type": {
+        "id": "4",
+        "shortName": "Streaming"
+       },
+       "market": {
+        "id": "1",
+        "type": "National"
+       },
+       "media": {
+        "shortName": "ESPN+",
+        "logo": "https://a.espncdn.com/guid/322a7e47-3cdb-3b5c-ab1b-678e1f2c27e5/logos/default.png",
+        "darkLogo": "https://a.espncdn.com/guid/322a7e47-3cdb-3b5c-ab1b-678e1f2c27e5/logos/default-dark.png"
+       },
+       "lang": "en",
+       "region": "us"
+      },
+      {
+       "type": {
+        "id": "4",
+        "shortName": "Streaming"
+       },
+       "market": {
+        "id": "1",
+        "type": "National"
+       },
+       "media": {
+        "shortName": "Disney+",
+        "logo": "https://a.espncdn.com/guid/2f3d8704-2682-3195-9920-bb3e38d3e845/logos/default.png",
+        "darkLogo": "https://a.espncdn.com/guid/2f3d8704-2682-3195-9920-bb3e38d3e845/logos/default-dark.png"
+       },
+       "lang": "en",
+       "region": "us"
+      }
+     ],
+     "highlights": []
+    },
+    {
+     "id": "401757865",
+     "uid": "s:3301~l:3321~e:600053165~c:401757865",
+     "date": "2025-04-12T22:00Z",
+     "endDate": "2025-04-12T22:00Z",
+     "type": {
+      "id": "972",
+      "abbreviation": "Middleweight"
+     },
+     "timeValid": true,
+     "neutralSite": false,
+     "playByPlayAvailable": false,
+     "recent": false,
+     "venue": {
+      "id": "3438",
+      "fullName": "Kaseya Center",
+      "address": {
+       "city": "Miami",
+       "state": "FL",
+       "address1": "AMERICAN AIRLINES ARENA,  601 BISCAYNE BLVD.",
+       "country": "USA"
+      },
+      "indoor": true
+     },
+     "competitors": [
+      {
+       "id": "4012999",
+       "uid": "s:3301~a:4012999",
+       "type": "athlete",
+       "order": 2,
+       "winner": true,
+       "athlete": {
+        "fullName": "Michal Oleksiejczuk",
+        "displayName": "Michal Oleksiejczuk",
+        "shortName": "M. Oleksiejczuk",
+        "flag": {
+         "href": "https://a.espncdn.com/i/teamlogos/countries/500/pol.png",
+         "alt": "Poland",
+         "rel": [
+          "country-flag"
+         ]
+        }
+       },
+       "statistics": [],
+       "records": [
+        {
+         "name": "overall",
+         "abbreviation": "TOT",
+         "type": "total",
+         "summary": "22-10-0"
+        }
+       ]
+      },
+      {
+       "id": "5060467",
+       "uid": "s:3301~a:5060467",
+       "type": "athlete",
+       "order": 1,
+       "winner": false,
+       "athlete": {
+        "fullName": "Sedriques Dumas",
+        "displayName": "Sedriques Dumas",
+        "shortName": "S. Dumas",
+        "flag": {
+         "href": "https://a.espncdn.com/i/teamlogos/countries/500/usa.png",
+         "alt": "USA",
+         "rel": [
+          "country-flag"
+         ]
+        }
+       },
+       "statistics": [],
+       "records": [
+        {
+         "name": "overall",
+         "abbreviation": "TOT",
+         "type": "total",
+         "summary": "10-6-0"
+        }
+       ]
+      }
+     ],
+     "status": {
+      "clock": 169.0,
+      "displayClock": "2:49",
+      "period": 1,
+      "type": {
+       "id": "3",
+       "name": "STATUS_FINAL",
+       "state": "post",
+       "completed": true,
+       "description": "Final",
+       "detail": "Final",
+       "shortDetail": "Final"
+      },
+      "featured": false
+     },
+     "broadcasts": [
+      {
+       "market": "national",
+       "names": [
+        "ESPN+",
+        "Disney+"
+       ]
+      }
+     ],
+     "format": {
+      "regulation": {
+       "periods": 3
+      }
+     },
+     "startDate": "2025-04-12T22:00Z",
+     "broadcast": "ESPN+/Disney+",
+     "geoBroadcasts": [
+      {
+       "type": {
+        "id": "4",
+        "shortName": "Streaming"
+       },
+       "market": {
+        "id": "1",
+        "type": "National"
+       },
+       "media": {
+        "shortName": "ESPN+",
+        "logo": "https://a.espncdn.com/guid/322a7e47-3cdb-3b5c-ab1b-678e1f2c27e5/logos/default.png",
+        "darkLogo": "https://a.espncdn.com/guid/322a7e47-3cdb-3b5c-ab1b-678e1f2c27e5/logos/default-dark.png"
+       },
+       "lang": "en",
+       "region": "us"
+      },
+      {
+       "type": {
+        "id": "4",
+        "shortName": "Streaming"
+       },
+       "market": {
+        "id": "1",
+        "type": "National"
+       },
+       "media": {
+        "shortName": "Disney+",
+        "logo": "https://a.espncdn.com/guid/2f3d8704-2682-3195-9920-bb3e38d3e845/logos/default.png",
+        "darkLogo": "https://a.espncdn.com/guid/2f3d8704-2682-3195-9920-bb3e38d3e845/logos/default-dark.png"
+       },
+       "lang": "en",
+       "region": "us"
+      }
+     ],
+     "highlights": []
+    },
+    "... 9 more"
+   ],
+   "links": [
+    {
+     "language": "en-US",
+     "rel": [
+      "summary",
+      "desktop",
+      "event"
+     ],
+     "href": "https://www.espn.com/mma/fightcenter/_/id/600053165/league/ufc",
+     "text": "Gamecast",
+     "shortText": "Gamecast",
+     "isExternal": false,
+     "isPremium": false
+    }
+   ],
+   "venues": [
+    {
+     "id": "3438",
+     "fullName": "Kaseya Center",
+     "address": {
+      "city": "Miami",
+      "state": "FL",
+      "address1": "AMERICAN AIRLINES ARENA,  601 BISCAYNE BLVD.",
+      "country": "USA"
+     }
+    }
+   ],
+   "status": {
+    "type": {
+     "id": "3",
+     "name": "STATUS_FINAL",
+     "state": "post",
+     "completed": true,
+     "description": "Final",
+     "detail": "Final",
+     "shortDetail": "Final"
+    }
+   }
+  }
+ }
+}
