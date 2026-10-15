@@ -851,7 +851,10 @@ async function bootEdges() {
       const base = { sport: key, label: m.label, g, when: g.d + ' ' + (g.tm || '') };
       // Market chance with the bookmaker's cut removed, from both sides' prices.
       const fair = (mine, theirs) => { const a = E.impliedProb(mine ?? -110), b = E.impliedProb(theirs ?? -110); return a / (a + b); };
+      const fixedLine = m.family === 'hockey' || m.family === 'baseball'; // puck/run lines are never priced at -110
       const add = (type, bet, p, price, other, edge) => {
+        if (type === 'Moneyline' && price > 250) return;      // skip long shots
+        if (fixedLine && type !== 'Moneyline' && price == null) return;
         const pm = fair(price, other), pb = (p + pm) / 2; // 50/50 blend of your model and the market
         const ev = E.evPerUnit(pb, price ?? -110);
         if (ev > 0.015) rows.push({ ...base, type, bet: bet + (price != null && price !== -110 ? ' (' + (price > 0 ? '+' + price : price) + ')' : ''), p, pm, ev, edge });
@@ -884,7 +887,7 @@ async function bootEdges() {
       <td><button class="logbtn" data-open="${r.sport}">Open</button></td></tr>`).join('')}
     </tbody></table></div>
     ${rows.length > 25 ? `<p><button class="btn ghost" id="showAll">Show all ${rows.length}</button></p>` : ''}
-    <p class="note">Value uses a 50/50 blend of your model and the market's fair price, so long-shot underdogs don't flood the list just because the model is less extreme than the odds. Uses real prices when the feed has them (−110 otherwise), each sport's saved sliders, and any lines you typed in.</p>`
+    <p class="note">Value uses a 50/50 blend of your model and the market's fair price, so long-shot underdogs don't flood the list just because the model is less extreme than the odds. Moneylines longer than +250 are left out. Uses real prices when the feed has them (−110 otherwise), each sport's saved sliders, and any lines you typed in.</p>`
     : `<div class="empty">No edges in the next couple of days with your current models. Try lowering the edge threshold in a sport, or check back after the next data refresh.</div>`;
   $('#view').addEventListener('click', (e) => {
     if (e.target.id === 'showAll') { document.querySelectorAll('tr.more').forEach((r) => { r.hidden = false; }); e.target.remove(); return; }
