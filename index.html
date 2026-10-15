@@ -187,6 +187,24 @@ details.inj > div { margin-top: 4px }
 .gsel { display: inline-flex; gap: 6px; align-items: center; font-weight: 600 }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0) }
 
+/* Vegas vs model comparison on each card */
+.cmp { display: grid; grid-template-columns: 74px minmax(0, 1.15fr) minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 8px 10px; align-items: start; font-size: 14px; border-top: 1px solid var(--line); padding-top: 8px }
+.cmp .ch { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600 }
+.cmp .rl { font-family: var(--display); font-weight: 600; font-size: 15px; text-transform: uppercase; padding-top: 6px; line-height: 1.1 }
+.cmp .vc { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; min-width: 0 }
+.cmp .vc label { font-size: 12px; color: var(--muted) }
+.cmp .vc input { width: 74px; -moz-appearance: textfield }
+.cmp .vc input::-webkit-inner-spin-button, .cmp .vc input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0 }
+.cmp .vc .move, .cmp .vc .imp { flex-basis: 100% }
+.cmp .imp { font-size: 12.5px; color: var(--ink); font-weight: 600 }
+.cmp .mc { padding-top: 6px; font-weight: 600 }
+.cmp .ec { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0 }
+.cmp .ec .logbtn { margin-top: 2px }
+.cmp > :nth-child(4n+5), .cmp > :nth-child(4n+6), .cmp > :nth-child(4n+7), .cmp > :nth-child(4n+8) { padding-top: 8px; border-top: 1px dashed var(--line) }
+.bestbet { border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); padding: 8px 10px; font-size: 13.5px }
+.bestbet.good { border-color: var(--good); }
+@media (max-width: 520px) { .cmp { grid-template-columns: 58px minmax(0, 1.1fr) minmax(0, 0.8fr) minmax(0, 1.1fr); gap: 6px 6px; font-size: 13px } .cmp .vc input { width: 62px } .cmp .rl { font-size: 13px } }
+
 /* tables */
 .tblwrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r) }
 table { border-collapse: collapse; width: 100%; font-size: 14px }
@@ -455,34 +473,60 @@ function gamesView() {
   <div class="games">${list.map(gameCard).join('') || `<div class="empty">No games match${S.teamQ ? ' "' + esc(S.teamQ) + '"' : ''}${S.onlyEdges ? ' with an edge of ' + S.edgeMin + '+ ' + UNIT : ''}.</div>`}</div>`;
 }
 function gameCard({ g, L, pr }) {
-  const homeLine = L.sp != null ? -L.sp : '';
   const fav = pr.margin >= 0 ? g.h : g.a;
-  const modelLine = bookSpread(g.h, half(pr.margin));
+  const spName = META.spreadName || 'Spread';
+  const priceOf = (v) => v ?? -110;
+  // ---- spread
   const spSide = pr.spEdge == null ? null : pr.spEdge > 0 ? g.h : g.a;
-  const spSideLine = pr.spEdge == null ? '' : spSide === g.h ? bookSpread(g.h, L.sp) : bookSpread(g.a, -L.sp);
+  const spBet = pr.spEdge == null ? '' : spSide === g.h ? bookSpread(g.h, L.sp) : bookSpread(g.a, -L.sp);
   const coverP = pr.spEdge == null ? null : (pr.spEdge > 0 ? pr.pHomeCover : 1 - pr.pHomeCover);
   const spPrice = pr.spEdge == null ? null : (spSide === g.h ? L.hspp : L.aspp);
-  const totPrice = pr.totEdge == null ? null : (pr.totEdge > 0 ? L.ovp : L.unp);
-  const priceTag = (v) => v != null && v !== -110 ? ` (${odds(v)})` : '';
+  // ---- total
   const totSide = pr.totEdge == null ? null : pr.totEdge > 0 ? 'Over' : 'Under';
   const totP = pr.totEdge == null ? null : (pr.totEdge > 0 ? pr.pOver : 1 - pr.pOver);
-  const mlBest = (pr.evHome == null && pr.evAway == null) ? null : ((pr.evHome ?? -9) >= (pr.evAway ?? -9) ? { t: g.h, ev: pr.evHome, ml: L.hml, p: pr.pHome } : { t: g.a, ev: pr.evAway, ml: L.aml, p: pr.pAway });
+  const totPrice = pr.totEdge == null ? null : (pr.totEdge > 0 ? L.ovp : L.unp);
+  // ---- win chance: Vegas's (from the moneylines, bookmaker cut removed) vs the model's
+  const hasMl = L.hml != null && L.aml != null;
+  const vH = hasMl ? E.impliedProb(L.hml) / (E.impliedProb(L.hml) + E.impliedProb(L.aml)) : null;
+  const mlTeam = hasMl ? (pr.pHome - vH >= 0 ? g.h : g.a) : null;
+  const mlGap = hasMl ? Math.abs(pr.pHome - vH) : null;
+  // ---- the single best bet by value
+  const cands = [];
+  if (pr.spEdge != null) cands.push({ type: 'spread', side: spSide, text: spBet, p: coverP, price: priceOf(spPrice) });
+  if (pr.totEdge != null) cands.push({ type: 'total', side: totSide, text: totSide + ' ' + L.tot, p: totP, price: priceOf(totPrice) });
+  if (hasMl) cands.push({ type: 'ml', side: mlTeam, text: mlTeam + ' to win', p: mlTeam === g.h ? pr.pHome : pr.pAway, price: mlTeam === g.h ? L.hml : L.aml });
+  cands.forEach((c) => { c.ev = E.evPerUnit(c.p, c.price); });
+  const best = cands.sort((a, b) => b.ev - a.ev)[0];
   const hot = (Math.abs(pr.spEdge || 0) >= S.edgeMin || Math.abs(pr.totEdge || 0) >= S.edgeMin);
   const ap = Math.round(pr.pAway * 100), hp = 100 - ap;
+  const gapPill = (v, unit) => v == null ? '' : `<span class="pill ${Math.abs(v) >= S.edgeMin ? 'acc' : 'flat'}">${Math.abs(v).toFixed(1)} ${unit}</span>`;
+  const sp0 = (v) => v == null ? '' : -v; // book style for the home team
   return `<article class="game ${hot ? 'hot' : ''}">
     <div class="gh"><div class="matchup">${g.a}<span class="at">@</span>${g.h}</div><div class="kick">${kickoff(g)}${g.neu ? '<br>Neutral site' : ''}</div></div>
     <div class="score"><b>${UNIT === 'pts' ? Math.round(pr.as) + '–' + Math.round(pr.hs) : fmt(pr.as) + '–' + fmt(pr.hs)}</b><span class="small muted">model score · ${fav} by ${fmt(Math.abs(pr.margin))}</span></div>
     <div class="wp" title="Model win probability"><div class="a" style="flex:${Math.max(ap, 12)}">${g.a} ${ap}%</div><div class="h" style="flex:${Math.max(hp, 12)}">${g.h} ${hp}%</div></div>
     ${pitchersRow(g, pr)}${goalieRow(g, pr)}${weatherRow(g, pr)}${injuryRow(g, pr)}
-    <div class="mk"><span class="k">${(META.spreadName || 'Spread').replace(' ', '&nbsp;')}</span>
-      <span class="ins"><label class="small muted" for="sp-${g.id}">${g.h}</label><input type="number" step="0.5" id="sp-${g.id}" data-line="sp" data-g="${g.id}" value="${homeLine}" placeholder="line"><span class="small muted">model ${modelLine}</span>${moveNote(g, 'sp', L, pr)}</span>
-      <span class="out">${pr.spEdge == null ? '<span class="muted">enter line</span>' : `${edgePill(pr.spEdge, S.edgeMin)}<br><span class="small">${esc(spSideLine)}${priceTag(spPrice)} · ${pct(coverP)}</span> <button class="logbtn" data-log="spread" data-g="${g.id}" data-side="${spSide}">Log</button>`}</span></div>
-    <div class="mk"><span class="k">Total</span>
-      <span class="ins"><label class="small muted" for="tot-${g.id}">O/U</label><input type="number" step="0.5" id="tot-${g.id}" data-line="tot" data-g="${g.id}" value="${L.tot ?? ''}" placeholder="total"><span class="small muted">model ${fmt(pr.total)}</span>${moveNote(g, 'tot', L, pr)}</span>
-      <span class="out">${pr.totEdge == null ? '<span class="muted">enter total</span>' : `${edgePill(pr.totEdge, S.edgeMin)}<br><span class="small">${totSide} ${L.tot}${priceTag(totPrice)} · ${pct(totP)}</span> <button class="logbtn" data-log="total" data-g="${g.id}" data-side="${totSide}">Log</button>`}</span></div>
-    <div class="mk"><span class="k">Money&shy;line</span>
-      <span class="ins"><label class="small muted" for="aml-${g.id}">${g.a}</label><input type="number" step="5" id="aml-${g.id}" data-line="aml" data-g="${g.id}" value="${L.aml ?? ''}"><label class="small muted" for="hml-${g.id}">${g.h}</label><input type="number" step="5" id="hml-${g.id}" data-line="hml" data-g="${g.id}" value="${L.hml ?? ''}"></span>
-      <span class="out">${mlBest ? `${evPill(mlBest.ev)}<br><span class="small">${mlBest.t} ${odds(mlBest.ml)} · ${pct(mlBest.p)}</span> <button class="logbtn" data-log="ml" data-g="${g.id}" data-side="${mlBest.t}">Log</button>` : '<span class="muted">enter odds</span>'}</span></div>
+    <div class="cmp" role="table" aria-label="Vegas vs your model">
+      <span class="ch" role="columnheader"></span><span class="ch" role="columnheader">Vegas</span><span class="ch" role="columnheader">Your model</span><span class="ch" role="columnheader">Edge</span>
+
+      <span class="rl">${esc(spName)}</span>
+      <span class="vc"><label for="sp-${g.id}">${g.h}</label><input type="number" step="0.5" id="sp-${g.id}" data-line="sp" data-g="${g.id}" value="${sp0(L.sp)}" placeholder="line">${moveNote(g, 'sp', L, pr)}</span>
+      <span class="mc">${esc(bookSpread(g.h, half(pr.margin)))}</span>
+      <span class="ec">${pr.spEdge == null ? '<span class="muted small">enter line</span>' : `${gapPill(pr.spEdge, UNIT)}<span class="small">→ ${esc(spBet)}${spPrice != null && spPrice !== -110 ? ' (' + odds(spPrice) + ')' : ''}</span><span class="small muted">${pct(coverP)} to cover</span><button class="logbtn" data-log="spread" data-g="${g.id}" data-side="${spSide}">Log</button>`}</span>
+
+      <span class="rl">Total</span>
+      <span class="vc"><label for="tot-${g.id}">O/U</label><input type="number" step="0.5" id="tot-${g.id}" data-line="tot" data-g="${g.id}" value="${L.tot ?? ''}" placeholder="total">${moveNote(g, 'tot', L, pr)}</span>
+      <span class="mc">${fmt(pr.total)}</span>
+      <span class="ec">${pr.totEdge == null ? `<span class="muted small">${L.tot == null ? 'enter total' : 'after both teams play'}</span>` : `${gapPill(pr.totEdge, UNIT)}<span class="small">→ ${totSide} ${L.tot}${totPrice != null && totPrice !== -110 ? ' (' + odds(totPrice) + ')' : ''}</span><span class="small muted">${pct(totP)} chance</span><button class="logbtn" data-log="total" data-g="${g.id}" data-side="${totSide}">Log</button>`}</span>
+
+      <span class="rl">Win chance</span>
+      <span class="vc ml"><label for="aml-${g.id}">${g.a}</label><input type="number" step="5" id="aml-${g.id}" data-line="aml" data-g="${g.id}" value="${L.aml ?? ''}" placeholder="odds">
+        <label for="hml-${g.id}">${g.h}</label><input type="number" step="5" id="hml-${g.id}" data-line="hml" data-g="${g.id}" value="${L.hml ?? ''}" placeholder="odds">
+        ${hasMl ? `<span class="imp">${vH >= 0.5 ? g.h + ' ' + pct(vH) : g.a + ' ' + pct(1 - vH)}</span>` : ''}</span>
+      <span class="mc">${pr.pHome >= 0.5 ? g.h + ' ' + pct(pr.pHome) : g.a + ' ' + pct(pr.pAway)}</span>
+      <span class="ec">${!hasMl ? '<span class="muted small">enter odds</span>' : `<span class="pill ${mlGap >= 0.05 ? 'acc' : 'flat'}">${Math.round(mlGap * 100)}% gap</span><span class="small">→ ${mlTeam} ${odds(mlTeam === g.h ? L.hml : L.aml)}</span><span class="small muted">model is higher on ${mlTeam}</span><button class="logbtn" data-log="ml" data-g="${g.id}" data-side="${mlTeam}">Log</button>`}</span>
+    </div>
+    ${best ? `<div class="bestbet ${best.ev > 0.03 ? 'good' : ''}"><span>${best.ev > 0 ? 'Model\'s best bet' : 'No value at these prices · closest'}: <b>${esc(best.text)}</b> · ${pct(best.p)} chance · ${evPill(best.ev)}</span></div>` : ''}
   </article>`;
 }
 
@@ -1168,20 +1212,28 @@ function bootUfc(DATA) {
       const evA = L.aml != null ? E.evPerUnit(p, L.aml) : null, evB = L.bml != null ? E.evPerUnit(pb, L.bml) : null;
       const best = evA == null && evB == null ? null : (evA ?? -9) >= (evB ?? -9) ? { side: 'a', name: f.an, ev: evA, ml: L.aml, p } : { side: 'b', name: f.bn, ev: evB, ml: L.bml, p: pb };
       const ap = Math.round(p * 100);
+      const lastA = f.an.split(' ').slice(-1)[0], lastB = f.bn.split(' ').slice(-1)[0];
+      const vA = L.aml != null && L.bml != null ? E.impliedProb(L.aml) / (E.impliedProb(L.aml) + E.impliedProb(L.bml)) : null;
+      const gap = vA == null ? null : Math.abs(p - vA);
+      const gapSide = vA == null ? null : p >= vA ? { side: 'a', name: lastA, ml: L.aml, ev: evA } : { side: 'b', name: lastB, ml: L.bml, ev: evB };
       const move = f.oml && L.aml != null && f.oml[0] !== L.aml ? `<span class="move ${(p > 0.5) === (L.aml < f.oml[0]) ? 'yes' : 'no'}">opened ${odds(f.oml[0])} / ${odds(f.oml[1])}</span>` : '';
       return `<article class="game ${best && best.ev > 0.05 ? 'hot' : ''}">
         <div class="gh"><div class="matchup" style="font-size:20px">${esc(f.an)}<span class="at">vs</span>${esc(f.bn)}</div><div class="kick">${esc(f.wc)}${f.sched === 5 ? ' · 5 rds' : ''}</div></div>
         <div class="why">${esc(f.an)}: ${esc(f.ar)}${info(f.a, f.d) ? ' · ' + esc(info(f.a, f.d)) : ''}<br>${esc(f.bn)}: ${esc(f.br)}${info(f.b, f.d) ? ' · ' + esc(info(f.b, f.d)) : ''}</div>
         <div class="wp"><div class="a" style="flex:${Math.max(ap, 14)}">${esc(f.an.split(' ').slice(-1)[0])} ${ap}%</div><div class="h" style="flex:${Math.max(100 - ap, 14)}">${esc(f.bn.split(' ').slice(-1)[0])} ${100 - ap}%</div></div>
-        <div class="mk"><span class="k">Money&shy;line</span>
-          <span class="ins"><label class="small muted" for="ua-${f.id}">${esc(f.an.split(' ').slice(-1)[0])}</label><input type="number" step="5" id="ua-${f.id}" data-uline="aml" data-f="${f.id}" value="${L.aml ?? ''}">
-            <label class="small muted" for="ub-${f.id}">${esc(f.bn.split(' ').slice(-1)[0])}</label><input type="number" step="5" id="ub-${f.id}" data-uline="bml" data-f="${f.id}" value="${L.bml ?? ''}">
-            <span class="small muted">fair ${odds(fair(p))} / ${odds(fair(pb))}</span>${move}</span>
-          <span class="out">${best ? `${evPill(best.ev)}<br><span class="small">${esc(best.name.split(' ').slice(-1)[0])} ${odds(best.ml)} · ${pct(best.p)}</span> <button class="logbtn" data-ulog="${f.id}" data-side="${best.side}">Log</button>` : '<span class="muted">enter odds</span>'}</span></div>
+        <div class="cmp" role="table" aria-label="Vegas vs your model">
+          <span class="ch"></span><span class="ch">Vegas</span><span class="ch">Your model</span><span class="ch">Edge</span>
+          <span class="rl">Win chance</span>
+          <span class="vc ml"><label for="ua-${f.id}">${esc(lastA)}</label><input type="number" step="5" id="ua-${f.id}" data-uline="aml" data-f="${f.id}" value="${L.aml ?? ''}" placeholder="odds">
+            <label for="ub-${f.id}">${esc(lastB)}</label><input type="number" step="5" id="ub-${f.id}" data-uline="bml" data-f="${f.id}" value="${L.bml ?? ''}" placeholder="odds">
+            ${vA != null ? `<span class="imp">${vA >= 0.5 ? esc(lastA) + ' ' + pct(vA) : esc(lastB) + ' ' + pct(1 - vA)}</span>` : ''}${move}</span>
+          <span class="mc">${p >= 0.5 ? esc(lastA) + ' ' + pct(p) : esc(lastB) + ' ' + pct(pb)}<br><span class="small muted" style="font-weight:400">fair ${odds(fair(p >= 0.5 ? p : pb))}</span></span>
+          <span class="ec">${vA == null ? '<span class="muted small">enter odds</span>' : `<span class="pill ${gap >= 0.05 ? 'acc' : 'flat'}">${Math.round(gap * 100)}% gap</span><span class="small">→ ${esc(gapSide.name)} ${odds(gapSide.ml)}</span><span class="small muted">model is higher on ${esc(gapSide.name)}</span>${evPill(gapSide.ev)}<button class="logbtn" data-ulog="${f.id}" data-side="${gapSide.side}">Log</button>`}</span>
+        </div>
       </article>`;
     }).join('');
     return `<div class="toolbar"><div class="f"><label class="label" for="evSel">Event</label><select id="evSel">${events.slice(0, 6).map((e) => `<option value="${e.eid}" ${e.eid === S.ev ? 'selected' : ''}>${esc(e.name)} · ${sdate(e.d)}</option>`).join('')}</select></div></div>
-      <p class="note" style="margin:0 0 14px">Main event first. "Fair" is the price that matches the model's win chance; value shows when the real odds pay more than that. ${DATA.meta.oddsNote ? 'Lines: ' + esc(DATA.meta.oddsNote) + '.' : ''}</p>
+      <p class="note" style="margin:0 0 14px">Main event first. Vegas's win chance comes from the odds (sportsbook cut removed). "Fair" is the price that matches the model's chance; there's value when the real odds pay more than that. ${DATA.meta.oddsNote ? 'Lines: ' + esc(DATA.meta.oddsNote) + '.' : ''}</p>
       <div class="games">${cards}</div>`;
   }
 
@@ -1284,8 +1336,11 @@ function bootGuide() {
     <ol>
       <li><b>Model score:</b> the score the model expects. "DET by 1.7" means it thinks Detroit wins by about 2.</li>
       <li><b>Win bar:</b> each team's chance to win, from the model.</li>
-      <li><b>Spread, Total and Moneyline rows:</b> the betting line on the left (already filled in when available; you can type your sportsbook's number instead), the model's own line under it, and on the right which side the model likes and how sure it is.</li>
-      <li><b>Edge pill:</b> how far the model's number is from the betting line. A highlighted "Edge" means the gap is bigger than the threshold you picked in "Flag edges of".</li>
+      <li><b>Vegas | Your model | Edge:</b> each bet type is one row, read left to right. <b>Vegas</b> is the sportsbook's number (already filled in when available; type your own book's number if it differs). <b>Your model</b> is what the model thinks that number should be. <b>Edge</b> is the gap between the two and the bet it points to.</li>
+      <li><b>Example:</b> Vegas has DEN +2.5, your model says DEN +1.5. The model thinks Denver should only be getting 1.5 points, so getting 2.5 is a gift: Edge shows "1.0 pts → DEN +2.5". Same idea for totals: Vegas 40.5, model 46.1 means a 5.6 point edge on the Over.</li>
+      <li><b>Win chance row:</b> Vegas's chance comes from the moneyline odds (with the sportsbook's cut removed), next to the model's chance. The gap tells you which team the model is higher on than Vegas.</li>
+      <li><b>Highlighted edge:</b> the gap is bigger than the threshold you set in "Flag edges of". Small gaps are noise.</li>
+      <li><b>Model's best bet:</b> the bottom line picks the single bet with the best value (EV) at the current prices, and how likely the model thinks it is to hit.</li>
       <li><b>Log:</b> saves that pick to your Pick log so you can track how it does.</li>
       <li><b>Extras:</b> some cards show injuries (tap to open), kickoff weather, starting goalies or pitchers, and where the line opened ("moving toward you" means the market has moved in your model's direction, which is a good sign).</li>
     </ol>
