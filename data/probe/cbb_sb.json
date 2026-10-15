@@ -1,0 +1,5 @@
+{
+ "url": "https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?dates=20260214&groups=50&limit=5",
+ "status": 200,
+ "sample": "ok"
+}

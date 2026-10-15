@@ -1,0 +1,45 @@
+{
+ "url": "https://api.collegefootballdata.com/lines?year=2026&week=7&seasonType=regular",
+ "status": 200,
+ "sample": [
+  {
+   "id": 401858263,
+   "season": 2026,
+   "seasonType": "regular",
+   "week": 7,
+   "startDate": "2026-10-17T23:00:00.000Z",
+   "homeTeamId": 2390,
+   "homeTeam": "Miami",
+   "homeConference": "ACC",
+   "homeClassification": "fbs",
+   "homeScore": null,
+   "awayTeamId": 52,
+   "awayTeam": "Florida State",
+   "awayConference": "ACC",
+   "awayClassification": "fbs",
+   "awayScore": null,
+   "lines": [
+    {
+     "provider": "DraftKings",
+     "spread": -21.5,
+     "formattedSpread": "Miami -21.5",
+     "spreadOpen": -16.5,
+     "overUnder": 56.5,
+     "overUnderOpen": 53.5,
+     "homeMoneyline": -1800,
+     "awayMoneyline": 1000
+    },
+    {
+     "provider": "Bovada",
+     "spread": -21.5,
+     "formattedSpread": "Miami -21.5",
+     "spreadOpen": -21,
+     "overUnder": 56.5,
+     "overUnderOpen": 56.5,
+     "homeMoneyline": -1600,
+     "awayMoneyline": 800
+    }
+   ]
+  }
+ ]
+}

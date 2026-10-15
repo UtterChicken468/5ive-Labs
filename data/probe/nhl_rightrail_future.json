@@ -1,0 +1,10 @@
+{
+ "url": "https://api-web.nhle.com/v1/gamecenter/2026020108/right-rail",
+ "status": 200,
+ "sample": [
+  "seasonSeries",
+  "seasonSeriesWins",
+  "gameInfo",
+  "... 2 more"
+ ]
+}

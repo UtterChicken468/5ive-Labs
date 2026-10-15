@@ -1,0 +1,55 @@
+{
+ "url": "https://api.collegefootballdata.com/venues",
+ "status": 200,
+ "sample": [
+  {
+   "id": 5938,
+   "name": "Al Whitehead Field at Greyhound Stadium",
+   "capacity": 4000,
+   "grass": null,
+   "dome": false,
+   "city": "Portales",
+   "state": "NM",
+   "zip": "88130",
+   "countryCode": "US",
+   "timezone": null,
+   "latitude": 34.1861922,
+   "longitude": -103.334397,
+   "elevation": null,
+   "constructionYear": null
+  },
+  {
+   "id": 218,
+   "name": "FIU Stadium",
+   "capacity": 20000,
+   "grass": false,
+   "dome": false,
+   "city": "Miami",
+   "state": "FL",
+   "zip": "33199",
+   "countryCode": "US",
+   "timezone": "America/New_York",
+   "latitude": 25.7525014,
+   "longitude": -80.3778912,
+   "elevation": "1.718581796",
+   "constructionYear": 1995
+  },
+  {
+   "id": 4779,
+   "name": "Thomas A. Robinson National Stadium",
+   "capacity": 15000,
+   "grass": true,
+   "dome": false,
+   "city": "Nassau",
+   "state": "",
+   "zip": null,
+   "countryCode": "BS",
+   "timezone": null,
+   "latitude": 25.055569,
+   "longitude": -77.358736,
+   "elevation": "3.182889223",
+   "constructionYear": 1981
+  },
+  "... 849 more"
+ ]
+}

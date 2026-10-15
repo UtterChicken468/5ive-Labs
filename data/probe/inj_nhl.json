@@ -1,0 +1,3443 @@
+{
+ "url": "https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/injuries",
+ "status": 200,
+ "sample": {
+  "timestamp": "2026-10-15T00:21:05Z",
+  "status": "success",
+  "season": {
+   "year": 2027,
+   "type": 2,
+   "name": "Regular Season",
+   "displayName": "2026-27"
+  },
+  "injuries": [
+   {
+    "id": "25",
+    "displayName": "Anaheim Ducks",
+    "injuries": [
+     {
+      "id": "595865",
+      "longComment": "day-to-day",
+      "shortComment": "day-to-day",
+      "status": "Day-To-Day",
+      "date": "2026-10-14T13:14Z",
+      "athlete": {
+       "firstName": "Cutter",
+       "lastName": "Gauthier",
+       "displayName": "Cutter Gauthier",
+       "shortName": "C. Gauthier",
+       "links": [
+        {
+         "language": "en-US",
+         "rel": [
+          "playercard",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/_/id/5080145",
+         "text": "Player Card",
+         "shortText": "Player Card",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "stats",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/stats/_/id/5080145/cutter-gauthier",
+         "text": "Stats",
+         "shortText": "Stats",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "stats",
+          "sportscenter",
+          "app",
+          "athlete"
+         ],
+         "href": "sportscenter://x-callback-url/showClubhouse?uid=s:70~l:90~a:5080145&section=stats",
+         "text": "Stats",
+         "shortText": "Stats",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "splits",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/splits/_/id/5080145/cutter-gauthier",
+         "text": "Splits",
+         "shortText": "Splits",
+         "isExternal": false,
+         "isPremium": false
+        },
+        "... 8 more"
+       ],
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/nhl/players/full/5080145.png",
+        "alt": "Cutter Gauthier"
+       },
+       "position": {
+        "id": "2",
+        "name": "Left Wing",
+        "displayName": "Left Wing",
+        "abbreviation": "LW",
+        "leaf": true
+       },
+       "team": {
+        "id": "25",
+        "uid": "s:70~l:90~t:25",
+        "slug": "anaheim-ducks",
+        "name": "Ducks",
+        "abbreviation": "ANA",
+        "displayName": "Anaheim Ducks",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500/ana.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "default"
+          ],
+          "lastUpdated": "2024-07-02T15:51Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500-dark/ana.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "dark"
+          ],
+          "lastUpdated": "2024-06-26T17:24Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500/scoreboard/ana.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "scoreboard"
+          ],
+          "lastUpdated": "2024-07-02T15:51Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500-dark/scoreboard/ana.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "scoreboard",
+           "dark"
+          ],
+          "lastUpdated": "2024-06-26T17:24Z"
+         },
+         "... 12 more"
+        ],
+        "links": [
+         {
+          "language": "en-US",
+          "rel": [
+           "clubhouse",
+           "desktop",
+           "team"
+          ],
+          "href": "https://www.espn.com/nhl/team/_/name/ana/anaheim-ducks",
+          "text": "Clubhouse",
+          "shortText": "Clubhouse",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "clubhouse",
+           "mobile",
+           "team"
+          ],
+          "href": "https://m.espn.com/nhl/clubhouse?teamId=25",
+          "text": "Clubhouse",
+          "shortText": "Clubhouse",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "roster",
+           "desktop",
+           "team"
+          ],
+          "href": "https://www.espn.com/nhl/team/roster/_/name/ana/anaheim-ducks",
+          "text": "Roster",
+          "shortText": "Roster",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "roster",
+           "sportscenter",
+           "app",
+           "team"
+          ],
+          "href": "sportscenter://x-callback-url/showClubhouse?uid=s:70~l:90~t:25&section=roster",
+          "text": "Roster",
+          "shortText": "Roster",
+          "isExternal": false,
+          "isPremium": false
+         },
+         "... 8 more"
+        ]
+       },
+       "notes": {
+        "items": [
+         {
+          "id": "595865",
+          "type": "news",
+          "date": "2026-10-14T13:14Z",
+          "headline": "day-to-day",
+          "text": "day-to-day",
+          "source": "RotoWire",
+          "injury": {
+           "$ref": "http://sports.core.api.espn.pvt/v2/sports/hockey/leagues/nhl/seasons/2027/athletes/5080145/injuries/595865?lang=en&region=us"
+          }
+         },
+         {
+          "id": "595702",
+          "type": "news",
+          "date": "2026-10-13T17:26Z",
+          "headline": "out",
+          "text": "out",
+          "source": "RotoWire",
+          "injury": {
+           "$ref": "http://sports.core.api.espn.pvt/v2/sports/hockey/leagues/nhl/seasons/2027/athletes/5080145/injuries/595702?lang=en&region=us"
+          }
+         },
+         {
+          "id": "595703",
+          "type": "news",
+          "date": "2026-10-13T17:26Z",
+          "headline": "Gauthier (upper body) will not be in the lineup versus Calgary on Tuesday, Eric Francis of Sportsnet reports.",
+          "text": "Gauthier continues to be classified as day-to-day, so it's possible he'll be ready to face the Bruins on Friday. With the 22-year-old winger on the shelf, Roger...",
+          "source": "RotoWire",
+          "injury": {
+           "$ref": "http://sports.core.api.espn.pvt/v2/sports/hockey/leagues/nhl/seasons/2027/athletes/5080145/injuries/595703?lang=en&region=us"
+          }
+         },
+         {
+          "id": "595611",
+          "type": "news",
+          "date": "2026-10-12T19:08Z",
+          "headline": "Gauthier (upper body) participated in drills to begin Monday's practice session but left before line rushes and team drills, Zach Cavanagh of The Sporting Tribu...",
+          "text": "Gauthier exited Saturday's game against the Flames in the first period due to an upper-body injury, and it's not yet clear whether the issue will impact his ava...",
+          "source": "RotoWire",
+          "injury": {
+           "$ref": "http://sports.core.api.espn.pvt/v2/sports/hockey/leagues/nhl/seasons/2027/athletes/5080145/injuries/595611?lang=en&region=us"
+          }
+         },
+         "... 2 more"
+        ]
+       },
+       "status": {
+        "id": "1",
+        "name": "Active",
+        "type": "active",
+        "abbreviation": "Active"
+       }
+      },
+      "source": {
+       "id": "1",
+       "description": "basic/manual",
+       "state": "basic"
+      },
+      "type": {
+       "id": "6",
+       "name": "INJURY_STATUS_DAYTODAY",
+       "description": "day-to-day",
+       "abbreviation": "DD"
+      },
+      "details": {
+       "fantasyStatus": {
+        "description": "Day-To-Day",
+        "abbreviation": "Day-To-Day"
+       },
+       "type": "Upper Body",
+       "returnDate": "2026-10-16"
+      }
+     },
+     {
+      "id": "595699",
+      "longComment": "Poehling was placed on injured reserve Tuesday morning, and the specifics of his injury have revealed that he's set to likely be sidelined into late November. I...",
+      "shortComment": "Poehling (knee) is expected to miss 6-8 weeks with an MCL sprain.",
+      "status": "Injured Reserve",
+      "date": "2026-10-13T17:19Z",
+      "athlete": {
+       "firstName": "Ryan",
+       "lastName": "Poehling",
+       "displayName": "Ryan Poehling",
+       "shortName": "R. Poehling",
+       "links": [
+        {
+         "language": "en-US",
+         "rel": [
+          "playercard",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/_/id/4233668",
+         "text": "Player Card",
+         "shortText": "Player Card",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "stats",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/stats/_/id/4233668/ryan-poehling",
+         "text": "Stats",
+         "shortText": "Stats",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "stats",
+          "sportscenter",
+          "app",
+          "athlete"
+         ],
+         "href": "sportscenter://x-callback-url/showClubhouse?uid=s:70~l:90~a:4233668&section=stats",
+         "text": "Stats",
+         "shortText": "Stats",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "splits",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/splits/_/id/4233668/ryan-poehling",
+         "text": "Splits",
+         "shortText": "Splits",
+         "isExternal": false,
+         "isPremium": false
+        },
+        "... 8 more"
+       ],
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/nhl/players/full/4233668.png",
+        "alt": "Ryan Poehling"
+       },
+       "position": {
+        "id": "1",
+        "name": "Center",
+        "displayName": "Center",
+        "abbreviation": "C",
+        "leaf": true
+       },
+       "team": {
+        "id": "25",
+        "uid": "s:70~l:90~t:25",
+        "slug": "anaheim-ducks",
+        "name": "Ducks",
+        "abbreviation": "ANA",
+        "displayName": "Anaheim Ducks",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500/ana.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "default"
+          ],
+          "lastUpdated": "2024-07-02T15:51Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500-dark/ana.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "dark"
+          ],
+          "lastUpdated": "2024-06-26T17:24Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500/scoreboard/ana.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "scoreboard"
+          ],
+          "lastUpdated": "2024-07-02T15:51Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500-dark/scoreboard/ana.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "scoreboard",
+           "dark"
+          ],
+          "lastUpdated": "2024-06-26T17:24Z"
+         },
+         "... 12 more"
+        ],
+        "links": [
+         {
+          "language": "en-US",
+          "rel": [
+           "clubhouse",
+           "desktop",
+           "team"
+          ],
+          "href": "https://www.espn.com/nhl/team/_/name/ana/anaheim-ducks",
+          "text": "Clubhouse",
+          "shortText": "Clubhouse",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "clubhouse",
+           "mobile",
+           "team"
+          ],
+          "href": "https://m.espn.com/nhl/clubhouse?teamId=25",
+          "text": "Clubhouse",
+          "shortText": "Clubhouse",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "roster",
+           "desktop",
+           "team"
+          ],
+          "href": "https://www.espn.com/nhl/team/roster/_/name/ana/anaheim-ducks",
+          "text": "Roster",
+          "shortText": "Roster",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "roster",
+           "sportscenter",
+           "app",
+           "team"
+          ],
+          "href": "sportscenter://x-callback-url/showClubhouse?uid=s:70~l:90~t:25&section=roster",
+          "text": "Roster",
+          "shortText": "Roster",
+          "isExternal": false,
+          "isPremium": false
+         },
+         "... 8 more"
+        ]
+       },
+       "notes": {
+        "items": [
+         {
+          "id": "595699",
+          "type": "news",
+          "date": "2026-10-13T17:19Z",
+          "headline": "Poehling (knee) is expected to miss 6-8 weeks with an MCL sprain.",
+          "text": "Poehling was placed on injured reserve Tuesday morning, and the specifics of his injury have revealed that he's set to likely be sidelined into late November. I...",
+          "source": "RotoWire",
+          "injury": {
+           "$ref": "http://sports.core.api.espn.pvt/v2/sports/hockey/leagues/nhl/seasons/2027/athletes/4233668/injuries/595699?lang=en&region=us"
+          }
+         },
+         {
+          "id": "595696",
+          "type": "news",
+          "date": "2026-10-13T17:06Z",
+          "headline": "ir",
+          "text": "ir",
+          "source": "RotoWire",
+          "injury": {
+           "$ref": "http://sports.core.api.espn.pvt/v2/sports/hockey/leagues/nhl/seasons/2027/athletes/4233668/injuries/595696?lang=en&region=us"
+          }
+         },
+         {
+          "id": "595695",
+          "type": "news",
+          "date": "2026-10-13T17:06Z",
+          "headline": "Poehling (lower body) was placed on injured reserve by the Ducks on Tuesday.",
+          "text": "Poehling was deemed day-to-day on Monday, but he will ultimately end up missing the Ducks' next three games by moving to injured reserve. Across five games to b...",
+          "source": "RotoWire",
+          "injury": {
+           "$ref": "http://sports.core.api.espn.pvt/v2/sports/hockey/leagues/nhl/seasons/2027/athletes/4233668/injuries/595695?lang=en&region=us"
+          }
+         },
+         {
+          "id": "595610",
+          "type": "news",
+          "date": "2026-10-12T19:02Z",
+          "headline": "Poehling (lower body) is day-to-day and missed practice Monday, Zach Cavanagh of The Sporting Tribune reports.",
+          "text": "Poehling finally got on the scoresheet against the Flames on Saturday, notching one goal and one assist before being forced to leave the game due to his lower-b...",
+          "source": "RotoWire",
+          "injury": {
+           "$ref": "http://sports.core.api.espn.pvt/v2/sports/hockey/leagues/nhl/seasons/2027/athletes/4233668/injuries/595610?lang=en&region=us"
+          }
+         },
+         "... 2 more"
+        ]
+       },
+       "status": {
+        "id": "1",
+        "name": "Active",
+        "type": "active",
+        "abbreviation": "Active"
+       }
+      },
+      "source": {
+       "id": "1",
+       "description": "basic/manual",
+       "state": "basic"
+      },
+      "type": {
+       "id": "5",
+       "name": "INJURY_STATUS_IR",
+       "description": "Injured Reserve",
+       "abbreviation": "IR"
+      },
+      "details": {
+       "fantasyStatus": {
+        "description": "IR",
+        "abbreviation": "IR"
+       },
+       "type": "Lower Body",
+       "returnDate": "2026-11-25"
+      }
+     },
+     {
+      "id": "594251",
+      "longComment": "Terry isn't expected to be back until mid-November at the earliest, so this transfer doesn't impact his timetable. He had 19 goals and 57 points in 61 regular-s...",
+      "shortComment": "Terry (hip) was moved from the non-roster list to long-term injured reserve Wednesday, Zach Cavanagh of The Sporting Tribune reports.",
+      "status": "Injured Reserve",
+      "date": "2026-09-30T14:53Z",
+      "athlete": {
+       "firstName": "Troy",
+       "lastName": "Terry",
+       "displayName": "Troy Terry",
+       "shortName": "T. Terry",
+       "links": [
+        {
+         "language": "en-US",
+         "rel": [
+          "playercard",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/_/id/3942905",
+         "text": "Player Card",
+         "shortText": "Player Card",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "stats",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/stats/_/id/3942905/troy-terry",
+         "text": "Stats",
+         "shortText": "Stats",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "stats",
+          "sportscenter",
+          "app",
+          "athlete"
+         ],
+         "href": "sportscenter://x-callback-url/showClubhouse?uid=s:70~l:90~a:3942905&section=stats",
+         "text": "Stats",
+         "shortText": "Stats",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "splits",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/splits/_/id/3942905/troy-terry",
+         "text": "Splits",
+         "shortText": "Splits",
+         "isExternal": false,
+         "isPremium": false
+        },
+        "... 8 more"
+       ],
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/nhl/players/full/3942905.png",
+        "alt": "Troy Terry"
+       },
+       "position": {
+        "id": "3",
+        "name": "Right Wing",
+        "displayName": "Right Wing",
+        "abbreviation": "RW",
+        "leaf": true
+       },
+       "team": {
+        "id": "25",
+        "uid": "s:70~l:90~t:25",
+        "slug": "anaheim-ducks",
+        "name": "Ducks",
+        "abbreviation": "ANA",
+        "displayName": "Anaheim Ducks",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500/ana.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "default"
+          ],
+          "lastUpdated": "2024-07-02T15:51Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500-dark/ana.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "dark"
+          ],
+          "lastUpdated": "2024-06-26T17:24Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500/scoreboard/ana.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "scoreboard"
+          ],
+          "lastUpdated": "2024-07-02T15:51Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500-dark/scoreboard/ana.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "scoreboard",
+           "dark"
+          ],
+          "lastUpdated": "2024-06-26T17:24Z"
+         },
+         "... 12 more"
+        ],
+        "links": [
+         {
+          "language": "en-US",
+          "rel": [
+           "clubhouse",
+           "desktop",
+           "team"
+          ],
+          "href": "https://www.espn.com/nhl/team/_/name/ana/anaheim-ducks",
+          "text": "Clubhouse",
+          "shortText": "Clubhouse",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "clubhouse",
+           "mobile",
+           "team"
+          ],
+          "href": "https://m.espn.com/nhl/clubhouse?teamId=25",
+          "text": "Clubhouse",
+          "shortText": "Clubhouse",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "roster",
+           "desktop",
+           "team"
+          ],
+          "href": "https://www.espn.com/nhl/team/roster/_/name/ana/anaheim-ducks",
+          "text": "Roster",
+          "shortText": "Roster",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "roster",
+           "sportscenter",
+           "app",
+           "team"
+          ],
+          "href": "sportscenter://x-callback-url/showClubhouse?uid=s:70~l:90~t:25&section=roster",
+          "text": "Roster",
+          "shortText": "Roster",
+          "isExternal": false,
+          "isPremium": false
+         },
+         "... 8 more"
+        ]
+       },
+       "notes": {
+        "items": []
+       },
+       "status": {
+        "id": "1",
+        "name": "Active",
+        "type": "active",
+        "abbreviation": "Active"
+       }
+      },
+      "source": {
+       "id": "1",
+       "description": "basic/manual",
+       "state": "basic"
+      },
+      "type": {
+       "id": "5",
+       "name": "INJURY_STATUS_IR",
+       "description": "Injured Reserve",
+       "abbreviation": "IR"
+      },
+      "details": {
+       "fantasyStatus": {
+        "description": "IR-LT",
+        "abbreviation": "IR-LT"
+       },
+       "type": "Hip",
+       "detail": "Surgery",
+       "returnDate": "2026-11-21"
+      }
+     },
+     {
+      "id": "594155",
+      "longComment": "ir",
+      "shortComment": "ir",
+      "status": "Injured Reserve",
+      "date": "2026-09-29T00:06Z",
+      "athlete": {
+       "firstName": "Ian",
+       "lastName": "Moore",
+       "displayName": "Ian Moore",
+       "shortName": "I. Moore",
+       "links": [
+        {
+         "language": "en-US",
+         "rel": [
+          "playercard",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/_/id/5188523",
+         "text": "Player Card",
+         "shortText": "Player Card",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "stats",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/stats/_/id/5188523/ian-moore",
+         "text": "Stats",
+         "shortText": "Stats",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "stats",
+          "sportscenter",
+          "app",
+          "athlete"
+         ],
+         "href": "sportscenter://x-callback-url/showClubhouse?uid=s:70~l:90~a:5188523&section=stats",
+         "text": "Stats",
+         "shortText": "Stats",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "splits",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/splits/_/id/5188523/ian-moore",
+         "text": "Splits",
+         "shortText": "Splits",
+         "isExternal": false,
+         "isPremium": false
+        },
+        "... 8 more"
+       ],
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/nhl/players/full/5188523.png",
+        "alt": "Ian Moore"
+       },
+       "position": {
+        "id": "4",
+        "name": "Defense",
+        "displayName": "Defense",
+        "abbreviation": "D",
+        "leaf": true
+       },
+       "team": {
+        "id": "25",
+        "uid": "s:70~l:90~t:25",
+        "slug": "anaheim-ducks",
+        "name": "Ducks",
+        "abbreviation": "ANA",
+        "displayName": "Anaheim Ducks",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500/ana.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "default"
+          ],
+          "lastUpdated": "2024-07-02T15:51Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500-dark/ana.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "dark"
+          ],
+          "lastUpdated": "2024-06-26T17:24Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500/scoreboard/ana.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "scoreboard"
+          ],
+          "lastUpdated": "2024-07-02T15:51Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500-dark/scoreboard/ana.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "scoreboard",
+           "dark"
+          ],
+          "lastUpdated": "2024-06-26T17:24Z"
+         },
+         "... 12 more"
+        ],
+        "links": [
+         {
+          "language": "en-US",
+          "rel": [
+           "clubhouse",
+           "desktop",
+           "team"
+          ],
+          "href": "https://www.espn.com/nhl/team/_/name/ana/anaheim-ducks",
+          "text": "Clubhouse",
+          "shortText": "Clubhouse",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "clubhouse",
+           "mobile",
+           "team"
+          ],
+          "href": "https://m.espn.com/nhl/clubhouse?teamId=25",
+          "text": "Clubhouse",
+          "shortText": "Clubhouse",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "roster",
+           "desktop",
+           "team"
+          ],
+          "href": "https://www.espn.com/nhl/team/roster/_/name/ana/anaheim-ducks",
+          "text": "Roster",
+          "shortText": "Roster",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "roster",
+           "sportscenter",
+           "app",
+           "team"
+          ],
+          "href": "sportscenter://x-callback-url/showClubhouse?uid=s:70~l:90~t:25&section=roster",
+          "text": "Roster",
+          "shortText": "Roster",
+          "isExternal": false,
+          "isPremium": false
+         },
+         "... 8 more"
+        ]
+       },
+       "notes": {
+        "items": []
+       },
+       "status": {
+        "id": "1",
+        "name": "Active",
+        "type": "active",
+        "abbreviation": "Active"
+       }
+      },
+      "source": {
+       "id": "1",
+       "description": "basic/manual",
+       "state": "basic"
+      },
+      "type": {
+       "id": "5",
+       "name": "INJURY_STATUS_IR",
+       "description": "Injured Reserve",
+       "abbreviation": "IR"
+      },
+      "details": {
+       "fantasyStatus": {
+        "description": "IR",
+        "abbreviation": "IR"
+       },
+       "type": "Lower Body",
+       "detail": "Not Specified",
+       "side": "Not Specified",
+       "returnDate": "2026-10-16"
+      }
+     }
+    ]
+   },
+   {
+    "id": "2",
+    "displayName": "Buffalo Sabres",
+    "injuries": [
+     {
+      "id": "595858",
+      "longComment": "day-to-day",
+      "shortComment": "day-to-day",
+      "status": "Day-To-Day",
+      "date": "2026-10-14T13:14Z",
+      "athlete": {
+       "firstName": "Rasmus",
+       "lastName": "Dahlin",
+       "displayName": "Rasmus Dahlin",
+       "shortName": "R. Dahlin",
+       "links": [
+        {
+         "language": "en-US",
+         "rel": [
+          "playercard",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/_/id/4294163",
+         "text": "Player Card",
+         "shortText": "Player Card",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "stats",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/stats/_/id/4294163/rasmus-dahlin",
+         "text": "Stats",
+         "shortText": "Stats",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "stats",
+          "sportscenter",
+          "app",
+          "athlete"
+         ],
+         "href": "sportscenter://x-callback-url/showClubhouse?uid=s:70~l:90~a:4294163&section=stats",
+         "text": "Stats",
+         "shortText": "Stats",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "splits",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/splits/_/id/4294163/rasmus-dahlin",
+         "text": "Splits",
+         "shortText": "Splits",
+         "isExternal": false,
+         "isPremium": false
+        },
+        "... 8 more"
+       ],
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/nhl/players/full/4294163.png",
+        "alt": "Rasmus Dahlin"
+       },
+       "position": {
+        "id": "4",
+        "name": "Defense",
+        "displayName": "Defense",
+        "abbreviation": "D",
+        "leaf": true
+       },
+       "team": {
+        "id": "2",
+        "uid": "s:70~l:90~t:2",
+        "slug": "buffalo-sabres",
+        "name": "Sabres",
+        "abbreviation": "BUF",
+        "displayName": "Buffalo Sabres",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500/buf.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "default"
+          ],
+          "lastUpdated": "2024-07-02T15:51Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500-dark/buf.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "dark"
+          ],
+          "lastUpdated": "2024-07-02T15:46Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500/scoreboard/buf.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "scoreboard"
+          ],
+          "lastUpdated": "2024-07-02T15:51Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500-dark/scoreboard/buf.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "scoreboard",
+           "dark"
+          ],
+          "lastUpdated": "2024-07-02T15:46Z"
+         },
+         "... 12 more"
+        ],
+        "links": [
+         {
+          "language": "en-US",
+          "rel": [
+           "clubhouse",
+           "desktop",
+           "team"
+          ],
+          "href": "https://www.espn.com/nhl/team/_/name/buf/buffalo-sabres",
+          "text": "Clubhouse",
+          "shortText": "Clubhouse",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "clubhouse",
+           "mobile",
+           "team"
+          ],
+          "href": "https://m.espn.com/nhl/clubhouse?teamId=2",
+          "text": "Clubhouse",
+          "shortText": "Clubhouse",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "roster",
+           "desktop",
+           "team"
+          ],
+          "href": "https://www.espn.com/nhl/team/roster/_/name/buf/buffalo-sabres",
+          "text": "Roster",
+          "shortText": "Roster",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "roster",
+           "sportscenter",
+           "app",
+           "team"
+          ],
+          "href": "sportscenter://x-callback-url/showClubhouse?uid=s:70~l:90~t:2&section=roster",
+          "text": "Roster",
+          "shortText": "Roster",
+          "isExternal": false,
+          "isPremium": false
+         },
+         "... 8 more"
+        ]
+       },
+       "notes": {
+        "items": [
+         {
+          "id": "595858",
+          "type": "news",
+          "date": "2026-10-14T13:14Z",
+          "headline": "day-to-day",
+          "text": "day-to-day",
+          "source": "RotoWire",
+          "injury": {
+           "$ref": "http://sports.core.api.espn.pvt/v2/sports/hockey/leagues/nhl/seasons/2027/athletes/4294163/injuries/595858?lang=en&region=us"
+          }
+         },
+         {
+          "id": "595625",
+          "type": "news",
+          "date": "2026-10-12T20:05Z",
+          "headline": "Dahlin (upper body) has been ruled out for Tuesday's game against Montreal, Heather Engel of NHL.com reports.",
+          "text": "Dahlin suffered an upper-body injury during Monday's matchup against the Panthers, and he won't travel with the Sabres ahead of the second half of the back-to-b...",
+          "source": "RotoWire",
+          "injury": {
+           "$ref": "http://sports.core.api.espn.pvt/v2/sports/hockey/leagues/nhl/seasons/2027/athletes/4294163/injuries/595625?lang=en&region=us"
+          }
+         },
+         {
+          "id": "595606",
+          "type": "news",
+          "date": "2026-10-12T18:35Z",
+          "headline": "out",
+          "text": "out",
+          "source": "RotoWire",
+          "injury": {
+           "$ref": "http://sports.core.api.espn.pvt/v2/sports/hockey/leagues/nhl/seasons/2027/athletes/4294163/injuries/595606?lang=en&region=us"
+          }
+         }
+        ]
+       },
+       "status": {
+        "id": "1",
+        "name": "Active",
+        "type": "active",
+        "abbreviation": "Active"
+       }
+      },
+      "source": {
+       "id": "1",
+       "description": "basic/manual",
+       "state": "basic"
+      },
+      "type": {
+       "id": "6",
+       "name": "INJURY_STATUS_DAYTODAY",
+       "description": "day-to-day",
+       "abbreviation": "DD"
+      },
+      "details": {
+       "fantasyStatus": {
+        "description": "Day-To-Day",
+        "abbreviation": "Day-To-Day"
+       },
+       "type": "Upper Body",
+       "detail": "Not Specified",
+       "side": "Not Specified",
+       "returnDate": "2026-10-15"
+      }
+     },
+     {
+      "id": "595732",
+      "longComment": "Buffalo placed Grzelcyk on injured reserve Tuesday. He hasn't played since Opening Night against Columbus on Oct. 1. With Rasmus Dahlin (upper body) and Grzelcy...",
+      "shortComment": "Grzelcyk (lower body) suffered a \"flare-up\" and could be out for at least \"a few days,\" head coach Lindy Ruff told Rachel Lenzi of The Buffalo News on Tuesday.",
+      "status": "Injured Reserve",
+      "date": "2026-10-13T20:51Z",
+      "athlete": {
+       "firstName": "Matt",
+       "lastName": "Grzelcyk",
+       "displayName": "Matt Grzelcyk",
+       "shortName": "M. Grzelcyk",
+       "links": [
+        {
+         "language": "en-US",
+         "rel": [
+          "playercard",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/_/id/3069448",
+         "text": "Player Card",
+         "shortText": "Player Card",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "stats",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/stats/_/id/3069448/matt-grzelcyk",
+         "text": "Stats",
+         "shortText": "Stats",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "stats",
+          "sportscenter",
+          "app",
+          "athlete"
+         ],
+         "href": "sportscenter://x-callback-url/showClubhouse?uid=s:70~l:90~a:3069448&section=stats",
+         "text": "Stats",
+         "shortText": "Stats",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "splits",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/splits/_/id/3069448/matt-grzelcyk",
+         "text": "Splits",
+         "shortText": "Splits",
+         "isExternal": false,
+         "isPremium": false
+        },
+        "... 8 more"
+       ],
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/nhl/players/full/3069448.png",
+        "alt": "Matt Grzelcyk"
+       },
+       "position": {
+        "id": "4",
+        "name": "Defense",
+        "displayName": "Defense",
+        "abbreviation": "D",
+        "leaf": true
+       },
+       "team": {
+        "id": "2",
+        "uid": "s:70~l:90~t:2",
+        "slug": "buffalo-sabres",
+        "name": "Sabres",
+        "abbreviation": "BUF",
+        "displayName": "Buffalo Sabres",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500/buf.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "default"
+          ],
+          "lastUpdated": "2024-07-02T15:51Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500-dark/buf.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "dark"
+          ],
+          "lastUpdated": "2024-07-02T15:46Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500/scoreboard/buf.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "scoreboard"
+          ],
+          "lastUpdated": "2024-07-02T15:51Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500-dark/scoreboard/buf.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "scoreboard",
+           "dark"
+          ],
+          "lastUpdated": "2024-07-02T15:46Z"
+         },
+         "... 12 more"
+        ],
+        "links": [
+         {
+          "language": "en-US",
+          "rel": [
+           "clubhouse",
+           "desktop",
+           "team"
+          ],
+          "href": "https://www.espn.com/nhl/team/_/name/buf/buffalo-sabres",
+          "text": "Clubhouse",
+          "shortText": "Clubhouse",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "clubhouse",
+           "mobile",
+           "team"
+          ],
+          "href": "https://m.espn.com/nhl/clubhouse?teamId=2",
+          "text": "Clubhouse",
+          "shortText": "Clubhouse",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "roster",
+           "desktop",
+           "team"
+          ],
+          "href": "https://www.espn.com/nhl/team/roster/_/name/buf/buffalo-sabres",
+          "text": "Roster",
+          "shortText": "Roster",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "roster",
+           "sportscenter",
+           "app",
+           "team"
+          ],
+          "href": "sportscenter://x-callback-url/showClubhouse?uid=s:70~l:90~t:2&section=roster",
+          "text": "Roster",
+          "shortText": "Roster",
+          "isExternal": false,
+          "isPremium": false
+         },
+         "... 8 more"
+        ]
+       },
+       "notes": {
+        "items": [
+         {
+          "id": "595732",
+          "type": "news",
+          "date": "2026-10-13T20:51Z",
+          "headline": "Grzelcyk (lower body) suffered a \"flare-up\" and could be out for at least \"a few days,\" head coach Lindy Ruff told Rachel Lenzi of The Buffalo News on Tuesday.",
+          "text": "Buffalo placed Grzelcyk on injured reserve Tuesday. He hasn't played since Opening Night against Columbus on Oct. 1. With Rasmus Dahlin (upper body) and Grzelcy...",
+          "source": "RotoWire",
+          "injury": {
+           "$ref": "http://sports.core.api.espn.pvt/v2/sports/hockey/leagues/nhl/seasons/2027/athletes/3069448/injuries/595732?lang=en&region=us"
+          }
+         },
+         {
+          "id": "595675",
+          "type": "news",
+          "date": "2026-10-13T15:03Z",
+          "headline": "ir",
+          "text": "ir",
+          "source": "RotoWire",
+          "injury": {
+           "$ref": "http://sports.core.api.espn.pvt/v2/sports/hockey/leagues/nhl/seasons/2027/athletes/3069448/injuries/595675?lang=en&region=us"
+          }
+         }
+        ]
+       },
+       "status": {
+        "id": "1",
+        "name": "Active",
+        "type": "active",
+        "abbreviation": "Active"
+       }
+      },
+      "source": {
+       "id": "1",
+       "description": "basic/manual",
+       "state": "basic"
+      },
+      "type": {
+       "id": "5",
+       "name": "INJURY_STATUS_IR",
+       "description": "Injured Reserve",
+       "abbreviation": "IR"
+      },
+      "details": {
+       "fantasyStatus": {
+        "description": "IR",
+        "abbreviation": "IR"
+       },
+       "type": "Lower Body",
+       "returnDate": "2026-10-21"
+      }
+     },
+     {
+      "id": "594873",
+      "longComment": "Zucker has spent the start of the regular season recovering from offseason sports hernia surgery, and while he appears to be trending in the right direction in ...",
+      "shortComment": "Zucker (abdomen) participated in Tuesday's morning skate but is still a few weeks away from returning to game action, Matthew Fairburn of The Athletic reports.",
+      "status": "Injured Reserve",
+      "date": "2026-10-06T15:10Z",
+      "athlete": {
+       "firstName": "Jason",
+       "lastName": "Zucker",
+       "displayName": "Jason Zucker",
+       "shortName": "J. Zucker",
+       "links": [
+        {
+         "language": "en-US",
+         "rel": [
+          "playercard",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/_/id/2593315",
+         "text": "Player Card",
+         "shortText": "Player Card",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "stats",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/stats/_/id/2593315/jason-zucker",
+         "text": "Stats",
+         "shortText": "Stats",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "stats",
+          "sportscenter",
+          "app",
+          "athlete"
+         ],
+         "href": "sportscenter://x-callback-url/showClubhouse?uid=s:70~l:90~a:2593315&section=stats",
+         "text": "Stats",
+         "shortText": "Stats",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "splits",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/splits/_/id/2593315/jason-zucker",
+         "text": "Splits",
+         "shortText": "Splits",
+         "isExternal": false,
+         "isPremium": false
+        },
+        "... 8 more"
+       ],
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/nhl/players/full/2593315.png",
+        "alt": "Jason Zucker"
+       },
+       "position": {
+        "id": "2",
+        "name": "Left Wing",
+        "displayName": "Left Wing",
+        "abbreviation": "LW",
+        "leaf": true
+       },
+       "team": {
+        "id": "2",
+        "uid": "s:70~l:90~t:2",
+        "slug": "buffalo-sabres",
+        "name": "Sabres",
+        "abbreviation": "BUF",
+        "displayName": "Buffalo Sabres",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500/buf.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "default"
+          ],
+          "lastUpdated": "2024-07-02T15:51Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500-dark/buf.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "dark"
+          ],
+          "lastUpdated": "2024-07-02T15:46Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500/scoreboard/buf.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "scoreboard"
+          ],
+          "lastUpdated": "2024-07-02T15:51Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500-dark/scoreboard/buf.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "scoreboard",
+           "dark"
+          ],
+          "lastUpdated": "2024-07-02T15:46Z"
+         },
+         "... 12 more"
+        ],
+        "links": [
+         {
+          "language": "en-US",
+          "rel": [
+           "clubhouse",
+           "desktop",
+           "team"
+          ],
+          "href": "https://www.espn.com/nhl/team/_/name/buf/buffalo-sabres",
+          "text": "Clubhouse",
+          "shortText": "Clubhouse",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "clubhouse",
+           "mobile",
+           "team"
+          ],
+          "href": "https://m.espn.com/nhl/clubhouse?teamId=2",
+          "text": "Clubhouse",
+          "shortText": "Clubhouse",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "roster",
+           "desktop",
+           "team"
+          ],
+          "href": "https://www.espn.com/nhl/team/roster/_/name/buf/buffalo-sabres",
+          "text": "Roster",
+          "shortText": "Roster",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "roster",
+           "sportscenter",
+           "app",
+           "team"
+          ],
+          "href": "sportscenter://x-callback-url/showClubhouse?uid=s:70~l:90~t:2&section=roster",
+          "text": "Roster",
+          "shortText": "Roster",
+          "isExternal": false,
+          "isPremium": false
+         },
+         "... 8 more"
+        ]
+       },
+       "notes": {
+        "items": []
+       },
+       "status": {
+        "id": "1",
+        "name": "Active",
+        "type": "active",
+        "abbreviation": "Active"
+       }
+      },
+      "source": {
+       "id": "1",
+       "description": "basic/manual",
+       "state": "basic"
+      },
+      "type": {
+       "id": "5",
+       "name": "INJURY_STATUS_IR",
+       "description": "Injured Reserve",
+       "abbreviation": "IR"
+      },
+      "details": {
+       "fantasyStatus": {
+        "description": "IR",
+        "abbreviation": "IR"
+       },
+       "type": "Abdomen",
+       "detail": "Surgery",
+       "side": "Not Specified",
+       "returnDate": "2026-10-15"
+      }
+     },
+     {
+      "id": "594872",
+      "longComment": "According to head coach Lindy Ruff, Lyon is still without a timetable for return from the injury he suffered late in the preseason. However, his presence at Tue...",
+      "shortComment": "Lyon (upper body) was spotted practicing at Tuesday's optional morning skate, per Matthew Fairburn of The Athletic.",
+      "status": "Injured Reserve",
+      "date": "2026-10-06T15:07Z",
+      "athlete": {
+       "firstName": "Alex",
+       "lastName": "Lyon",
+       "displayName": "Alex Lyon",
+       "shortName": "A. Lyon",
+       "links": [
+        {
+         "language": "en-US",
+         "rel": [
+          "playercard",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/_/id/3654006",
+         "text": "Player Card",
+         "shortText": "Player Card",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "stats",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/stats/_/id/3654006/alex-lyon",
+         "text": "Stats",
+         "shortText": "Stats",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "stats",
+          "sportscenter",
+          "app",
+          "athlete"
+         ],
+         "href": "sportscenter://x-callback-url/showClubhouse?uid=s:70~l:90~a:3654006&section=stats",
+         "text": "Stats",
+         "shortText": "Stats",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "splits",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/splits/_/id/3654006/alex-lyon",
+         "text": "Splits",
+         "shortText": "Splits",
+         "isExternal": false,
+         "isPremium": false
+        },
+        "... 8 more"
+       ],
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/nhl/players/full/3654006.png",
+        "alt": "Alex Lyon"
+       },
+       "position": {
+        "id": "5",
+        "name": "Goaltender",
+        "displayName": "Goaltender",
+        "abbreviation": "G",
+        "leaf": false
+       },
+       "team": {
+        "id": "2",
+        "uid": "s:70~l:90~t:2",
+        "slug": "buffalo-sabres",
+        "name": "Sabres",
+        "abbreviation": "BUF",
+        "displayName": "Buffalo Sabres",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500/buf.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "default"
+          ],
+          "lastUpdated": "2024-07-02T15:51Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500-dark/buf.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "dark"
+          ],
+          "lastUpdated": "2024-07-02T15:46Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500/scoreboard/buf.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "scoreboard"
+          ],
+          "lastUpdated": "2024-07-02T15:51Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500-dark/scoreboard/buf.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "scoreboard",
+           "dark"
+          ],
+          "lastUpdated": "2024-07-02T15:46Z"
+         },
+         "... 12 more"
+        ],
+        "links": [
+         {
+          "language": "en-US",
+          "rel": [
+           "clubhouse",
+           "desktop",
+           "team"
+          ],
+          "href": "https://www.espn.com/nhl/team/_/name/buf/buffalo-sabres",
+          "text": "Clubhouse",
+          "shortText": "Clubhouse",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "clubhouse",
+           "mobile",
+           "team"
+          ],
+          "href": "https://m.espn.com/nhl/clubhouse?teamId=2",
+          "text": "Clubhouse",
+          "shortText": "Clubhouse",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "roster",
+           "desktop",
+           "team"
+          ],
+          "href": "https://www.espn.com/nhl/team/roster/_/name/buf/buffalo-sabres",
+          "text": "Roster",
+          "shortText": "Roster",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "roster",
+           "sportscenter",
+           "app",
+           "team"
+          ],
+          "href": "sportscenter://x-callback-url/showClubhouse?uid=s:70~l:90~t:2&section=roster",
+          "text": "Roster",
+          "shortText": "Roster",
+          "isExternal": false,
+          "isPremium": false
+         },
+         "... 8 more"
+        ]
+       },
+       "notes": {
+        "items": []
+       },
+       "status": {
+        "id": "1",
+        "name": "Active",
+        "type": "active",
+        "abbreviation": "Active"
+       }
+      },
+      "source": {
+       "id": "1",
+       "description": "basic/manual",
+       "state": "basic"
+      },
+      "type": {
+       "id": "5",
+       "name": "INJURY_STATUS_IR",
+       "description": "Injured Reserve",
+       "abbreviation": "IR"
+      },
+      "details": {
+       "fantasyStatus": {
+        "description": "IR",
+        "abbreviation": "IR"
+       },
+       "type": "Upper Body",
+       "returnDate": "2026-10-24"
+      }
+     },
+     "... 3 more"
+    ]
+   },
+   {
+    "id": "3",
+    "displayName": "Calgary Flames",
+    "injuries": [
+     {
+      "id": "595598",
+      "longComment": "Honzek missed Saturday's game against the Ducks due to a previously unspecified injury, but it's now been revealed that he's dealing with a lower-body issue. Af...",
+      "shortComment": "The Flames announced Monday that Honzek is considered week-to-week due to a lower-body injury.",
+      "status": "Out",
+      "date": "2026-10-12T16:39Z",
+      "athlete": {
+       "firstName": "Samuel",
+       "lastName": "Honzek",
+       "displayName": "Samuel Honzek",
+       "shortName": "S. Honzek",
+       "links": [
+        {
+         "language": "en-US",
+         "rel": [
+          "playercard",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/_/id/5149191",
+         "text": "Player Card",
+         "shortText": "Player Card",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "stats",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/stats/_/id/5149191/samuel-honzek",
+         "text": "Stats",
+         "shortText": "Stats",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "stats",
+          "sportscenter",
+          "app",
+          "athlete"
+         ],
+         "href": "sportscenter://x-callback-url/showClubhouse?uid=s:70~l:90~a:5149191&section=stats",
+         "text": "Stats",
+         "shortText": "Stats",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "splits",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/splits/_/id/5149191/samuel-honzek",
+         "text": "Splits",
+         "shortText": "Splits",
+         "isExternal": false,
+         "isPremium": false
+        },
+        "... 8 more"
+       ],
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/nhl/players/full/5149191.png",
+        "alt": "Samuel Honzek"
+       },
+       "position": {
+        "id": "2",
+        "name": "Left Wing",
+        "displayName": "Left Wing",
+        "abbreviation": "LW",
+        "leaf": true
+       },
+       "team": {
+        "id": "3",
+        "uid": "s:70~l:90~t:3",
+        "slug": "calgary-flames",
+        "name": "Flames",
+        "abbreviation": "CGY",
+        "displayName": "Calgary Flames",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500/cgy.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "default"
+          ],
+          "lastUpdated": "2024-07-02T15:51Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500-dark/cgy.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "dark"
+          ],
+          "lastUpdated": "2024-07-02T15:46Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500/scoreboard/cgy.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "scoreboard"
+          ],
+          "lastUpdated": "2024-07-02T15:51Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500-dark/scoreboard/cgy.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "scoreboard",
+           "dark"
+          ],
+          "lastUpdated": "2024-07-02T15:46Z"
+         },
+         "... 12 more"
+        ],
+        "links": [
+         {
+          "language": "en-US",
+          "rel": [
+           "clubhouse",
+           "desktop",
+           "team"
+          ],
+          "href": "https://www.espn.com/nhl/team/_/name/cgy/calgary-flames",
+          "text": "Clubhouse",
+          "shortText": "Clubhouse",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "clubhouse",
+           "mobile",
+           "team"
+          ],
+          "href": "https://m.espn.com/nhl/clubhouse?teamId=3",
+          "text": "Clubhouse",
+          "shortText": "Clubhouse",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "roster",
+           "desktop",
+           "team"
+          ],
+          "href": "https://www.espn.com/nhl/team/roster/_/name/cgy/calgary-flames",
+          "text": "Roster",
+          "shortText": "Roster",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "roster",
+           "sportscenter",
+           "app",
+           "team"
+          ],
+          "href": "sportscenter://x-callback-url/showClubhouse?uid=s:70~l:90~t:3&section=roster",
+          "text": "Roster",
+          "shortText": "Roster",
+          "isExternal": false,
+          "isPremium": false
+         },
+         "... 8 more"
+        ]
+       },
+       "notes": {
+        "items": [
+         {
+          "id": "595599",
+          "type": "news",
+          "date": "2026-10-12T16:39Z",
+          "headline": "out",
+          "text": "out",
+          "source": "RotoWire",
+          "injury": {
+           "$ref": "http://sports.core.api.espn.pvt/v2/sports/hockey/leagues/nhl/seasons/2027/athletes/5149191/injuries/595599?lang=en&region=us"
+          }
+         },
+         {
+          "id": "595598",
+          "type": "news",
+          "date": "2026-10-12T16:39Z",
+          "headline": "The Flames announced Monday that Honzek is considered week-to-week due to a lower-body injury.",
+          "text": "Honzek missed Saturday's game against the Ducks due to a previously unspecified injury, but it's now been revealed that he's dealing with a lower-body issue. Af...",
+          "source": "RotoWire",
+          "injury": {
+           "$ref": "http://sports.core.api.espn.pvt/v2/sports/hockey/leagues/nhl/seasons/2027/athletes/5149191/injuries/595598?lang=en&region=us"
+          }
+         },
+         {
+          "id": "595508",
+          "type": "news",
+          "date": "2026-10-11T12:50Z",
+          "headline": "day-to-day",
+          "text": "day-to-day",
+          "source": "RotoWire",
+          "injury": {
+           "$ref": "http://sports.core.api.espn.pvt/v2/sports/hockey/leagues/nhl/seasons/2027/athletes/5149191/injuries/595508?lang=en&region=us"
+          }
+         },
+         {
+          "id": "595340",
+          "type": "news",
+          "date": "2026-10-10T17:37Z",
+          "headline": "out",
+          "text": "out",
+          "source": "RotoWire",
+          "injury": {
+           "$ref": "http://sports.core.api.espn.pvt/v2/sports/hockey/leagues/nhl/seasons/2027/athletes/5149191/injuries/595340?lang=en&region=us"
+          }
+         }
+        ]
+       },
+       "status": {
+        "id": "1",
+        "name": "Active",
+        "type": "active",
+        "abbreviation": "Active"
+       }
+      },
+      "source": {
+       "id": "1",
+       "description": "basic/manual",
+       "state": "basic"
+      },
+      "type": {
+       "id": "4",
+       "name": "INJURY_STATUS_OUT",
+       "description": "out",
+       "abbreviation": "O"
+      },
+      "details": {
+       "fantasyStatus": {
+        "description": "OUT",
+        "abbreviation": "OUT"
+       },
+       "type": "Lower Body",
+       "returnDate": "2026-10-22"
+      }
+     },
+     {
+      "id": "594122",
+      "longComment": "Huberdeau missed the final 26 games of the 2025-26 regular season. He won't be available at the beginning of the 2026-27 campaign, and it's unclear when he will...",
+      "shortComment": "Huberdeau (hip) was placed on injured reserve Monday, per Pat Steinberg of QR Calgary 770 AM.",
+      "status": "Injured Reserve",
+      "date": "2026-09-28T21:15Z",
+      "athlete": {
+       "firstName": "Jonathan",
+       "lastName": "Huberdeau",
+       "displayName": "Jonathan Huberdeau",
+       "shortName": "J. Huberdeau",
+       "links": [
+        {
+         "language": "en-US",
+         "rel": [
+          "playercard",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/_/id/2562606",
+         "text": "Player Card",
+         "shortText": "Player Card",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "stats",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/stats/_/id/2562606/jonathan-huberdeau",
+         "text": "Stats",
+         "shortText": "Stats",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "stats",
+          "sportscenter",
+          "app",
+          "athlete"
+         ],
+         "href": "sportscenter://x-callback-url/showClubhouse?uid=s:70~l:90~a:2562606&section=stats",
+         "text": "Stats",
+         "shortText": "Stats",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "splits",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/splits/_/id/2562606/jonathan-huberdeau",
+         "text": "Splits",
+         "shortText": "Splits",
+         "isExternal": false,
+         "isPremium": false
+        },
+        "... 8 more"
+       ],
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/nhl/players/full/2562606.png",
+        "alt": "Jonathan Huberdeau"
+       },
+       "position": {
+        "id": "2",
+        "name": "Left Wing",
+        "displayName": "Left Wing",
+        "abbreviation": "LW",
+        "leaf": true
+       },
+       "team": {
+        "id": "3",
+        "uid": "s:70~l:90~t:3",
+        "slug": "calgary-flames",
+        "name": "Flames",
+        "abbreviation": "CGY",
+        "displayName": "Calgary Flames",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500/cgy.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "default"
+          ],
+          "lastUpdated": "2024-07-02T15:51Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500-dark/cgy.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "dark"
+          ],
+          "lastUpdated": "2024-07-02T15:46Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500/scoreboard/cgy.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "scoreboard"
+          ],
+          "lastUpdated": "2024-07-02T15:51Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500-dark/scoreboard/cgy.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "scoreboard",
+           "dark"
+          ],
+          "lastUpdated": "2024-07-02T15:46Z"
+         },
+         "... 12 more"
+        ],
+        "links": [
+         {
+          "language": "en-US",
+          "rel": [
+           "clubhouse",
+           "desktop",
+           "team"
+          ],
+          "href": "https://www.espn.com/nhl/team/_/name/cgy/calgary-flames",
+          "text": "Clubhouse",
+          "shortText": "Clubhouse",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "clubhouse",
+           "mobile",
+           "team"
+          ],
+          "href": "https://m.espn.com/nhl/clubhouse?teamId=3",
+          "text": "Clubhouse",
+          "shortText": "Clubhouse",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "roster",
+           "desktop",
+           "team"
+          ],
+          "href": "https://www.espn.com/nhl/team/roster/_/name/cgy/calgary-flames",
+          "text": "Roster",
+          "shortText": "Roster",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "roster",
+           "sportscenter",
+           "app",
+           "team"
+          ],
+          "href": "sportscenter://x-callback-url/showClubhouse?uid=s:70~l:90~t:3&section=roster",
+          "text": "Roster",
+          "shortText": "Roster",
+          "isExternal": false,
+          "isPremium": false
+         },
+         "... 8 more"
+        ]
+       },
+       "notes": {
+        "items": []
+       },
+       "status": {
+        "id": "1",
+        "name": "Active",
+        "type": "active",
+        "abbreviation": "Active"
+       }
+      },
+      "source": {
+       "id": "1",
+       "description": "basic/manual",
+       "state": "basic"
+      },
+      "type": {
+       "id": "5",
+       "name": "INJURY_STATUS_IR",
+       "description": "Injured Reserve",
+       "abbreviation": "IR"
+      },
+      "details": {
+       "fantasyStatus": {
+        "description": "IR",
+        "abbreviation": "IR"
+       },
+       "type": "Hip",
+       "detail": "Surgery",
+       "returnDate": "2026-11-02"
+      }
+     }
+    ]
+   },
+   {
+    "id": "7",
+    "displayName": "Carolina Hurricanes",
+    "injuries": [
+     {
+      "id": "595901",
+      "longComment": "Nikishin hasn't signed a new contract as a restricted free agent and has officially requested a trade, though nothing has materialized as of yet. Even if the yo...",
+      "shortComment": "Nikishin (contract dispute) is on the Hurricanes' injured, non-roster list, per the NHL media site Wednesday.",
+      "status": "Injured Reserve",
+      "date": "2026-10-14T15:18Z",
+      "athlete": {
+       "firstName": "Alexander",
+       "lastName": "Nikishin",
+       "displayName": "Alexander Nikishin",
+       "shortName": "A. Nikishin",
+       "links": [
+        {
+         "language": "en-US",
+         "rel": [
+          "playercard",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/_/id/4915850",
+         "text": "Player Card",
+         "shortText": "Player Card",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "stats",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/stats/_/id/4915850/alexander-nikishin",
+         "text": "Stats",
+         "shortText": "Stats",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "stats",
+          "sportscenter",
+          "app",
+          "athlete"
+         ],
+         "href": "sportscenter://x-callback-url/showClubhouse?uid=s:70~l:90~a:4915850&section=stats",
+         "text": "Stats",
+         "shortText": "Stats",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "splits",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/splits/_/id/4915850/alexander-nikishin",
+         "text": "Splits",
+         "shortText": "Splits",
+         "isExternal": false,
+         "isPremium": false
+        },
+        "... 8 more"
+       ],
+       "position": {
+        "id": "4",
+        "name": "Defense",
+        "displayName": "Defense",
+        "abbreviation": "D",
+        "leaf": true
+       },
+       "team": {
+        "id": "7",
+        "uid": "s:70~l:90~t:7",
+        "slug": "carolina-hurricanes",
+        "name": "Hurricanes",
+        "abbreviation": "CAR",
+        "displayName": "Carolina Hurricanes",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500/car.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "default"
+          ],
+          "lastUpdated": "2024-07-02T15:51Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500-dark/car.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "dark"
+          ],
+          "lastUpdated": "2024-07-02T15:46Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500/scoreboard/car.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "scoreboard"
+          ],
+          "lastUpdated": "2024-07-02T15:51Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500-dark/scoreboard/car.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "scoreboard",
+           "dark"
+          ],
+          "lastUpdated": "2024-07-02T15:46Z"
+         },
+         "... 12 more"
+        ],
+        "links": [
+         {
+          "language": "en-US",
+          "rel": [
+           "clubhouse",
+           "desktop",
+           "team"
+          ],
+          "href": "https://www.espn.com/nhl/team/_/name/car/carolina-hurricanes",
+          "text": "Clubhouse",
+          "shortText": "Clubhouse",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "clubhouse",
+           "mobile",
+           "team"
+          ],
+          "href": "https://m.espn.com/nhl/clubhouse?teamId=7",
+          "text": "Clubhouse",
+          "shortText": "Clubhouse",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "roster",
+           "desktop",
+           "team"
+          ],
+          "href": "https://www.espn.com/nhl/team/roster/_/name/car/carolina-hurricanes",
+          "text": "Roster",
+          "shortText": "Roster",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "roster",
+           "sportscenter",
+           "app",
+           "team"
+          ],
+          "href": "sportscenter://x-callback-url/showClubhouse?uid=s:70~l:90~t:7&section=roster",
+          "text": "Roster",
+          "shortText": "Roster",
+          "isExternal": false,
+          "isPremium": false
+         },
+         "... 8 more"
+        ]
+       },
+       "notes": {
+        "items": [
+         {
+          "id": "595901",
+          "type": "news",
+          "date": "2026-10-14T15:18Z",
+          "headline": "Nikishin (contract dispute) is on the Hurricanes' injured, non-roster list, per the NHL media site Wednesday.",
+          "text": "Nikishin hasn't signed a new contract as a restricted free agent and has officially requested a trade, though nothing has materialized as of yet. Even if the yo...",
+          "source": "RotoWire",
+          "injury": {
+           "$ref": "http://sports.core.api.espn.pvt/v2/sports/hockey/leagues/nhl/seasons/2027/athletes/4915850/injuries/595901?lang=en&region=us"
+          }
+         },
+         {
+          "id": "595883",
+          "type": "news",
+          "date": "2026-10-14T14:36Z",
+          "headline": "ir-nr",
+          "text": "ir-nr",
+          "source": "RotoWire",
+          "injury": {
+           "$ref": "http://sports.core.api.espn.pvt/v2/sports/hockey/leagues/nhl/seasons/2027/athletes/4915850/injuries/595883?lang=en&region=us"
+          }
+         },
+         {
+          "id": "595308",
+          "type": "news",
+          "date": "2026-10-10T14:03Z",
+          "headline": "out",
+          "text": "out",
+          "source": "RotoWire",
+          "injury": {
+           "$ref": "http://sports.core.api.espn.pvt/v2/sports/hockey/leagues/nhl/seasons/2027/athletes/4915850/injuries/595308?lang=en&region=us"
+          }
+         },
+         {
+          "id": "595186",
+          "type": "news",
+          "date": "2026-10-09T13:04Z",
+          "headline": "day-to-day",
+          "text": "day-to-day",
+          "source": "RotoWire",
+          "injury": {
+           "$ref": "http://sports.core.api.espn.pvt/v2/sports/hockey/leagues/nhl/seasons/2027/athletes/4915850/injuries/595186?lang=en&region=us"
+          }
+         }
+        ]
+       },
+       "status": {
+        "id": "4",
+        "name": "Minors",
+        "type": "minors",
+        "abbreviation": "Minors"
+       }
+      },
+      "source": {
+       "id": "1",
+       "description": "basic/manual",
+       "state": "basic"
+      },
+      "type": {
+       "id": "5",
+       "name": "INJURY_STATUS_IR",
+       "description": "Injured Reserve",
+       "abbreviation": "IR"
+      },
+      "details": {
+       "fantasyStatus": {
+        "description": "IR-NR",
+        "abbreviation": "IR-NR"
+       },
+       "type": "Contract Dispute",
+       "detail": "Not Specified",
+       "side": "Not Specified",
+       "returnDate": "2026-11-01"
+      }
+     },
+     {
+      "id": "595749",
+      "longComment": "out",
+      "shortComment": "out",
+      "status": "Out",
+      "date": "2026-10-14T01:55Z",
+      "athlete": {
+       "firstName": "Taylor",
+       "lastName": "Hall",
+       "displayName": "Taylor Hall",
+       "shortName": "T. Hall",
+       "links": [
+        {
+         "language": "en-US",
+         "rel": [
+          "playercard",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/_/id/5428",
+         "text": "Player Card",
+         "shortText": "Player Card",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "stats",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/stats/_/id/5428/taylor-hall",
+         "text": "Stats",
+         "shortText": "Stats",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "stats",
+          "sportscenter",
+          "app",
+          "athlete"
+         ],
+         "href": "sportscenter://x-callback-url/showClubhouse?uid=s:70~l:90~a:5428&section=stats",
+         "text": "Stats",
+         "shortText": "Stats",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "splits",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/splits/_/id/5428/taylor-hall",
+         "text": "Splits",
+         "shortText": "Splits",
+         "isExternal": false,
+         "isPremium": false
+        },
+        "... 8 more"
+       ],
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/nhl/players/full/5428.png",
+        "alt": "Taylor Hall"
+       },
+       "position": {
+        "id": "2",
+        "name": "Left Wing",
+        "displayName": "Left Wing",
+        "abbreviation": "LW",
+        "leaf": true
+       },
+       "team": {
+        "id": "7",
+        "uid": "s:70~l:90~t:7",
+        "slug": "carolina-hurricanes",
+        "name": "Hurricanes",
+        "abbreviation": "CAR",
+        "displayName": "Carolina Hurricanes",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500/car.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "default"
+          ],
+          "lastUpdated": "2024-07-02T15:51Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500-dark/car.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "dark"
+          ],
+          "lastUpdated": "2024-07-02T15:46Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500/scoreboard/car.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "scoreboard"
+          ],
+          "lastUpdated": "2024-07-02T15:51Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500-dark/scoreboard/car.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "scoreboard",
+           "dark"
+          ],
+          "lastUpdated": "2024-07-02T15:46Z"
+         },
+         "... 12 more"
+        ],
+        "links": [
+         {
+          "language": "en-US",
+          "rel": [
+           "clubhouse",
+           "desktop",
+           "team"
+          ],
+          "href": "https://www.espn.com/nhl/team/_/name/car/carolina-hurricanes",
+          "text": "Clubhouse",
+          "shortText": "Clubhouse",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "clubhouse",
+           "mobile",
+           "team"
+          ],
+          "href": "https://m.espn.com/nhl/clubhouse?teamId=7",
+          "text": "Clubhouse",
+          "shortText": "Clubhouse",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "roster",
+           "desktop",
+           "team"
+          ],
+          "href": "https://www.espn.com/nhl/team/roster/_/name/car/carolina-hurricanes",
+          "text": "Roster",
+          "shortText": "Roster",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "roster",
+           "sportscenter",
+           "app",
+           "team"
+          ],
+          "href": "sportscenter://x-callback-url/showClubhouse?uid=s:70~l:90~t:7&section=roster",
+          "text": "Roster",
+          "shortText": "Roster",
+          "isExternal": false,
+          "isPremium": false
+         },
+         "... 8 more"
+        ]
+       },
+       "notes": {
+        "items": [
+         {
+          "id": "595749",
+          "type": "news",
+          "date": "2026-10-14T01:55Z",
+          "headline": "out",
+          "text": "out",
+          "source": "RotoWire",
+          "injury": {
+           "$ref": "http://sports.core.api.espn.pvt/v2/sports/hockey/leagues/nhl/seasons/2027/athletes/5428/injuries/595749?lang=en&region=us"
+          }
+         },
+         {
+          "id": "595744",
+          "type": "news",
+          "date": "2026-10-14T00:22Z",
+          "headline": "day-to-day",
+          "text": "day-to-day",
+          "source": "RotoWire",
+          "injury": {
+           "$ref": "http://sports.core.api.espn.pvt/v2/sports/hockey/leagues/nhl/seasons/2027/athletes/5428/injuries/595744?lang=en&region=us"
+          }
+         },
+         {
+          "id": "595419",
+          "type": "news",
+          "date": "2026-10-11T03:40Z",
+          "headline": "Hall deposited a goal and launched four shots on net in Saturday's 5-2 win over the Blackhawks.",
+          "text": "Hall continued his solid start to the new campaign Saturday, where he tallied the Hurricanes' fourth goal of the evening. Overall, the 34-year-old winger is up ...",
+          "source": "RotoWire"
+         },
+         {
+          "id": "595178",
+          "type": "news",
+          "date": "2026-10-09T11:49Z",
+          "headline": "Hall notched two assists, one on the power play, in Thursday's 7-2 rout of the Canucks.",
+          "text": "The veteran winger had a hand in the final two goals of Logan Stankoven's natural hat trick to round out the scoring for Carolina on the night. After being held...",
+          "source": "RotoWire"
+         },
+         "... 1 more"
+        ]
+       },
+       "status": {
+        "id": "1",
+        "name": "Active",
+        "type": "active",
+        "abbreviation": "Active"
+       }
+      },
+      "source": {
+       "id": "1",
+       "description": "basic/manual",
+       "state": "basic"
+      },
+      "type": {
+       "id": "4",
+       "name": "INJURY_STATUS_OUT",
+       "description": "out",
+       "abbreviation": "O"
+      },
+      "details": {
+       "fantasyStatus": {
+        "description": "OUT",
+        "abbreviation": "OUT"
+       },
+       "type": "Upper Body",
+       "returnDate": "2026-10-20"
+      }
+     },
+     {
+      "id": "595678",
+      "longComment": "out",
+      "shortComment": "out",
+      "status": "Out",
+      "date": "2026-10-13T15:20Z",
+      "athlete": {
+       "firstName": "Jordan",
+       "lastName": "Staal",
+       "displayName": "Jordan Staal",
+       "shortName": "J. Staal",
+       "links": [
+        {
+         "language": "en-US",
+         "rel": [
+          "playercard",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/_/id/3541",
+         "text": "Player Card",
+         "shortText": "Player Card",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "stats",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/stats/_/id/3541/jordan-staal",
+         "text": "Stats",
+         "shortText": "Stats",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "stats",
+          "sportscenter",
+          "app",
+          "athlete"
+         ],
+         "href": "sportscenter://x-callback-url/showClubhouse?uid=s:70~l:90~a:3541&section=stats",
+         "text": "Stats",
+         "shortText": "Stats",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "splits",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/splits/_/id/3541/jordan-staal",
+         "text": "Splits",
+         "shortText": "Splits",
+         "isExternal": false,
+         "isPremium": false
+        },
+        "... 8 more"
+       ],
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/nhl/players/full/3541.png",
+        "alt": "Jordan Staal"
+       },
+       "position": {
+        "id": "1",
+        "name": "Center",
+        "displayName": "Center",
+        "abbreviation": "C",
+        "leaf": true
+       },
+       "team": {
+        "id": "7",
+        "uid": "s:70~l:90~t:7",
+        "slug": "carolina-hurricanes",
+        "name": "Hurricanes",
+        "abbreviation": "CAR",
+        "displayName": "Carolina Hurricanes",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500/car.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "default"
+          ],
+          "lastUpdated": "2024-07-02T15:51Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500-dark/car.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "dark"
+          ],
+          "lastUpdated": "2024-07-02T15:46Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500/scoreboard/car.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "scoreboard"
+          ],
+          "lastUpdated": "2024-07-02T15:51Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500-dark/scoreboard/car.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "scoreboard",
+           "dark"
+          ],
+          "lastUpdated": "2024-07-02T15:46Z"
+         },
+         "... 12 more"
+        ],
+        "links": [
+         {
+          "language": "en-US",
+          "rel": [
+           "clubhouse",
+           "desktop",
+           "team"
+          ],
+          "href": "https://www.espn.com/nhl/team/_/name/car/carolina-hurricanes",
+          "text": "Clubhouse",
+          "shortText": "Clubhouse",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "clubhouse",
+           "mobile",
+           "team"
+          ],
+          "href": "https://m.espn.com/nhl/clubhouse?teamId=7",
+          "text": "Clubhouse",
+          "shortText": "Clubhouse",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "roster",
+           "desktop",
+           "team"
+          ],
+          "href": "https://www.espn.com/nhl/team/roster/_/name/car/carolina-hurricanes",
+          "text": "Roster",
+          "shortText": "Roster",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "roster",
+           "sportscenter",
+           "app",
+           "team"
+          ],
+          "href": "sportscenter://x-callback-url/showClubhouse?uid=s:70~l:90~t:7&section=roster",
+          "text": "Roster",
+          "shortText": "Roster",
+          "isExternal": false,
+          "isPremium": false
+         },
+         "... 8 more"
+        ]
+       },
+       "notes": {
+        "items": [
+         {
+          "id": "595678",
+          "type": "news",
+          "date": "2026-10-13T15:20Z",
+          "headline": "out",
+          "text": "out",
+          "source": "RotoWire",
+          "injury": {
+           "$ref": "http://sports.core.api.espn.pvt/v2/sports/hockey/leagues/nhl/seasons/2027/athletes/3541/injuries/595678?lang=en&region=us"
+          }
+         },
+         {
+          "id": "595581",
+          "type": "news",
+          "date": "2026-10-12T12:56Z",
+          "headline": "day-to-day",
+          "text": "day-to-day",
+          "source": "RotoWire",
+          "injury": {
+           "$ref": "http://sports.core.api.espn.pvt/v2/sports/hockey/leagues/nhl/seasons/2027/athletes/3541/injuries/595581?lang=en&region=us"
+          }
+         },
+         {
+          "id": "595535",
+          "type": "news",
+          "date": "2026-10-11T22:30Z",
+          "headline": "out",
+          "text": "out",
+          "source": "RotoWire",
+          "injury": {
+           "$ref": "http://sports.core.api.espn.pvt/v2/sports/hockey/leagues/nhl/seasons/2027/athletes/3541/injuries/595535?lang=en&region=us"
+          }
+         }
+        ]
+       },
+       "status": {
+        "id": "1",
+        "name": "Active",
+        "type": "active",
+        "abbreviation": "Active"
+       }
+      },
+      "source": {
+       "id": "1",
+       "description": "basic/manual",
+       "state": "basic"
+      },
+      "type": {
+       "id": "4",
+       "name": "INJURY_STATUS_OUT",
+       "description": "out",
+       "abbreviation": "O"
+      },
+      "details": {
+       "fantasyStatus": {
+        "description": "OUT",
+        "abbreviation": "OUT"
+       },
+       "type": "Calf",
+       "returnDate": "2026-12-03"
+      }
+     },
+     {
+      "id": "594004",
+      "longComment": "Jarvis was initially pegged to miss about 4-6 months after having shoulder surgery in June. However, he believes he could return ahead of schedule after taking ...",
+      "shortComment": "Jarvis (shoulder) was placed on the injured non-roster list Sunday.",
+      "status": "Injured Reserve",
+      "date": "2026-09-27T18:00Z",
+      "athlete": {
+       "firstName": "Seth",
+       "lastName": "Jarvis",
+       "displayName": "Seth Jarvis",
+       "shortName": "S. Jarvis",
+       "links": [
+        {
+         "language": "en-US",
+         "rel": [
+          "playercard",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/_/id/4697396",
+         "text": "Player Card",
+         "shortText": "Player Card",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "stats",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/stats/_/id/4697396/seth-jarvis",
+         "text": "Stats",
+         "shortText": "Stats",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "stats",
+          "sportscenter",
+          "app",
+          "athlete"
+         ],
+         "href": "sportscenter://x-callback-url/showClubhouse?uid=s:70~l:90~a:4697396&section=stats",
+         "text": "Stats",
+         "shortText": "Stats",
+         "isExternal": false,
+         "isPremium": false
+        },
+        {
+         "language": "en-US",
+         "rel": [
+          "splits",
+          "desktop",
+          "athlete"
+         ],
+         "href": "https://www.espn.com/nhl/player/splits/_/id/4697396/seth-jarvis",
+         "text": "Splits",
+         "shortText": "Splits",
+         "isExternal": false,
+         "isPremium": false
+        },
+        "... 8 more"
+       ],
+       "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/nhl/players/full/4697396.png",
+        "alt": "Seth Jarvis"
+       },
+       "position": {
+        "id": "1",
+        "name": "Center",
+        "displayName": "Center",
+        "abbreviation": "C",
+        "leaf": true
+       },
+       "team": {
+        "id": "7",
+        "uid": "s:70~l:90~t:7",
+        "slug": "carolina-hurricanes",
+        "name": "Hurricanes",
+        "abbreviation": "CAR",
+        "displayName": "Carolina Hurricanes",
+        "logos": [
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500/car.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "default"
+          ],
+          "lastUpdated": "2024-07-02T15:51Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500-dark/car.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "dark"
+          ],
+          "lastUpdated": "2024-07-02T15:46Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500/scoreboard/car.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "scoreboard"
+          ],
+          "lastUpdated": "2024-07-02T15:51Z"
+         },
+         {
+          "href": "https://a.espncdn.com/i/teamlogos/nhl/500-dark/scoreboard/car.png",
+          "width": 500,
+          "height": 500,
+          "alt": "",
+          "rel": [
+           "full",
+           "scoreboard",
+           "dark"
+          ],
+          "lastUpdated": "2024-07-02T15:46Z"
+         },
+         "... 12 more"
+        ],
+        "links": [
+         {
+          "language": "en-US",
+          "rel": [
+           "clubhouse",
+           "desktop",
+           "team"
+          ],
+          "href": "https://www.espn.com/nhl/team/_/name/car/carolina-hurricanes",
+          "text": "Clubhouse",
+          "shortText": "Clubhouse",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "clubhouse",
+           "mobile",
+           "team"
+          ],
+          "href": "https://m.espn.com/nhl/clubhouse?teamId=7",
+          "text": "Clubhouse",
+          "shortText": "Clubhouse",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "roster",
+           "desktop",
+           "team"
+          ],
+          "href": "https://www.espn.com/nhl/team/roster/_/name/car/carolina-hurricanes",
+          "text": "Roster",
+          "shortText": "Roster",
+          "isExternal": false,
+          "isPremium": false
+         },
+         {
+          "language": "en-US",
+          "rel": [
+           "roster",
+           "sportscenter",
+           "app",
+           "team"
+          ],
+          "href": "sportscenter://x-callback-url/showClubhouse?uid=s:70~l:90~t:7&section=roster",
+          "text": "Roster",
+          "shortText": "Roster",
+          "isExternal": false,
+          "isPremium": false
+         },
+         "... 8 more"
+        ]
+       },
+       "notes": {
+        "items": []
+       },
+       "status": {
+        "id": "1",
+        "name": "Active",
+        "type": "active",
+        "abbreviation": "Active"
+       }
+      },
+      "source": {
+       "id": "1",
+       "description": "basic/manual",
+       "state": "basic"
+      },
+      "type": {
+       "id": "5",
+       "name": "INJURY_STATUS_IR",
+       "description": "Injured Reserve",
+       "abbreviation": "IR"
+      },
+      "details": {
+       "fantasyStatus": {
+        "description": "IR-NR",
+        "abbreviation": "IR-NR"
+       },
+       "type": "Shoulder",
+       "detail": "Surgery",
+       "side": "Not Specified",
+       "returnDate": "2026-10-24"
+      }
+     }
+    ]
+   },
+   "... 26 more"
+  ]
+ }
+}
