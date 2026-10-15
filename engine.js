@@ -195,6 +195,12 @@
     return (sv + LG_SV * 600) / (sa + 600);
   }
 
+  function teamSv(data, team, before) {
+    let sa = 0, sv = 0;
+    ((data.teamGoalies || {})[team] || []).forEach((gid) => (data.goalies[gid] || []).forEach((s) => { if (s[0] < before) { sa += s[1]; sv += s[2]; } }));
+    return (sv + LG_SV * 600) / (sa + 600);
+  }
+
   // Baseball: run value of each probable starter vs a league-average starter, from his starts
   // before this game. Shrunk toward average until he has ~40 innings.
   function starterRuns(data, pid, before) {
@@ -228,9 +234,9 @@
     }
     if (FAMILY === 'hockey' && data && data.goalies && settings.goalie) {
       const hg = lines.hg !== undefined ? lines.hg : game.hg, ag = lines.ag !== undefined ? lines.ag : game.ag;
-      const tsv = (t) => 1 - div(t.S.o_gf, t.S.o_sf);
-      const adj = (gid, team) => gid ? (goalieSv(data, gid, game.w) - tsv(team)) * 28 : 0; // goals saved vs the team's usual goaltending
-      goalie = { h: adj(hg, h), a: adj(ag, a), hg, ag };
+      // goals saved vs the team's usual goaltending, both measured from goalie box scores
+      const adj = (gid, team) => gid ? (goalieSv(data, gid, game.w) - teamSv(data, team, game.w)) * 28 : 0;
+      goalie = { h: adj(hg, game.h), a: adj(ag, game.a), hg, ag };
       margin += (goalie.h - goalie.a) * settings.goalie / 5;
     }
     let starter = null;

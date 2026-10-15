@@ -303,13 +303,17 @@ def odds_lines(sport_key, sched, names, cache_name):
                         if ho and ao:
                             line['hml'], line['aml'] = int(ho['price']), int(ao['price'])
                     if m['key'] == 'spreads' and 'sp' not in line:
-                        ho = oc.get(ev['home_team'])
+                        ho, ao = oc.get(ev['home_team']), oc.get(ev['away_team'])
                         if ho and ho.get('point') is not None:
                             line['sp'] = -float(ho['point'])
+                            line['hspp'] = int(ho['price']) if ho.get('price') is not None else None
+                            line['aspp'] = int(ao['price']) if ao and ao.get('price') is not None else None
                     if m['key'] == 'totals' and 'tot' not in line:
-                        ov = oc.get('Over')
+                        ov, un = oc.get('Over'), oc.get('Under')
                         if ov and ov.get('point') is not None:
                             line['tot'] = float(ov['point'])
+                            line['ovp'] = int(ov['price']) if ov.get('price') is not None else None
+                            line['unp'] = int(un['price']) if un and un.get('price') is not None else None
             if line:
                 cache[str(g['id'])] = line
     save_cache(cache_name, cache)
@@ -317,6 +321,9 @@ def odds_lines(sport_key, sched, names, cache_name):
         l = cache.get(str(g['id']))
         if l:
             g['sp'], g['tot'], g['hml'], g['aml'] = l.get('sp'), l.get('tot'), l.get('hml'), l.get('aml')
+            for k in ('hspp', 'aspp', 'ovp', 'unp'):
+                if l.get(k) is not None:
+                    g[k] = l[k]
     return note, cache.get('_remaining')
 
 
@@ -442,7 +449,7 @@ def build_nhl(_season):
                 seasonLabel=f'{y}-{str(y + 1)[2:]}', sigma=2.4, sigmaTot=2.3, btSkip=10, formN=5,
                 hfa=0.15, trust=55, bye=0.2, rest='b2b', unit='goals', spreadName='Puck line',
                 edgeSteps=[0.25, 0.5, 0.75, 1], edgeDefault=0.5, hfaMax=0.5, hfaStep=0.05, byeMax=0.5, byeStep=0.05,
-                goalie=True, lgSv=round(1 - sum(r['gf'] for r in team_games) / max(sum(r['sf'] for r in team_games), 1), 4),
+                goalie=True, lgSv=round(sum(x[2] for v in goalies.values() for x in v) / max(sum(x[1] for v in goalies.values() for x in v), 1), 4),
                 source='NHL stats API · lines from The Odds API · injuries from ESPN', oddsNote=note, oddsRemaining=remaining)
     return dict(meta=meta, season=y, teamGames=team_games, games=sched, players=players, goalies=goalies, gnames=gnames,
                 teamGoalies=team_goalies, injuries=injuries)
@@ -943,7 +950,7 @@ def build_cfb(season):
 
     meta = dict(sport='cfb', label='College football', family='football', period='Week', sigma=16, sigmaTot=15, btSkip=2,
                 hfa=2.5, trust=70, bye=1.0, rest='bye', formN=3, props=False, weather=True,
-                priors=priors, priorGames=4, priorLabel=f'{season - 1} SP+',
+                priors=priors, priorGames=3, priorLabel=f'{season - 1} SP+',
                 source='CollegeFootballData.com · injuries from ESPN · weather from Open-Meteo', **FOOTBALL_UI)
     return dict(meta=meta, season=season, teamGames=team_games, games=sched, players=[], injuries=injuries)
 
@@ -970,7 +977,9 @@ def main():
             data = SPORTS[sport](args.season)
             changed = write_if_changed(os.path.join(DATA_DIR, sport + '.json'), data)
             done = [g for g in data['games'] if g['hs'] is not None]
-            status[sport] = dict(ok=True, season=data['season'], finals=len(done),
+            today = datetime.datetime.now(ET).date().isoformat()
+            nxt = min((g['d'] for g in data['games'] if g['hs'] is None and g.get('d') and g['d'] >= today), default=None)
+            status[sport] = dict(ok=True, season=data['season'], finals=len(done), next=nxt,
                                  through=max((g['d'] for g in done), default=''),
                                  upcoming=len(data['games']) - len(done), rows=len(data['teamGames']))
             print(f"{sport}: {'updated' if changed else 'no change'} - {status[sport]}")
