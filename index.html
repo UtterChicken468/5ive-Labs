@@ -510,12 +510,9 @@ function gameCard({ g, L, pr }) {
   if (hasMl) cands.push({ type: 'ml', side: mlTeam, text: mlTeam + ' to win', p: mlTeam === g.h ? pr.pHome : pr.pAway, price: mlTeam === g.h ? L.hml : L.aml });
   cands.forEach((c) => { c.ev = E.evPerUnit(c.p, c.price); });
   const best = cands.sort((a, b) => b.ev - a.ev)[0];
-  const BE = 0.524; // a -110 bet needs to win 52.4% to break even
-  const hot = (Math.abs(pr.spEdge || 0) >= S.edgeMin && coverP >= BE) || (Math.abs(pr.totEdge || 0) >= S.edgeMin && totP >= BE);
+  const hot = (Math.abs(pr.spEdge || 0) >= S.edgeMin || Math.abs(pr.totEdge || 0) >= S.edgeMin);
   const ap = Math.round(pr.pAway * 100), hp = 100 - ap;
-  const gapPill = (v, unit, p) => v == null ? '' : `<span class="pill ${Math.abs(v) >= S.edgeMin && p >= BE ? 'acc' : 'flat'}">${Math.abs(v).toFixed(1)} ${unit}</span>`;
-  const MK = META.mkt || {};
-  const past = (k) => MK[k] && MK[k].hit != null ? `<span class="small muted" title="Every past game where the model was ${MK.edgeMin}+ off the line">past edges won ${MK[k].hit}%</span>` : '';
+  const gapPill = (v, unit) => v == null ? '' : `<span class="pill ${Math.abs(v) >= S.edgeMin ? 'acc' : 'flat'}">${Math.abs(v).toFixed(1)} ${unit}</span>`;
   const sp0 = (v) => v == null ? '' : -v; // book style for the home team
   return `<article class="game ${hot ? 'hot' : ''}">
     <div class="gh"><div class="matchup">${g.a}<span class="at">@</span>${g.h}</div><div class="kick">${kickoff(g)}${g.neu ? '<br>Neutral site' : ''}</div></div>
@@ -528,12 +525,12 @@ function gameCard({ g, L, pr }) {
       <span class="rl">${esc(spName)}</span>
       <span class="vc"><label for="sp-${g.id}">${g.h}</label><input type="number" step="0.5" id="sp-${g.id}" data-line="sp" data-g="${g.id}" value="${sp0(L.sp)}" placeholder="line">${moveNote(g, 'sp', L, pr)}</span>
       <span class="mc">${esc(bookSpread(g.h, half(pr.margin)))}</span>
-      <span class="ec">${pr.spEdge == null ? '<span class="muted small">enter line</span>' : `${gapPill(pr.spEdge, UNIT, coverP)}<span class="small">→ ${esc(spBet)}${spPrice != null && spPrice !== -110 ? ' (' + odds(spPrice) + ')' : ''}</span><span class="small muted">${pct(coverP)} to cover</span>${past('sp')}<button class="logbtn" data-log="spread" data-g="${g.id}" data-side="${spSide}">Log</button>`}</span>
+      <span class="ec">${pr.spEdge == null ? '<span class="muted small">enter line</span>' : `${gapPill(pr.spEdge, UNIT)}<span class="small">→ ${esc(spBet)}${spPrice != null && spPrice !== -110 ? ' (' + odds(spPrice) + ')' : ''}</span><span class="small muted">${pct(coverP)} to cover</span><button class="logbtn" data-log="spread" data-g="${g.id}" data-side="${spSide}">Log</button>`}</span>
 
       <span class="rl">Total</span>
       <span class="vc"><label for="tot-${g.id}">O/U</label><input type="number" step="0.5" id="tot-${g.id}" data-line="tot" data-g="${g.id}" value="${L.tot ?? ''}" placeholder="total">${moveNote(g, 'tot', L, pr)}</span>
       <span class="mc">${fmt(pr.total)}</span>
-      <span class="ec">${pr.totEdge == null ? `<span class="muted small">${L.tot == null ? 'enter total' : 'after both teams play'}</span>` : `${gapPill(pr.totEdge, UNIT, totP)}<span class="small">→ ${totSide} ${L.tot}${totPrice != null && totPrice !== -110 ? ' (' + odds(totPrice) + ')' : ''}</span><span class="small muted">${pct(totP)} chance</span>${past('tot')}<button class="logbtn" data-log="total" data-g="${g.id}" data-side="${totSide}">Log</button>`}</span>
+      <span class="ec">${pr.totEdge == null ? `<span class="muted small">${L.tot == null ? 'enter total' : 'after both teams play'}</span>` : `${gapPill(pr.totEdge, UNIT)}<span class="small">→ ${totSide} ${L.tot}${totPrice != null && totPrice !== -110 ? ' (' + odds(totPrice) + ')' : ''}</span><span class="small muted">${pct(totP)} chance</span><button class="logbtn" data-log="total" data-g="${g.id}" data-side="${totSide}">Log</button>`}</span>
 
       <span class="rl">Win chance</span>
       <span class="vc ml"><label for="aml-${g.id}">${g.a}</label><input type="number" step="5" id="aml-${g.id}" data-line="aml" data-g="${g.id}" value="${L.aml ?? ''}" placeholder="odds">
@@ -1406,8 +1403,7 @@ function bootGuide() {
       <li><b>Vegas | Your model | Edge:</b> each bet type is one row, read left to right. <b>Vegas</b> is the sportsbook's number (already filled in when available; type your own book's number if it differs). <b>Your model</b> is what the model thinks that number should be. <b>Edge</b> is the gap between the two and the bet it points to.</li>
       <li><b>Example:</b> Vegas has DEN +2.5, your model says DEN +1.5. The model thinks Denver should only be getting 1.5 points, so getting 2.5 is a gift: Edge shows "1.0 pts → DEN +2.5". Same idea for totals: Vegas 40.5, model 46.1 means a 5.6 point edge on the Over.</li>
       <li><b>Win chance row:</b> Vegas's chance comes from the moneyline odds (with the sportsbook's cut removed), next to the model's chance. The gap tells you which team the model is higher on than Vegas.</li>
-      <li><b>The chance is honest, not just the gap:</b> Vegas lines are sharp, so a big gap doesn't automatically mean a good bet. The "% chance" under each edge is based on how often gaps like that actually won in past seasons, and "past edges won" shows that record. In the NFL, for example, the model's spread and total gaps have won about 49% of the time, so those bets show close to 50% no matter how big the gap looks.</li>
-      <li><b>Highlighted edge:</b> the gap is bigger than your "Flag edges of" threshold <i>and</i> the honest chance is above 52.4%, the break-even rate at normal −110 odds.</li>
+      <li><b>Highlighted edge:</b> the gap is bigger than the threshold you set in "Flag edges of". Small gaps are noise.</li>
       <li><b>Model's best bet:</b> the bottom line picks the single bet with the best value (EV) at the current prices, and how likely the model thinks it is to hit.</li>
       <li><b>Log:</b> saves that pick to your Pick log so you can track how it does.</li>
       <li><b>Extras:</b> some cards show injuries (tap to open), kickoff weather, starting goalies or pitchers, and where the line opened ("moving toward you" means the market has moved in your model's direction, which is a good sign).</li>
