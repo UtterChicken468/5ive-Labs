@@ -72,6 +72,17 @@ header.mast h1 img { display: block; height: clamp(54px, 9vw, 86px); width: auto
 .layout.solo { grid-template-columns: minmax(0, 1fr) }
 @media (max-width: 920px) { .layout { grid-template-columns: minmax(0, 1fr) } }
 
+/* sync */
+.navrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; justify-content: space-between }
+.navrow .sports { flex: 1 1 auto }
+.syncbtn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 6px 12px; font-size: 13px; font-weight: 600; color: var(--muted) }
+.syncbtn.on { color: var(--good); border-color: var(--good) }
+.syncbtn.err { color: var(--bad); border-color: var(--bad) }
+.syncpanel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px; margin-bottom: 14px; display: grid; gap: 10px; max-width: 720px }
+.syncpanel ol { margin: 0; padding-left: 20px; display: grid; gap: 4px }
+.syncpanel .row { display: flex; gap: 8px; flex-wrap: wrap }
+.syncpanel .row input { flex: 1 1 260px; font-family: ui-monospace, Menlo, monospace; font-size: 13px }
+
 /* sport switcher */
 .sports { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px }
 .sport { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 6px 14px;
@@ -213,7 +224,8 @@ td input { width: 70px }
     <h1><img src="logo.png" width="950" height="306" alt="5ive Lab"></h1>
     <div class="stamp" id="stamp"></div>
   </header>
-  <nav class="sports" id="sports" aria-label="Sport"></nav>
+  <div class="navrow"><nav class="sports" id="sports" aria-label="Sport"></nav><button class="syncbtn" id="syncBtn" type="button">Sync: off</button></div>
+  <section class="syncpanel" id="syncPanel" hidden></section>
   <div class="hash" aria-hidden="true"></div>
 
   <div class="layout">
@@ -254,7 +266,7 @@ E.configure(META);
 const pre = META.sport === 'nfl' ? 'gml:' : 'gml:' + META.sport + ':';
 const store = {
   get(k, d) { try { const v = localStorage.getItem(pre + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
-  set(k, v) { try { localStorage.setItem(pre + k, JSON.stringify(v)); } catch (e) {} },
+  set(k, v) { try { localStorage.setItem(pre + k, JSON.stringify(v)); } catch (e) {} window.Sync && Sync.changed(pre + k); },
 };
 const SPORT_DEFAULTS = sportDefaults(META);
 const DAILY = META.period === 'Day';
@@ -897,9 +909,130 @@ async function bootEdges() {
   });
 }
 
+// ---------- sync across devices (a private GitHub Gist on your account) ----------
+const Sync = (() => {
+  const API = 'https://api.github.com', DESC = '5ive Lab sync', FILE = '5ive-lab-sync.json';
+  const ls = { get: (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} } };
+  const token = () => ls.get('gml_sync_token');
+  const tsMap = () => { try { return JSON.parse(ls.get('gml_sync_ts') || '{}'); } catch (e) { return {}; } };
+  let timer = 0, state = token() ? 'on' : 'off', lastMsg = '';
+  const synced = (k) => k.startsWith('gml:') && !/^gml:(sport|tab)$/.test(k) && !/:tab$/.test(k);
+  const headers = () => ({ Authorization: 'Bearer ' + token(), Accept: 'application/vnd.github+json' });
+  async function gistId() {
+    let id = ls.get('gml_sync_gist'); if (id) return id;
+    for (let page = 1; page <= 5; page++) {
+      const r = await fetch(`${API}/gists?per_page=100&page=${page}`, { headers: headers() });
+      if (!r.ok) throw new Error(r.status === 401 ? 'GitHub rejected the token' : 'GitHub error ' + r.status);
+      const list = await r.json();
+      const hit = list.find((g) => g.description === DESC && g.files && g.files[FILE]);
+      if (hit) { ls.set('gml_sync_gist', hit.id); return hit.id; }
+      if (list.length < 100) break;
+    }
+    const r = await fetch(`${API}/gists`, { method: 'POST', headers: headers(), body: JSON.stringify({ description: DESC, public: false, files: { [FILE]: { content: '{"v":1,"ts":{},"data":{}}' } } }) });
+    if (!r.ok) throw new Error(r.status === 403 || r.status === 404 ? 'The token needs Gists read and write permission' : 'GitHub error ' + r.status);
+    const g = await r.json(); ls.set('gml_sync_gist', g.id); return g.id;
+  }
+  function snapshot() {
+    const data = {}, ts = tsMap();
+    for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (synced(k)) data[k] = ls.get(k); }
+    return { v: 1, ts, data };
+  }
+  function merge(remote) { // newer value wins per setting; pick logs are combined
+    const local = tsMap(); let changed = false;
+    Object.entries(remote.data || {}).forEach(([k, v]) => {
+      if (!synced(k)) return;
+      const rt = (remote.ts || {})[k] || 0, lt = local[k] || 0, cur = ls.get(k);
+      if (/(^|:)picks$/.test(k) && cur && v && cur !== v) {
+        try {
+          const a = JSON.parse(cur), b = JSON.parse(v), seen = new Set(a.map((p) => p.ts));
+          const all = a.concat(b.filter((p) => !seen.has(p.ts))).sort((x, y) => x.ts - y.ts);
+          const out = JSON.stringify(all); if (out !== cur) { ls.set(k, out); changed = true; }
+          local[k] = Math.max(rt, lt); return;
+        } catch (e) {}
+      }
+      if (rt > lt || cur == null) { if (cur !== v) { ls.set(k, v); changed = true; } local[k] = rt; }
+    });
+    ls.set('gml_sync_ts', JSON.stringify(local));
+    return changed;
+  }
+  async function pull() {
+    if (!token()) return false;
+    try {
+      const id = await gistId();
+      const r = await fetch(`${API}/gists/${id}`, { headers: headers(), cache: 'no-store' });
+      if (r.status === 404) { ls.set('gml_sync_gist', ''); return pull(); }
+      if (!r.ok) throw new Error('GitHub error ' + r.status);
+      const g = await r.json(); const f = g.files && g.files[FILE];
+      let content = f && f.content; if (f && f.truncated) content = await (await fetch(f.raw_url)).text();
+      const changed = merge(JSON.parse(content || '{}'));
+      setState('on', 'Synced'); return changed;
+    } catch (e) { setState('err', String(e.message || e)); return false; }
+  }
+  async function push() {
+    if (!token()) return;
+    try {
+      const id = await gistId();
+      const r = await fetch(`${API}/gists/${id}`, { method: 'PATCH', headers: headers(), body: JSON.stringify({ files: { [FILE]: { content: JSON.stringify(snapshot()) } } }) });
+      if (!r.ok) throw new Error(r.status === 401 ? 'GitHub rejected the token' : 'GitHub error ' + r.status);
+      setState('on', 'Saved ' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }));
+    } catch (e) { setState('err', String(e.message || e)); }
+  }
+  function changed(k) {
+    if (!synced(k)) return;
+    const ts = tsMap(); ts[k] = Date.now(); ls.set('gml_sync_ts', JSON.stringify(ts));
+    if (!token()) return;
+    clearTimeout(timer); timer = setTimeout(push, 2000);
+  }
+  function setState(s, msg) {
+    state = s; lastMsg = msg || '';
+    const b = document.getElementById('syncBtn'); if (!b) return;
+    b.className = 'syncbtn ' + (s === 'on' ? 'on' : s === 'err' ? 'err' : '');
+    b.textContent = s === 'on' ? 'Sync: on' : s === 'err' ? 'Sync: problem' : 'Sync: off';
+    b.title = lastMsg;
+    if (!document.getElementById('syncPanel').hidden) panel();
+  }
+  function panel() {
+    const p = document.getElementById('syncPanel');
+    const on = !!token();
+    p.innerHTML = on ? `
+      <b>Sync is on for this device.</b>
+      <div class="small">${state === 'err' ? '<span style="color:var(--bad)">' + lastMsg.replace(/</g, '&lt;') + '</span>' : lastMsg ? lastMsg + '.' : ''} Your saved models, lines, logged picks and slider settings are stored in a private Gist on your GitHub account and merged whenever this page opens.</div>
+      <div class="row"><button class="btn" id="syncNow" type="button">Sync now</button><button class="btn ghost" id="syncOff" type="button">Turn off on this device</button></div>`
+    : `
+      <b>Keep your picks and models the same on every device</b>
+      <ol class="small">
+        <li>On GitHub, open <b>Settings → Developer settings → Personal access tokens → Fine-grained tokens</b>, and click <b>Generate new token</b>.</li>
+        <li>Name it "5ive Lab sync", set an expiration, and under <b>Account permissions</b> set <b>Gists</b> to <b>Read and write</b>. Nothing else is needed.</li>
+        <li>Generate it, copy it, and paste it below. Do this once on each device (phone, laptop).</li>
+      </ol>
+      <div class="row"><label class="sr" for="syncToken">GitHub token</label><input id="syncToken" type="password" autocomplete="off" placeholder="github_pat_…"><button class="btn accent" id="syncSave" type="button">Turn on sync</button></div>
+      <div class="small muted">The token stays in this browser and can only read and write your Gists. ${state === 'err' ? '<br><span style="color:var(--bad)">' + lastMsg.replace(/</g, '&lt;') + '</span>' : ''}</div>`;
+  }
+  async function enable(t) {
+    ls.set('gml_sync_token', t.trim()); ls.set('gml_sync_gist', '');
+    setState('on', 'Connecting…');
+    const changed = await pull();
+    if (state === 'err') { ls.set('gml_sync_token', ''); panel(); return; }
+    await push();
+    if (changed) location.reload();
+  }
+  document.addEventListener('click', async (e) => {
+    const id = e.target.id;
+    if (id === 'syncBtn') { const p = document.getElementById('syncPanel'); p.hidden = !p.hidden; if (!p.hidden) panel(); }
+    if (id === 'syncSave') { const v = document.getElementById('syncToken').value; if (v.trim()) enable(v); }
+    if (id === 'syncNow') { const changed = await pull(); await push(); if (changed) location.reload(); }
+    if (id === 'syncOff') { ls.set('gml_sync_token', ''); ls.set('gml_sync_gist', ''); setState('off'); panel(); }
+  });
+  window.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && token() && timer) { clearTimeout(timer); push(); } });
+  setState(state);
+  return { pull, push, changed, enabled: () => !!token() };
+})();
+window.Sync = Sync;
+
 document.getElementById('view').innerHTML = '<div class="empty">Loading this week\'s data…</div>';
-if (SPORT === 'edges') bootEdges(); else
-fetch('data/' + SPORT + '.json', { cache: 'no-cache' })
+const syncFirst = Sync.enabled() ? Promise.race([Sync.pull(), new Promise((r) => setTimeout(r, 4000))]) : Promise.resolve();
+if (SPORT === 'edges') syncFirst.then(bootEdges); else
+syncFirst.then(() => fetch('data/' + SPORT + '.json', { cache: 'no-cache' }))
   .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
   .then(boot)
   .catch((err) => {
