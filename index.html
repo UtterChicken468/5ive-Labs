@@ -373,9 +373,9 @@ function renderBuilder() {
     return `<button class="chip" data-preset="${esc(n)}" aria-pressed="${on}">${esc(n)}</button>`;
   }).join('');
   $('#sliders').innerHTML = E.FACTORS.map((f) => `
-    <label class="sl" for="w-${f.key}"><span class="nm">${f.label}</span><span class="val" id="wv-${f.key}">${S.weights[f.key] ?? 0}</span>
+    <label class="sl" for="w-${f.key}"><span class="nm">${f.label}</span><span class="val" id="wv-${f.key}">${S.weights[f.key]}</span>
       <span class="hint">${f.hint}</span>
-      <input type="range" id="w-${f.key}" data-w="${f.key}" min="0" max="10" step="1" value="${S.weights[f.key] ?? 0}"></label>`).join('');
+      <input type="range" id="w-${f.key}" data-w="${f.key}" min="0" max="10" step="1" value="${S.weights[f.key]}"></label>`).join('');
   const st = [
     { k: 'hfa', nm: META.family === 'hockey' ? 'Home-ice edge' : META.family === 'basketball' ? 'Home-court edge' : 'Home-field edge', hint: 'Added to the home team, in ' + UNIT, min: 0, max: META.hfaMax ?? 4, step: META.hfaStep ?? 0.5, show: (v) => v + ' ' + UNIT },
     { k: 'trust', nm: 'Trust in this season', hint: 'Lower pulls everyone toward average; early-season stats are noisy', min: 20, max: 150, step: 5, show: (v) => v + '%' },
@@ -466,7 +466,7 @@ function gamesView() {
   const { P, R } = model();
   const weekGames = DATA.games.filter((g) => g.w === S.week);
   const played = weekGames.filter((g) => g.hs != null).length;
-  const items = weekGames.filter((g) => g.hs == null).map((g) => ({ g, L: linesFor(g), pr: null, P })).map((x) => { x.pr = E.predict(x.g, P, R, S.settings, x.L, DATA); return x; });
+  const items = weekGames.filter((g) => g.hs == null).map((g) => ({ g, L: linesFor(g), pr: null })).map((x) => { x.pr = E.predict(x.g, P, R, S.settings, x.L, DATA); return x; });
   const maxEdge = (x) => Math.max(Math.abs(x.pr?.spEdge || 0), Math.abs(x.pr?.totEdge || 0));
   let list = items.filter((x) => x.pr);
   if (S.onlyEdges) list = list.filter((x) => maxEdge(x) >= S.edgeMin);
@@ -485,7 +485,7 @@ function gamesView() {
   <p class="note" style="margin:0 0 14px">Lines are editable: type in what your book shows and the edge updates. ${META.spreadName || 'Spread'}s use book style (favorite is negative). ${byes.length ? (byes.length > 8 ? `${byes.length} teams on bye.` : 'On bye: ' + byes.join(', ') + '.') : ''} ${played ? `${played} game${played > 1 ? 's' : ''} ${DAILY ? 'on this date' : 'this week'} already played (graded in Accuracy).` : ''}</p>
   <div class="games">${list.map(gameCard).join('') || `<div class="empty">No games match${S.teamQ ? ' "' + esc(S.teamQ) + '"' : ''}${S.onlyEdges ? ' with an edge of ' + S.edgeMin + '+ ' + UNIT : ''}.</div>`}</div>`;
 }
-function gameCard({ g, L, pr, P }) {
+function gameCard({ g, L, pr }) {
   const fav = pr.margin >= 0 ? g.h : g.a;
   const spName = META.spreadName || 'Spread';
   const priceOf = (v) => v ?? -110;
@@ -518,7 +518,7 @@ function gameCard({ g, L, pr, P }) {
     <div class="gh"><div class="matchup">${g.a}<span class="at">@</span>${g.h}</div><div class="kick">${kickoff(g)}${g.neu ? '<br>Neutral site' : ''}</div></div>
     <div class="score"><b>${UNIT === 'pts' ? Math.round(pr.as) + '–' + Math.round(pr.hs) : fmt(pr.as) + '–' + fmt(pr.hs)}</b><span class="small muted">model score · ${fav} by ${fmt(Math.abs(pr.margin))}</span></div>
     <div class="wp" title="Model win probability"><div class="a" style="flex:${Math.max(ap, 12)}">${g.a} ${ap}%</div><div class="h" style="flex:${Math.max(hp, 12)}">${g.h} ${hp}%</div></div>
-    ${pitchersRow(g, pr)}${goalieRow(g, pr)}${yardsRow(g, P)}${weatherRow(g, pr)}${injuryRow(g, pr)}
+    ${pitchersRow(g, pr)}${goalieRow(g, pr)}${weatherRow(g, pr)}${injuryRow(g, pr)}
     <div class="cmp" role="table" aria-label="Vegas vs your model">
       <span class="ch" role="columnheader"></span><span class="ch" role="columnheader">Vegas</span><span class="ch" role="columnheader">Your model</span><span class="ch" role="columnheader">Edge</span>
 
@@ -551,14 +551,6 @@ function moveNote(g, k, L, pr) {
   const toward = Math.abs(target - now) < Math.abs(target - o);
   const fmtL = (v) => k === 'sp' ? (v === 0 ? 'PK' : (v > 0 ? '−' : '+') + Math.abs(v)) : v;
   return `<span class="move ${toward ? 'yes' : 'no'}" title="${toward ? 'The market has moved toward your model since it opened' : 'The market has moved away from your model since it opened'}">opened ${esc(String(fmtL(o)))} ${toward ? '↗ toward you' : '↘ away'}</span>`;
-}
-// Football: each team's total yards per game, gained and allowed, season to date.
-function yardsRow(g, P) {
-  if (META.family !== 'football' || !P) return '';
-  const y = (t) => { const p = P[t]; if (!p || !p.n || p.S.py == null) return null;
-    return { off: Math.round((p.S.py + p.S.ry) / p.n), def: Math.round((p.S.o_py + p.S.o_ry) / p.n) }; };
-  const a = y(g.a), h = y(g.h); if (!a || !h) return '';
-  return `<div class="why">Yards per game: <b>${g.a}</b> ${a.off} (allows ${a.def}) · <b>${g.h}</b> ${h.off} (allows ${h.def})</div>`;
 }
 function weatherRow(g, pr) {
   if (!g.wx) return '';
