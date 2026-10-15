@@ -873,7 +873,7 @@ async function bootEdges() {
     const m = data.meta;
     if (key === 'ufc') { // fighters: moneylines only
       const g2 = (k, d) => { try { const v = localStorage.getItem('gml:ufc:' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
-      const res = E.ufc.walk(data, g2('weights', { ...E.ufc.PRESETS.Trained })), over = g2('lines', {});
+      const res = E.ufc.walk(data, g2('weights2', { ...E.ufc.trainedWeights(data) })), over = g2('lines', {});
       const fair = (mine, theirs) => { const a = E.impliedProb(mine), b = E.impliedProb(theirs); return a / (a + b); };
       res.upcoming.filter(({ f }) => f.d && f.d >= today && f.d <= plus(6)).forEach(({ f, p }) => {
         const o = over[f.id] || {}, aml = o.aml !== undefined ? o.aml : f.aml, bml = o.bml !== undefined ? o.bml : f.bml;
@@ -1087,7 +1087,8 @@ function bootUfc(DATA) {
     set(k, v) { try { localStorage.setItem(pre + k, JSON.stringify(v)); } catch (e) {} window.Sync && Sync.changed(pre + k); },
   };
   const T = DATA.meta.trained;
-  const S = { weights: store.get('weights', { ...U.PRESETS.Trained }), lines: store.get('lines', {}), picks: store.get('picks', []),
+  const PRESETS = { Trained: { ...U.trainedWeights(DATA) }, ...U.PRESETS };
+  const S = { weights: store.get('weights2', { ...PRESETS.Trained }), lines: store.get('lines', {}), picks: store.get('picks', []),
     tab: store.get('tab', 'fights'), ev: null, wc: 'all', confirmClear: false };
   const pct = (p) => Math.round(p * 100) + '%';
   const odds = (o) => o == null ? '–' : (o > 0 ? '+' + o : String(o));
@@ -1107,18 +1108,18 @@ function bootUfc(DATA) {
 
   // ---- model panel
   function renderBuilder() {
-    $('#presets').innerHTML = Object.keys(U.PRESETS).map((n) => `<button class="chip ${n === 'Trained' ? 'trained' : ''}" data-upreset="${esc(n)}" aria-pressed="${U.FACTORS.every((f) => (U.PRESETS[n][f.key] ?? 0) === (S.weights[f.key] ?? 0))}">${esc(n)}</button>`).join('');
+    $('#presets').innerHTML = Object.keys(PRESETS).map((n) => `<button class="chip ${n === 'Trained' ? 'trained' : ''}" data-upreset="${esc(n)}" aria-pressed="${U.FACTORS.every((f) => (PRESETS[n][f.key] ?? 0) === (S.weights[f.key] ?? 0))}">${esc(n)}</button>`).join('');
     $('#sliders').innerHTML = U.FACTORS.map((f) => `
       <label class="sl" for="u-${f.key}"><span class="nm">${f.label}</span><span class="val" id="uv-${f.key}">${S.weights[f.key] ?? 0}</span>
         <span class="hint">${f.hint}</span>
         <input type="range" id="u-${f.key}" data-uw="${f.key}" min="0" max="10" step="1" value="${S.weights[f.key] ?? 0}"></label>`).join('');
   }
   const aside = $('aside');
-  aside.querySelector('.small.muted').textContent = '5 is the strength the model learned from past fights. Slide up to lean on a factor more, down to ignore it.';
-  aside.addEventListener('input', (e) => { const t = e.target; if (!t.dataset.uw) return; S.weights[t.dataset.uw] = +t.value; $('#uv-' + t.dataset.uw).textContent = t.value; store.set('weights', S.weights); cancelAnimationFrame(rf); rf = requestAnimationFrame(() => { recompute(); renderBuilderChips(); render(); }); });
+  aside.querySelector('.small.muted').textContent = 'How much each factor matters, 0 to 10. Trained sets them to what the model learned from past fights.';
+  aside.addEventListener('input', (e) => { const t = e.target; if (!t.dataset.uw) return; S.weights[t.dataset.uw] = +t.value; $('#uv-' + t.dataset.uw).textContent = t.value; store.set('weights2', S.weights); cancelAnimationFrame(rf); rf = requestAnimationFrame(() => { recompute(); renderBuilderChips(); render(); }); });
   let rf = 0;
-  const renderBuilderChips = () => document.querySelectorAll('[data-upreset]').forEach((b) => b.setAttribute('aria-pressed', U.FACTORS.every((f) => (U.PRESETS[b.dataset.upreset][f.key] ?? 0) === (S.weights[f.key] ?? 0))));
-  aside.addEventListener('click', (e) => { const b = e.target.closest('[data-upreset]'); if (!b) return; S.weights = { ...U.PRESETS[b.dataset.upreset] }; store.set('weights', S.weights); renderBuilder(); recompute(); render(); });
+  const renderBuilderChips = () => document.querySelectorAll('[data-upreset]').forEach((b) => b.setAttribute('aria-pressed', U.FACTORS.every((f) => (PRESETS[b.dataset.upreset][f.key] ?? 0) === (S.weights[f.key] ?? 0))));
+  aside.addEventListener('click', (e) => { const b = e.target.closest('[data-upreset]'); if (!b) return; S.weights = { ...PRESETS[b.dataset.upreset] }; store.set('weights2', S.weights); renderBuilder(); recompute(); render(); });
 
   // ---- tabs
   const TABS = [['fights', 'Fight cards'], ['fighters', 'Fighter ratings'], ['accuracy', 'Accuracy'], ['log', 'Pick log']];
@@ -1165,7 +1166,7 @@ function bootUfc(DATA) {
     keys.forEach((k) => { const v = rows.map((r) => r.x[k]).filter((x) => x != null); avg[k] = v.length ? v.reduce((a, b) => a + b, 0) / v.length : 0; });
     rows.forEach((r) => {
       const d = {}; keys.forEach((k) => { d[k] = r.x[k] == null ? 0 : (r.x[k] - avg[k]) / (k === 'reach' ? 3 : 1); });
-      r.score = U.sigmoid(U.logit(d, model.coef, S.weights));
+      r.score = U.sigmoid(U.logit(d, model.unit, S.weights));
     });
     const wcs = [...new Set(rows.map((r) => r.s.wc).filter(Boolean))].sort();
     const list = rows.filter((r) => S.wc === 'all' || r.s.wc === S.wc).sort((a, b) => b.score - a.score).slice(0, 60);

@@ -193,13 +193,26 @@ for (const sport of SPORTS) {
   const keys = E.ufc.FACTORS.map((f) => f.key);
   const unit = Object.fromEntries(keys.map((k) => [k, 1]));
   const rows = [];
-  E.ufc.walk(data, E.ufc.PRESETS.Trained, unit, (f, x) => {
+  E.ufc.walk(data, unit, unit, (f, x) => {
     const y = +f.d.slice(0, 4);
     if (y < data.meta.firstYear + 2 || f.win === 'draw') return; // first two years warm up the ratings
     rows.push({ year: y, x: keys.map((k) => x[k]), won: f.win === 'a' ? 1 : 0 });
   });
   if (rows.length < 300) { console.log('ufc: not enough fights yet'); return; }
+  // Non-negative: a factor that comes out negative is dropped and the rest refit, so raising any
+  // slider always means "this helps a fighter".
   function fitLogistic(rs, lambda = 2) {
+    let active = keys.map((_, i) => i), coef;
+    for (let pass = 0; pass <= keys.length; pass++) {
+      coef = fitLogisticOn(rs, lambda, active);
+      const neg = active.filter((i) => coef[keys[i]] < 0);
+      if (!neg.length) break;
+      active = active.filter((i) => coef[keys[i]] > 0);
+    }
+    return coef;
+  }
+  function fitLogisticOn(rs, lambda, active) {
+    const on = new Set(active);
     let b = new Array(keys.length).fill(0);
     for (let it = 0; it < 25; it++) {
       const g = new Array(keys.length).fill(0), H = keys.map(() => new Array(keys.length).fill(0));
@@ -208,8 +221,8 @@ for (const sport of SPORTS) {
         const p = 1 / (1 + Math.exp(-x.reduce((t, v, i) => t + v * b[i], 0)));
         for (let i = 0; i < keys.length; i++) { g[i] += (yv - p) * x[i]; for (let j = 0; j < keys.length; j++) H[i][j] += p * (1 - p) * x[i] * x[j]; }
       }
-      for (let i = 0; i < keys.length; i++) { g[i] -= lambda * b[i]; H[i][i] += lambda; }
-      const step = solve(H, g); b = b.map((v, i) => v + step[i]);
+      for (let i = 0; i < keys.length; i++) { g[i] -= lambda * b[i]; H[i][i] += lambda; if (!on.has(i)) { g[i] = 0; H[i] = H[i].map((_, j) => (j === i ? 1 : 0)); H.forEach((row, r) => { if (r !== i) row[i] = 0; }); } }
+      const step = solve(H, g); b = b.map((v, i) => (on.has(i) ? v + step[i] : 0));
       if (Math.max(...step.map(Math.abs)) < 1e-6) break;
     }
     return Object.fromEntries(keys.map((k, i) => [k, round(b[i], 4)]));
@@ -226,12 +239,22 @@ for (const sport of SPORTS) {
   const coefTest = fitLogistic(train);
   const t = score(test, coefTest), base = score(test, E.ufc.DEFAULT_COEF);
   // calibration + betting favorite on the test year, using the model's own walk
-  const bt = E.ufc.backtest({ ...data, meta: { ...data.meta, trained: { coef: coefTest } } }, E.ufc.PRESETS.Trained, testYear);
+  // Slider scale: importance = coefficient x typical spread of that factor's edge.
+  const spread = keys.map((k, i) => Math.sqrt(rows.reduce((t, r) => t + r.x[i] * r.x[i], 0) / rows.length) || 1);
+  const toSliders = (c) => {
+    const imp = keys.map((k, i) => Math.max(0, c[k]) * spread[i]), top = Math.max(...imp, 1e-9);
+    const unitK = Object.fromEntries(keys.map((k, i) => [k, round(top / 10 / spread[i], 6)]));
+    const w = Object.fromEntries(keys.map((k, i) => [k, round(10 * imp[i] / top, 1)]));
+    return { unit: unitK, weights: w };
+  };
+  const sTest = toSliders(coefTest);
+  const bt = E.ufc.backtest({ ...data, meta: { ...data.meta, trained: { ...sTest } } }, sTest.weights, testYear);
   const cal = bt.cal.filter((q) => q.n).map((q) => [Math.round(q.p / q.n * 100), Math.round(q.won / q.n * 100), q.n]);
   const coef = fitLogistic(rows);
-  data.meta.trained = { coef, fights: rows.length, years: [years[0], years[years.length - 1]], testYear,
+  const sl = toSliders(coef);
+  data.meta.trained = { coef, unit: sl.unit, weights: sl.weights, fights: rows.length, years: [years[0], years[years.length - 1]], testYear,
     test: { ...t, baseSu: base.su, baseLl: base.ll, favSu: bt.favN ? round(bt.favRight / bt.favN * 100, 1) : null, favN: bt.favN, calibration: cal } };
   fs.writeFileSync(file, JSON.stringify(data));
   console.log(`ufc: trained on ${rows.length} fights (${years[0]}-${years[years.length - 1]}); test ${testYear}: winners ${t.su}% (untrained ${base.su}%), log loss ${t.ll} (untrained ${base.ll})`);
-  console.log('   coef', JSON.stringify(coef));
+  console.log('   coef', JSON.stringify(coef), '\n   sliders', JSON.stringify(sl.weights));
 })();

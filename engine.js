@@ -470,12 +470,16 @@
   ];
   // Untrained starting point: the rating does almost all the work.
   const UFC_DEFAULT_COEF = { elo: 0.55, striking: 0.15, grappling: 0.05, power: 0.1, subs: 0.03, control: 0.3, reach: 0.04, age: 0.15, layoff: 0.05, experience: 0.05, form: 0.2 };
+  // Sliders are real importance on a 0-10 scale: one point = the same push on the win chance
+  // for a typical difference between two fighters, whatever the factor's units.
+  const UFC_DEFAULT_WEIGHTS = { elo: 10, striking: 3, grappling: 1, power: 1, subs: 1, control: 3, reach: 1, age: 3, layoff: 1, experience: 1, form: 2 };
   const UFC_PRESETS = {
-    Trained: Object.fromEntries(UFC_FACTORS.map((f) => [f.key, 5])),
-    'Rating only': Object.fromEntries(UFC_FACTORS.map((f) => [f.key, f.key === 'elo' ? 5 : 0])),
-    Striker: { elo: 4, striking: 9, grappling: 2, power: 9, subs: 1, control: 1, reach: 7, age: 5, layoff: 5, experience: 4, form: 5 },
-    Grappler: { elo: 4, striking: 3, grappling: 9, power: 3, subs: 8, control: 9, reach: 2, age: 5, layoff: 5, experience: 4, form: 5 },
+    'Rating only': Object.fromEntries(UFC_FACTORS.map((f) => [f.key, f.key === 'elo' ? 10 : 0])),
+    Striker: { elo: 7, striking: 9, grappling: 1, power: 8, subs: 0, control: 1, reach: 5, age: 4, layoff: 1, experience: 1, form: 2 },
+    Grappler: { elo: 7, striking: 2, grappling: 9, power: 1, subs: 7, control: 9, reach: 1, age: 4, layoff: 1, experience: 1, form: 2 },
   };
+  // Units: logit change per slider point per unit of each factor's edge.
+  const UFC_DEFAULT_UNIT = Object.fromEntries(UFC_FACTORS.map((f) => [f.key, UFC_DEFAULT_COEF[f.key] / UFC_DEFAULT_WEIGHTS[f.key]]));
   const yearsBetween = (a, b) => (new Date(b) - new Date(a)) / 3.15576e10;
   function ufcFeatures(st, fighter, date) {
     const mins = st.secs / 60;
@@ -503,20 +507,21 @@
     });
     return x;
   }
-  const ufcLogit = (x, coef, weights) => UFC_FACTORS.reduce((z, { key }) => z + (coef[key] || 0) * ((weights[key] ?? 5) / 5) * x[key], 0);
+  const ufcLogit = (x, unit, weights) => UFC_FACTORS.reduce((z, { key }) => z + (unit[key] || 0) * (weights[key] ?? 0) * x[key], 0);
   const sigmoid = (z) => 1 / (1 + Math.exp(-z));
   // Walk every fight in order. onFight(f, x, p) sees each finished fight before it updates
   // the fighters; returns final fighter states and predictions for fights not yet fought.
-  function ufcWalk(data, weights, coef, onFight) {
-    coef = coef || (data.meta.trained && data.meta.trained.coef) || UFC_DEFAULT_COEF;
-    weights = weights || UFC_PRESETS.Trained;
+  function ufcWalk(data, weights, unit, onFight) {
+    const tr = data.meta.trained && data.meta.trained.unit ? data.meta.trained : null;
+    unit = unit || (tr ? tr.unit : UFC_DEFAULT_UNIT);
+    weights = weights || (tr ? tr.weights : UFC_DEFAULT_WEIGHTS);
     const S = {}, F = data.fighters || {};
     const get = (id) => S[id] || (S[id] = { elo: 1450, n: 0, secs: 0, ssl: 0, sslAbs: 0, tdl: 0, tdlAbs: 0, kd: 0, sub: 0, ctrl: 0, res: [], last: null, wc: '' });
     const upcoming = [];
     for (const f of data.fights) {
       const A = get(f.a), B = get(f.b);
       const x = ufcDiff(ufcFeatures(A, F[f.a], f.d), ufcFeatures(B, F[f.b], f.d));
-      const p = sigmoid(ufcLogit(x, coef, weights));
+      const p = sigmoid(ufcLogit(x, unit, weights));
       if (f.win == null) { upcoming.push({ f, x, p }); continue; }
       if (onFight) onFight(f, x, p);
       // rating update (bigger swing for finishes, newcomers move faster)
@@ -534,7 +539,7 @@
       }
       A.n++; B.n++; A.res.push(sa); B.res.push(1 - sa); A.last = f.d; B.last = f.d; A.wc = f.wc; B.wc = f.wc;
     }
-    return { state: S, upcoming, coef };
+    return { state: S, upcoming, unit };
   }
   // Accuracy from a given year on: winners picked, calibration, and vs the betting favorite.
   function ufcBacktest(data, weights, fromYear) {
@@ -553,7 +558,8 @@
     r.ll /= r.n || 1;
     return r;
   }
-  api.ufc = { FACTORS: UFC_FACTORS, PRESETS: UFC_PRESETS, DEFAULT_COEF: UFC_DEFAULT_COEF, walk: ufcWalk, backtest: ufcBacktest, features: ufcFeatures, logit: ufcLogit, sigmoid };
+  const ufcTrainedWeights = (data) => (data.meta.trained && data.meta.trained.weights) || UFC_DEFAULT_WEIGHTS;
+  api.ufc = { FACTORS: UFC_FACTORS, PRESETS: UFC_PRESETS, DEFAULT_COEF: UFC_DEFAULT_COEF, DEFAULT_WEIGHTS: UFC_DEFAULT_WEIGHTS, trainedWeights: ufcTrainedWeights, walk: ufcWalk, backtest: ufcBacktest, features: ufcFeatures, logit: ufcLogit, sigmoid };
 
   Object.assign(api, { configure, DEFAULT_SETTINGS, teamProfiles, ratings, predict, backtest, propOf, walk, starterRuns, priors: () => PRIORS,
     defenseAllowed, projectProp, overProb, impliedProb, evPerUnit, profitPerUnit, phi, statOf });
