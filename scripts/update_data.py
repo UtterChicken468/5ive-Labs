@@ -1219,7 +1219,144 @@ def build_cfb(season):
 
 
 # ---------------------------------------------------------------- main
-SPORTS = {'nfl': build_nfl, 'cfb': build_cfb, 'nhl': build_nhl, 'cbb': build_cbb, 'nba': build_nba, 'mlb': build_mlb, 'ufc': build_ufc}
+# ---------------------------------------------------------------- Golf (ESPN, PGA Tour)
+GOLF_FIRST_YEAR = 2025
+GOLF_SB = 'https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard'
+
+
+def golf_num(v):
+    if isinstance(v, dict):
+        v = v.get('value', v.get('displayValue'))
+    if v is None:
+        return None
+    if isinstance(v, (int, float)):
+        return float(v)
+    v = str(v).strip()
+    if v.upper() == 'E':
+        return 0.0
+    try:
+        return float(v.replace('+', ''))
+    except ValueError:
+        return None
+
+
+def golf_calendar(year):
+    """Every PGA Tour event in a calendar year: [{id, name, start, end}]."""
+    out = {}
+    for url in (f'{GOLF_SB}?dates={year}', f'{GOLF_SB}?dates={year}0101-{year}1231'):
+        try:
+            data = get_json(url)
+        except Exception as e:
+            print(f'  golf calendar {year}: {e}'); continue
+        for lg in data.get('leagues', []):
+            for c in lg.get('calendar', []) or []:
+                if not isinstance(c, dict):
+                    continue
+                eid = str(c.get('id') or (c.get('event') or {}).get('id') or '')
+                if not eid:
+                    ref = (c.get('event') or {}).get('$ref', '')
+                    eid = ref.rstrip('/').split('/')[-1].split('?')[0] if ref else ''
+                st = (c.get('startDate') or '')[:10]
+                if eid and st.startswith(str(year)):
+                    out[eid] = dict(id=eid, name=c.get('label') or c.get('name') or '', start=st, end=(c.get('endDate') or '')[:10])
+        for ev in data.get('events', []):
+            st = (ev.get('date') or '')[:10]
+            if st.startswith(str(year)):
+                out.setdefault(str(ev['id']), dict(id=str(ev['id']), name=ev.get('name', ''), start=st, end=(ev.get('endDate') or '')[:10]))
+        if out:
+            break
+    return sorted(out.values(), key=lambda e: e['start'])
+
+
+def golf_event(ev):
+    """One tournament's leaderboard: players with their completed round scores."""
+    urls = [f'https://site.web.api.espn.com/apis/site/v2/sports/golf/leaderboard?league=pga&event={ev["id"]}',
+            f'{GOLF_SB}?event={ev["id"]}']
+    if ev.get('start'):
+        urls.append(f'{GOLF_SB}?dates={ev["start"].replace("-", "")}')
+    last = None
+    for url in urls:
+        try:
+            data = get_json(url)
+        except Exception as e:
+            last = e; continue
+        evs = data.get('events') or []
+        e = next((x for x in evs if str(x.get('id')) == ev['id']), evs[0] if len(evs) == 1 else None)
+        if not e:
+            continue
+        comp = (e.get('competitions') or [{}])[0]
+        state = ((e.get('status') or comp.get('status') or {}).get('type') or {}).get('state', 'pre')
+        players, names = [], {}
+        for c in comp.get('competitors', []) or []:
+            a = c.get('athlete') or {}
+            pid = str(a.get('id') or c.get('id') or '')
+            if not pid:
+                continue
+            names[pid] = a.get('displayName') or a.get('shortName') or pid
+            rounds, partial = [], None
+            for ls in sorted(c.get('linescores', []) or [], key=lambda x: x.get('period', 0)):
+                per, v = ls.get('period', 0), golf_num(ls.get('value'))
+                if not (1 <= per <= 4) or v is None:
+                    continue
+                holes = len(ls.get('linescores') or [])
+                if v >= 55 and (holes in (0, 18)):
+                    rounds.append(int(round(v)))
+                else:
+                    partial = per
+            st = c.get('status') or {}
+            pos = ((st.get('position') or {}).get('displayName')) or c.get('position') or ''
+            thru = st.get('thru') if isinstance(st.get('thru'), (int, float)) else None
+            players.append(dict(id=pid, r=rounds, tp=golf_num(c.get('score')), pos=str(pos or ''), thru=thru, ord=c.get('order') or c.get('sortOrder')))
+        if not players:
+            continue
+        venue = (comp.get('venue') or {}).get('fullName') or ((e.get('courses') or [{}])[0].get('name') if e.get('courses') else '')
+        return dict(state=state, players=players, names=names, course=venue or '', name=e.get('name') or ev.get('name'),
+                    start=(e.get('date') or ev.get('start') or '')[:10], end=(e.get('endDate') or ev.get('end') or '')[:10])
+    raise RuntimeError(f'no leaderboard for {ev["id"]}: {last}')
+
+
+def build_golf(_season):
+    today = datetime.datetime.now(ET).date()
+    cache = load_cache('golf_events.json')
+    cal = []
+    for y in range(GOLF_FIRST_YEAR, today.year + 1):
+        cal += golf_calendar(y)
+    if not cal:
+        raise RuntimeError('golf calendar empty')
+    soon = (today + datetime.timedelta(days=10)).isoformat()
+    want = [e for e in cal if e['start'] <= soon]
+    need = [e for e in want if cache.get(e['id'], {}).get('state') != 'post' or e['start'] >= (today - datetime.timedelta(days=6)).isoformat()]
+    byid = {e['id']: e for e in need}
+    got = parallel(lambda eid: golf_event(byid[eid]), list(byid), workers=6) if need else {}
+    errs, first_err = 0, None
+    for eid, r in got.items():
+        if isinstance(r, dict) and r.get('players'):
+            cache[eid] = r
+        else:
+            errs += 1; first_err = first_err or (r.get('_error') if isinstance(r, dict) else str(r))
+    save_cache('golf_events.json', cache)
+    names, events = {}, []
+    for e in want:
+        x = cache.get(e['id'])
+        if not x:
+            continue
+        names.update(x.get('names', {}))
+        # par: completed players' strokes minus their score to par
+        pars = [sum(p['r']) - p['tp'] for p in x['players'] if p.get('tp') is not None and len(p['r']) == 4]
+        par = round(sorted(pars)[len(pars) // 2] / 4) if pars else 72
+        events.append(dict(id=e['id'], name=x.get('name') or e['name'], d=x.get('start') or e['start'], end=x.get('end') or e['end'],
+                           course=x.get('course', ''), state=x['state'], par=par,
+                           p=[[p['id'], p['r'], p['pos'], p['tp'], p['thru']] for p in x['players']]))
+    upcoming = [e for e in cal if e['start'] > soon][:3]
+    events.sort(key=lambda e: e['d'])
+    games = [dict(id=e['id'], d=e['d'], hs=0 if e['state'] == 'post' else None) for e in events] + \
+            [dict(id=e['id'], d=e['start'], hs=None) for e in upcoming]
+    meta = dict(sport='golf', label='Golf', family='golf', tour='PGA Tour', firstYear=GOLF_FIRST_YEAR, source='ESPN',
+                debug=dict(calendar=len(cal), fetched=len(need), errors=errs, firstError=first_err, cached=len(cache)))
+    return dict(meta=meta, season=today.year, events=events, names=names, schedule=upcoming, games=games, teamGames=[])
+
+
+SPORTS = {'nfl': build_nfl, 'cfb': build_cfb, 'nhl': build_nhl, 'cbb': build_cbb, 'nba': build_nba, 'mlb': build_mlb, 'ufc': build_ufc, 'golf': build_golf}
 
 
 def main():
