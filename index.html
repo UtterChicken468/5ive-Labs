@@ -283,6 +283,17 @@ body.noscroll { overflow: hidden }
   .vt .vr > span:nth-child(2)::before { content: 'Vegas · '; color: var(--muted); font-size: 11px } .vt .vr > span:nth-child(3)::before { content: 'Model · '; color: var(--muted); font-size: 11px }
   .vt .vr > span:nth-child(4) { grid-column: 1 / -1 } }
 
+/* golf */
+.gev h3 { font-family: var(--display); font-size: 26px; text-transform: uppercase; margin: 0 }
+.gev { margin: 4px 0 14px }
+.gtop, .gh2h { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; margin-bottom: 16px }
+.gh2h { grid-template-columns: 1fr 1fr }
+.gcard { display: flex; flex-direction: column; gap: 3px; padding: 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); min-width: 0 }
+.gcard.lead { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset }
+.gcard b { font-family: var(--display); font-size: 20px; text-transform: uppercase; line-height: 1.1; overflow-wrap: anywhere }
+.gcard .big { font-family: var(--display); font-size: 34px; font-weight: 700; color: var(--accent) }
+@media (max-width: 520px) { .gtop { grid-template-columns: 1fr 1fr } .gtop .gcard:nth-child(3) { display: none } }
+
 /* tables */
 .tblwrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r) }
 table { border-collapse: collapse; width: 100%; font-size: 14px }
@@ -1189,6 +1200,7 @@ const SPORTS = [
   { key: 'cbb', label: 'College basketball' },
   { key: 'mlb', label: 'MLB' },
   { key: 'ufc', label: 'UFC' },
+  { key: 'golf', label: 'Golf' },
 ];
 function chosenSport() {
   const h = location.hash.slice(1);
@@ -1223,7 +1235,7 @@ async function bootEdges() {
   const status = await fetch('data/status.json', { cache: 'no-cache' }).then((r) => r.json()).catch(() => ({}));
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
   const plus = (n) => { const d = new Date(today + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
-  const keys = SPORTS.filter((x) => x.key !== 'edges' && !(status[x.key] && (status[x.key].ok === false || (status[x.key].next !== undefined && (!status[x.key].next || status[x.key].next > plus(6)))))).map((x) => x.key);
+  const keys = SPORTS.filter((x) => x.key !== 'edges' && x.key !== 'golf' && !(status[x.key] && (status[x.key].ok === false || (status[x.key].next !== undefined && (!status[x.key].next || status[x.key].next > plus(6)))))).map((x) => x.key);
   const rows = [], counts = {};
   for (const key of keys) {
     let data; try { data = await fetch('data/' + key + '.json', { cache: 'no-cache' }).then((r) => r.json()); } catch (e) { continue; }
@@ -1485,6 +1497,244 @@ window.Sync = Sync;
 document.getElementById('view').innerHTML = '<div class="empty">Loading this week\'s data…</div>';
 const syncFirst = Sync.enabled() ? Promise.race([Sync.pull(), new Promise((r) => setTimeout(r, 4000))]) : Promise.resolve();
 // ---------- UFC: fight cards instead of games ----------
+// ---------- Golf: player ratings from every round, tournament simulations ----------
+function bootGolf(DATA) {
+  const $ = (q) => document.querySelector(q);
+  const esc = (v) => String(v ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const pre = 'gml:golf:';
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(pre + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(pre + k, JSON.stringify(v)); } catch (e) {} window.Sync && Sync.changed(pre + k); },
+  };
+  const DEFAULTS = { recent: 2, sample: 2, sims: 5 }; // best head-to-head accuracy in testing
+  const S = { set: { ...DEFAULTS, ...store.get('settings', {}) }, tab: store.get('tab', 'event'), ev: null, a: null, b: null, q: '' };
+  const pct = (p, d = 0) => p == null ? '–' : p >= 0.995 && d === 0 ? '>99%' : p > 0 && p < 0.005 && d === 0 ? '<1%' : (p * 100).toFixed(d) + '%';
+  const sg = (v) => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(2);
+  const sdate = (d) => d ? new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+  const name = (id) => (DATA.names || {})[id] || id;
+  const SD = 2.9; // round-to-round spread of a PGA Tour player's score, in strokes
+  document.body.classList.add('sport-golf');
+  const events = (DATA.events || []).slice().sort((a, b) => a.d.localeCompare(b.d));
+  const done = events.filter((e) => e.state === 'post');
+  const rounds = events.reduce((s, e) => s + e.p.reduce((t, p) => t + p[1].length, 0), 0);
+  $('#stamp').innerHTML = `Golf · ${DATA.meta.tour} · ${done.length} tournaments and ${rounds.toLocaleString()} rounds since ${DATA.meta.firstYear} · leaderboards from ESPN. Every player is rated by strokes gained per round against the field, adjusted for how strong each field was.`;
+  $('aside .group').hidden = true; $('#saved').closest('.group').hidden = true;
+  $('#presets').innerHTML = '';
+
+  // ---- model panel: how the ratings are built
+  const SET = [
+    { key: 'recent', label: 'Recent form', hint: 'How much more recent rounds count than older ones', fmt: (v) => ({ 0: 'all equal', 10: 'mostly last few months' })[v] || halfLife(v) + ' day half-life' },
+    { key: 'sample', label: 'Caution with small samples', hint: 'Pull players with few rounds toward an average tour player', fmt: (v) => v === 0 ? 'none' : v * 4 + ' rounds of average' },
+    { key: 'sims', label: 'Simulations', hint: 'More tournament simulations means steadier percentages', fmt: (v) => simsN(v).toLocaleString() },
+  ];
+  const halfLife = (v) => v === 0 ? 1e6 : Math.round(720 * Math.pow(0.6, v - 1));
+  const simsN = (v) => 1000 + v * 1000;
+  function renderBuilder() {
+    $('#sliders').innerHTML = SET.map((f) => `<label class="sl" for="g-${f.key}"><span class="nm">${f.label}</span><span class="val" id="gv-${f.key}">${f.fmt(S.set[f.key])}</span>
+      <span class="hint">${f.hint}</span><input type="range" id="g-${f.key}" data-gs="${f.key}" min="0" max="10" step="1" value="${S.set[f.key]}"></label>`).join('') +
+      `<button class="btn ghost" id="gReset" type="button" style="margin-top:6px">Reset to defaults</button>`;
+  }
+  const aside = $('aside');
+  aside.querySelector('.small.muted').textContent = 'Ratings come from every round played. These settings change how the ratings are built.';
+  let rf = 0;
+  aside.addEventListener('input', (e) => { const t = e.target; if (!t.dataset.gs) return; S.set[t.dataset.gs] = +t.value; $('#gv-' + t.dataset.gs).textContent = SET.find((f) => f.key === t.dataset.gs).fmt(+t.value);
+    store.set('settings', S.set); cancelAnimationFrame(rf); rf = requestAnimationFrame(() => { cache.clear(); render(); }); });
+  aside.addEventListener('click', (e) => { if (e.target.id !== 'gReset') return; S.set = { ...DEFAULTS }; store.set('settings', S.set); renderBuilder(); cache.clear(); render(); });
+
+  // ---- ratings: strokes gained per round vs the field, adjusted for field strength, time-weighted
+  const cache = new Map();
+  function ratings(before) {
+    const key = before + '|' + S.set.recent + '|' + S.set.sample;
+    if (cache.has(key)) return cache.get(key);
+    const hl = halfLife(S.set.recent), k = S.set.sample * 4, t0 = new Date(before + 'T12:00:00');
+    const obs = [], groups = [];
+    events.forEach((e) => {
+      if (e.d >= before) return;
+      const age = (t0 - new Date(e.d + 'T12:00:00')) / 864e5, w = Math.pow(0.5, age / hl);
+      for (let i = 0; i < 4; i++) {
+        const ps = e.p.filter((p) => p[1][i] != null); if (ps.length < 20) continue;
+        const avg = ps.reduce((s, p) => s + p[1][i], 0) / ps.length, gi = groups.length;
+        groups.push(ps.map((p) => p[0]));
+        ps.forEach((p) => obs.push([p[0], avg - p[1][i], w, gi]));
+      }
+    });
+    const sw = {}, n = {}, last = {};
+    obs.forEach(([p, , w]) => { sw[p] = (sw[p] || 0) + w; n[p] = (n[p] || 0) + 1; });
+    let sk = {};
+    for (let it = 0; it < 6; it++) {
+      const field = groups.map((g) => g.reduce((s, p) => s + (sk[p] || 0), 0) / g.length);
+      const num = {};
+      obs.forEach(([p, v, w, gi]) => { num[p] = (num[p] || 0) + w * (v + field[gi]); });
+      const nx = {}; Object.keys(num).forEach((p) => { nx[p] = num[p] / (sw[p] + k * 0.5 + 1e-9); }); // shrinks small samples toward an average player
+      // center on regular tour players (40+ rounds) so 0 = an average tour player
+      const reg = Object.keys(nx).filter((p) => n[p] >= 40), mu = reg.length ? reg.reduce((s, p) => s + nx[p], 0) / reg.length : 0;
+      Object.keys(nx).forEach((p) => { nx[p] -= mu; }); sk = nx;
+    }
+    const out = { skill: sk, n, unknown: -1.2 };
+    cache.set(key, out); return out;
+  }
+
+  // ---- simulate a tournament from where it stands
+  function gauss() { let u = 0, v = 0; while (!u) u = Math.random(); v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+  function simulate(e) {
+    const pre = e.state === 'post'; // finished: show the model's pre-tournament prediction
+    const key = 'sim|' + e.id + '|' + S.set.recent + '|' + S.set.sample + '|' + S.set.sims;
+    if (cache.has(key)) return cache.get(key);
+    const R = ratings(e.d), N = simsN(S.set.sims);
+    // rounds already in: scores relative to each round's field average
+    const avgs = [0, 1, 2, 3].map((i) => { if (pre) return null; const v = e.p.map((p) => p[1][i]).filter((x) => x != null); return v.length >= 20 ? v.reduce((s, x) => s + x, 0) / v.length : null; });
+    const doneR = avgs.filter((a) => a != null).length;
+    const noCut = e.p.length <= 80; // small invitational fields play all four rounds
+    const cutMade = noCut || (!pre && doneR >= 3);
+    const field = e.p.map((p) => {
+      const base = pre ? 0 : p[1].reduce((s, x, i) => s + (avgs[i] != null ? x - avgs[i] : 0), 0);
+      const out = !pre && (cutMade && p[1].length < 3 || (doneR >= 2 && p[1].length < 2));
+      return { id: p[0], s: R.skill[p[0]] ?? R.unknown, n: R.n[p[0]] || 0, base, left: pre ? 4 : Math.max(0, 4 - p[1].length), out, pos: p[2], tp: p[3], thru: p[4], r: p[1] };
+    });
+    const live = field.filter((f) => !f.out), m = live.length;
+    const win = new Float64Array(m), t5 = new Float64Array(m), t10 = new Float64Array(m), t20 = new Float64Array(m), cut = new Float64Array(m), rk = new Float64Array(m);
+    const tot = new Float64Array(m), idx = new Array(m);
+    for (let sIt = 0; sIt < N; sIt++) {
+      for (let j = 0; j < m; j++) {
+        const f = live[j]; let t = f.base;
+        const toCut = Math.max(0, 2 - (4 - f.left));
+        for (let r = 0; r < toCut; r++) t += -f.s + SD * gauss();
+        tot[j] = t; idx[j] = j;
+      }
+      let alive = idx;
+      if (!cutMade) { // top 65 and ties after 36 holes
+        const order = idx.slice().sort((a, b) => tot[a] - tot[b]); const line = tot[order[Math.min(64, m - 1)]];
+        alive = order.filter((j) => tot[j] <= line + 1e-9); alive.forEach((j) => { cut[j]++; });
+      } else idx.forEach((j) => { cut[j]++; });
+      alive.forEach((j) => { const f = live[j]; const rem = f.left - Math.max(0, 2 - (4 - f.left)); for (let r = 0; r < rem; r++) tot[j] += -f.s + SD * gauss(); });
+      const order = alive.slice().sort((a, b) => tot[a] - tot[b] || Math.random() - 0.5);
+      order.forEach((j, r) => { if (r === 0) win[j]++; if (r < 5) t5[j]++; if (r < 10) t10[j]++; if (r < 20) t20[j]++; rk[j] += r + 1; });
+      idx.forEach((j) => { if (!alive.includes(j)) rk[j] += order.length + 1; });
+    }
+    const res = live.map((f, j) => ({ ...f, win: win[j] / N, t5: t5[j] / N, t10: t10[j] / N, t20: t20[j] / N, cut: cut[j] / N, avg: rk[j] / N }))
+      .sort((a, b) => b.win - a.win || a.avg - b.avg);
+    const outP = field.filter((f) => f.out);
+    const r = { res, out: outP, doneR, cutMade, noCut, N };
+    cache.set(key, r); return r;
+  }
+
+  // ---- tabs
+  const TABS = [['event', 'Tournament'], ['players', 'Player ratings'], ['h2h', 'Head to head'], ['accuracy', 'Accuracy']];
+  const renderTabs = () => { $('#tabs').innerHTML = TABS.map(([k, n]) => `<button role="tab" data-tab="${k}" aria-selected="${S.tab === k}">${n}</button>`).join(''); };
+  $('#tabs').addEventListener('click', (e) => { const b = e.target.closest('[data-tab]'); if (!b) return; S.tab = b.dataset.tab; store.set('tab', S.tab); renderTabs(); render(); });
+
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+  const live = events.filter((e) => e.state !== 'post' && e.p.length >= 20);
+  const pickable = [...live, ...done.filter((e) => e.p.length >= 20).slice(-10).reverse()];
+  if (!S.ev || !pickable.some((e) => e.id === S.ev)) S.ev = (live[0] || pickable[0] || {}).id;
+
+  function eventView() {
+    const e = events.find((x) => x.id === S.ev);
+    if (!e) return `<div class="empty">No tournament field posted yet. ${(DATA.schedule || []).length ? 'Next up: ' + esc(DATA.schedule[0].name) + ' (' + sdate(DATA.schedule[0].start) + ').' : ''} Check back after the next refresh.</div>`;
+    const sim = simulate(e), top = sim.res.slice(0, 3);
+    const status = e.state === 'post' ? 'Final' : e.state === 'in' ? (sim.doneR ? `Live · after round ${sim.doneR}` : 'Live · round 1') : 'Starts ' + sdate(e.d);
+    const finished = e.state === 'post';
+    const q = S.q.trim().toLowerCase();
+    const rows = sim.res.filter((p) => !q || name(p.id).toLowerCase().includes(q));
+    return `<div class="toolbar"><div class="f"><label class="label" for="gEv">Tournament</label><select id="gEv">${pickable.map((x) => `<option value="${x.id}" ${x.id === S.ev ? 'selected' : ''}>${esc(x.name)} · ${sdate(x.d)}${x.state === 'post' ? ' (final)' : x.state === 'in' ? ' (live)' : ''}</option>`).join('')}</select></div>
+      <div class="f"><label class="label" for="gQ">Player</label><input type="text" id="gQ" placeholder="Search" value="${esc(S.q)}" style="width:150px"></div></div>
+      <div class="gev"><div><h3>${esc(e.name)}</h3><div class="small muted">${esc(e.course || '')}${e.course ? ' · ' : ''}${status} · par ${e.par} · ${e.p.length} players</div></div></div>
+      ${!live.length && (DATA.schedule || []).length ? `<p class="note">No PGA Tour event this week. Next up: <b>${esc(DATA.schedule[0].name)}</b>, ${sdate(DATA.schedule[0].start)}. Predictions appear once the field is posted, usually a few days before.</p>` : ''}
+      ${finished ? `<p class="note">Final. These are the model's predictions from <b>before the tournament started</b>, next to how each player actually finished.</p>` : ''}
+      <div class="gtop">${top.map((p, i) => `<div class="gcard ${i === 0 ? 'lead' : ''}"><span class="label">${i === 0 ? 'Model favorite' : '#' + (i + 1)}</span><b>${esc(name(p.id))}</b>
+        <span class="big">${pct(p.win, 1)}</span><span class="small muted">to win · top 10 ${pct(p.t10)}</span>${p.pos && p.pos !== '-' ? `${finished ? '<span class="small">Finished</span>' : ''}<span class="small">${esc(p.pos)} ${p.tp != null ? (p.tp > 0 ? '+' : '') + (p.tp === 0 ? 'E' : p.tp) : ''}${p.thru && p.thru < 18 ? ' thru ' + p.thru : ''}</span>` : ''}</div>`).join('')}</div>
+      <div class="tblwrap"><table class="gtbl"><thead><tr><th>#</th><th>Player</th>${e.state === 'in' ? '<th class="num">Now</th>' : ''}<th class="num">Rating</th><th class="num">Win</th><th class="num">Top 5</th><th class="num">Top 10</th><th class="num">Top 20</th>${sim.cutMade ? '' : '<th class="num">Make cut</th>'}<th class="num">Avg finish</th>${finished ? '<th class="num">Actual</th>' : ''}</tr></thead><tbody>
+      ${rows.map((p, i) => `<tr><td class="muted">${sim.res.indexOf(p) + 1}</td><td class="pname">${esc(name(p.id))}${p.n < 12 ? ' <span class="muted small">(few rounds)</span>' : ''}</td>
+        ${e.state === 'in' ? `<td class="num small">${esc(p.pos || '')} ${p.tp != null ? (p.tp > 0 ? '+' : '') + (p.tp === 0 ? 'E' : p.tp) : ''}</td>` : ''}
+        <td class="num">${sg(p.s)}</td><td class="num"><b>${pct(p.win, 1)}</b></td><td class="num">${pct(p.t5)}</td><td class="num">${pct(p.t10)}</td><td class="num">${pct(p.t20)}</td>${sim.cutMade ? '' : `<td class="num">${pct(p.cut)}</td>`}<td class="num">${p.avg.toFixed(0)}</td>${finished ? `<td class="num"><b>${esc(p.pos && p.pos !== '-' ? p.pos : (p.r.length < 4 ? 'MC' : '–'))}</b></td>` : ''}</tr>`).join('')}
+      </tbody></table></div>
+      ${sim.out.length ? `<p class="small muted">Missed cut or withdrew: ${sim.out.map((p) => esc(name(p.id))).join(', ')}</p>` : ''}
+      <p class="note">Rating = strokes per round better (+) or worse (−) than an average PGA Tour player. Chances come from ${sim.N.toLocaleString()} simulations of ${finished ? 'the tournament as it looked before round 1' : 'the rest of the tournament, starting from the current scores'}, ${sim.noCut ? 'with no cut (small field)' : 'with the cut at the top 65 and ties'}.</p>`;
+  }
+
+  function playersView() {
+    const R = ratings(today);
+    const lastEvent = {}; events.forEach((e) => e.p.forEach((p) => { (lastEvent[p[0]] || (lastEvent[p[0]] = [])).push([e, p]); }));
+    const cutoff = new Date(Date.now() - 365 * 864e5).toISOString().slice(0, 10);
+    const list = Object.keys(R.skill).filter((id) => R.n[id] >= 16 && (lastEvent[id] || []).some(([e]) => e.d >= cutoff))
+      .map((id) => ({ id, s: R.skill[id], n: R.n[id], ev: lastEvent[id] })).sort((a, b) => b.s - a.s).slice(0, 150);
+    const q = S.q.trim().toLowerCase();
+    const fin = (p) => { const pos = p[2] || ''; return pos ? pos : (p[1].length < 3 ? 'MC' : '–'); };
+    return `<div class="toolbar"><div class="f"><label class="label" for="gQ">Player</label><input type="text" id="gQ" placeholder="Search" value="${esc(S.q)}" style="width:180px"></div></div>
+      <p class="note" style="margin:0 0 12px">Active players with 16+ rounds, ranked by strokes gained per round against an average PGA Tour player, adjusted for field strength. Change "Recent form" to weight the last few months more.</p>
+      <div class="tblwrap"><table><thead><tr><th>#</th><th>Player</th><th class="num">Rating</th><th class="num">Rounds</th><th class="num">Wins</th><th>Last 5 finishes</th></tr></thead><tbody>
+      ${list.filter((x) => !q || name(x.id).toLowerCase().includes(q)).map((x) => `<tr><td class="muted">${list.indexOf(x) + 1}</td><td class="pname">${esc(name(x.id))}</td><td class="num"><b>${sg(x.s)}</b></td><td class="num">${x.n}</td>
+        <td class="num">${x.ev.filter(([e, p]) => e.state === 'post' && /^1$/.test(p[2] || '')).length}</td><td class="small">${x.ev.filter(([e]) => e.state === 'post').slice(-5).reverse().map(([, p]) => fin(p)).join(' · ')}</td></tr>`).join('')}
+      </tbody></table></div>`;
+  }
+
+  function h2hView() {
+    const R = ratings(today);
+    const ids = Object.keys(R.skill).filter((id) => R.n[id] >= 16).sort((a, b) => name(a).localeCompare(name(b)));
+    const ranked = ids.slice().sort((a, b) => R.skill[b] - R.skill[a]);
+    if (!S.a || !R.skill[S.a]) S.a = ranked[0]; if (!S.b || !R.skill[S.b] || S.b === S.a) S.b = ranked[1];
+    const opt = (sel) => ids.map((id) => `<option value="${id}" ${id === sel ? 'selected' : ''}>${esc(name(id))}</option>`).join('');
+    const d = R.skill[S.a] - R.skill[S.b];
+    const p72 = E2.phi(d * 4 / (SD * Math.sqrt(8))), p18 = E2.phi(d / (SD * Math.SQRT2));
+    return `<p class="note" style="margin:0 0 12px">Pick any two players. The chance is from their ratings and how much scores vary round to round.</p>
+      <div class="toolbar"><div class="f"><label class="label" for="gA">Player A</label><select id="gA">${opt(S.a)}</select></div><div class="f"><label class="label" for="gB">Player B</label><select id="gB">${opt(S.b)}</select></div></div>
+      <div class="gh2h">${[[S.a, p72, p18], [S.b, 1 - p72, 1 - p18]].map(([id, a, b]) => `<div class="gcard ${a >= 0.5 ? 'lead' : ''}"><span class="label">${a >= 0.5 ? 'Model likes' : ''}&nbsp;</span><b>${esc(name(id))}</b>
+        <span class="big">${pct(a)}</span><span class="small muted">to beat the other over 72 holes</span><span class="small">${pct(b)} in a single round · rating ${sg(R.skill[id])} · ${R.n[id]} rounds</span></div>`).join('')}</div>
+      <p class="note">A ${Math.abs(d).toFixed(2)}-stroke-per-round gap adds up to about ${(Math.abs(d) * 4).toFixed(1)} strokes over a tournament, against a typical swing of ±${(SD * Math.sqrt(8)).toFixed(1)} strokes between two players. That's why golf upsets are common.</p>`;
+  }
+
+  function accuracyView() {
+    const key = 'acc|' + S.set.recent + '|' + S.set.sample;
+    if (!cache.has(key)) {
+      const first = events.length ? new Date(new Date(events[0].d).getTime() + 150 * 864e5).toISOString().slice(0, 10) : today;
+      let pairs = 0, right = 0, t10hit = 0, t10n = 0, winRank = [], n = 0, base = 0;
+      done.filter((e) => e.d >= first).forEach((e) => {
+        const R = ratings(e.d);
+        const fin = e.p.filter((p) => p[1].length === 4).map((p) => ({ id: p[0], tot: p[1].reduce((s, x) => s + x, 0) }));
+        const mc = e.p.filter((p) => p[1].length < 4 && p[1].length >= 2);
+        if (fin.length < 30) return;
+        n++;
+        const all = e.p.map((p) => ({ id: p[0], s: R.skill[p[0]] ?? R.unknown, tot: p[1].length === 4 ? p[1].reduce((s, x) => s + x, 0) : 1e9 + (4 - p[1].length) }));
+        const byModel = all.slice().sort((a, b) => b.s - a.s);
+        const actual = all.slice().sort((a, b) => a.tot - b.tot);
+        const top10 = new Set(actual.slice(0, 10).filter((x) => x.tot < 1e9).map((x) => x.id));
+        byModel.slice(0, 10).forEach((x) => { t10n++; if (top10.has(x.id)) t10hit++; });
+        base += 10 / all.length;
+        winRank.push(byModel.findIndex((x) => x.id === actual[0].id) + 1);
+        for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) {
+          const a = all[i], b = all[j]; if (a.tot === b.tot || a.s === b.s) continue; pairs++; if ((a.s > b.s) === (a.tot < b.tot)) right++;
+        }
+      });
+      winRank.sort((a, b) => a - b);
+      cache.set(key, { n, pairs, right, t10: t10n ? t10hit / t10n : 0, base: n ? base / n : 0, med: winRank.length ? winRank[Math.floor(winRank.length / 2)] : null, top10w: winRank.filter((r) => r <= 10).length });
+    }
+    const a = cache.get(key);
+    if (!a.n) return '<div class="empty">Not enough finished tournaments yet to test the model.</div>';
+    return `<p class="note" style="margin:0 0 14px">Every tournament from the model's first five months on, predicted using only rounds played before it started.</p>
+      <div class="tiles">
+        <div class="tile"><span class="label">Head-to-head</span><b>${pct(a.right / a.pairs, 1)}</b><span class="sub">picked the better finisher in ${a.pairs.toLocaleString()} player pairs (50% = coin flip)</span></div>
+        <div class="tile"><span class="label">Top-10 picks</span><b>${pct(a.t10)}</b><span class="sub">of the model's top 10 finished top 10 · random pick ${pct(a.base)}</span></div>
+        <div class="tile"><span class="label">Winners</span><b>#${a.med}</b><span class="sub">typical pre-tournament rank of the winner · ${a.top10w} of ${a.n} winners were in its top 10</span></div>
+        <div class="tile"><span class="label">Tournaments</span><b>${a.n}</b><span class="sub">tested</span></div>
+      </div>
+      <p class="note">Golf is the most random sport on the site: even the best player in the world wins only a small share of the events he plays. The head-to-head number is the fairest test of the ratings.</p>`;
+  }
+
+  const E2 = window.Engine;
+  function render() {
+    const v = S.tab === 'players' ? playersView() : S.tab === 'h2h' ? h2hView() : S.tab === 'accuracy' ? accuracyView() : eventView();
+    $('#view').innerHTML = v;
+  }
+  $('#view').addEventListener('change', (e) => {
+    if (e.target.id === 'gEv') { S.ev = e.target.value; render(); }
+    if (e.target.id === 'gA') { S.a = e.target.value; render(); }
+    if (e.target.id === 'gB') { S.b = e.target.value; render(); }
+  });
+  let qt = 0;
+  $('#view').addEventListener('input', (e) => { if (e.target.id !== 'gQ') return; clearTimeout(qt); qt = setTimeout(() => { S.q = e.target.value; const pos = e.target.selectionStart; render(); const el = $('#gQ'); if (el) { el.focus(); el.setSelectionRange(pos, pos); } }, 200); });
+  renderBuilder(); renderTabs(); render();
+}
+
 function bootUfc(DATA) {
   const E = window.Engine, U = E.ufc;
   const $ = (q) => document.querySelector(q);
@@ -1661,11 +1911,11 @@ function bootGuide() {
   <h2>How it works</h2>
   <nav class="toc" aria-label="Sections">
     <a href="#g-what">What this is</a><a href="#g-card">Reading a game card</a><a href="#g-terms">Betting terms</a><a href="#g-model">The model panel</a>
-    <a href="#g-edges">Best edges</a><a href="#g-accuracy">Accuracy</a><a href="#g-props">Player props</a><a href="#g-log">Pick log and sync</a><a href="#g-ufc">UFC</a><a href="#g-data">Data and updates</a><a href="#g-limits">Know the limits</a>
+    <a href="#g-edges">Best edges</a><a href="#g-accuracy">Accuracy</a><a href="#g-props">Player props</a><a href="#g-log">Pick log and sync</a><a href="#g-ufc">UFC</a><a href="#g-golf">Golf</a><a href="#g-data">Data and updates</a><a href="#g-limits">Know the limits</a>
   </nav>
 
   <section id="g-what"><h3>What this is</h3>
-    <p>5ive Lab predicts games in seven sports (NFL, college football, NBA, college basketball, NHL, MLB and UFC) using team stats, and compares its predictions to the betting lines. You decide what the model cares about by sliding factors up or down, or you can use the <b>Trained</b> model, which learned its settings from past seasons.</p>
+    <p>5ive Lab predicts games in eight sports (NFL, college football, NBA, college basketball, NHL, MLB, UFC and golf) using team stats, and compares its predictions to the betting lines. You decide what the model cares about by sliding factors up or down, or you can use the <b>Trained</b> model, which learned its settings from past seasons.</p>
     <p>Pick a sport from the buttons at the top. Everything you change (sliders, lines you type in, picks you log) is saved in your browser.</p>
   </section>
 
@@ -1737,6 +1987,11 @@ function bootGuide() {
     </ul>
   </section>
 
+  <section id="g-golf"><h3>Golf</h3>
+    <p>Golf works differently: there's one big field instead of two teams. Every PGA Tour round since 2025 is scored against the field that played that day, then adjusted for how strong the field was. That gives each player a <b>rating</b>: strokes per round better (+) or worse (−) than an average tour player. The model then plays out the tournament thousands of times (starting from the current scores once it's underway, with the cut at the top 65 and ties) to get each player's chance to win, finish top 5, 10 or 20, and make the cut.</p>
+    <p><b>Head to head</b> compares any two players. For finished tournaments, the table shows what the model predicted before round 1 next to how each player actually finished. Golf is very random: even a heavy favorite usually has well under a 20% chance to win.</p>
+  </section>
+
   <section id="g-data"><h3>Data and updates</h3>
     <p>Stats, scores, schedules, injuries and most betting lines refresh automatically about twice a day (around 9 AM and 5 PM Eastern), and the trained models re-learn after each refresh. Late games show up the next morning. Lines move between updates, so check your sportsbook and type in the current number if it changed. The header on each page says when that sport last updated and where the data comes from.</p>
   </section>
@@ -1754,7 +2009,9 @@ function bootGuide() {
 }
 
 if (SPORT === 'guide') bootGuide(); else
-if (SPORT === 'ufc') syncFirst.then(() => fetch('data/ufc.json', { cache: 'no-cache' })).then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then(bootUfc)
+if (SPORT === 'golf') syncFirst.then(() => fetch('data/golf.json', { cache: 'no-cache' })).then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then(bootGolf)
+  .catch((err) => { document.getElementById('view').innerHTML = '<div class="empty">Couldn\'t load the golf data (' + String(err.message || err) + '). Reload to try again.</div>'; });
+else if (SPORT === 'ufc') syncFirst.then(() => fetch('data/ufc.json', { cache: 'no-cache' })).then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then(bootUfc)
   .catch((err) => { document.getElementById('view').innerHTML = '<div class="empty">Couldn\'t load the UFC data (' + String(err.message || err) + '). Reload to try again.</div>'; });
 else if (SPORT === 'edges') syncFirst.then(bootEdges); else
 syncFirst.then(() => fetch('data/' + SPORT + '.json', { cache: 'no-cache' }))
