@@ -1284,33 +1284,52 @@ def golf_event(ev):
         e = next((x for x in evs if str(x.get('id')) == ev['id']), evs[0] if len(evs) == 1 else None)
         if not e:
             continue
-        comp = (e.get('competitions') or [{}])[0]
-        state = ((e.get('status') or comp.get('status') or {}).get('type') or {}).get('state', 'pre')
-        players, names = [], {}
+        comps = e.get('competitions') if isinstance(e.get('competitions'), list) else []
+        comp = comps[0] if comps and isinstance(comps[0], dict) else {}
+        stt = e.get('status') if isinstance(e.get('status'), dict) else comp.get('status') if isinstance(comp.get('status'), dict) else {}
+        state = (stt.get('type') or {}).get('state', 'pre') if isinstance(stt.get('type'), dict) else 'pre'
+        players, names, pars = [], {}, []
         for c in comp.get('competitors', []) or []:
-            a = c.get('athlete') or {}
+            if not isinstance(c, dict):
+                continue
+            a = c.get('athlete') if isinstance(c.get('athlete'), dict) else {}
             pid = str(a.get('id') or c.get('id') or '')
             if not pid:
                 continue
             names[pid] = a.get('displayName') or a.get('shortName') or pid
-            rounds, partial = [], None
-            for ls in sorted(c.get('linescores', []) or [], key=lambda x: x.get('period', 0)):
-                per, v = ls.get('period', 0), golf_num(ls.get('value'))
+            rounds = []
+            lss = [x for x in (c.get('linescores') or []) if isinstance(x, dict)]
+            for ls in sorted(lss, key=lambda x: x.get('period') or 0):
+                per, v = ls.get('period') or 0, golf_num(ls.get('value'))
                 if not (1 <= per <= 4) or v is None:
                     continue
-                holes = len(ls.get('linescores') or [])
-                if v >= 55 and (holes in (0, 18)):
+                holes = len([h for h in (ls.get('linescores') or []) if isinstance(h, dict) and h.get('value') is not None])
+                if v >= 55 and holes in (0, 18):
                     rounds.append(int(round(v)))
-                else:
-                    partial = per
-            st = c.get('status') or {}
-            pos = ((st.get('position') or {}).get('displayName')) or c.get('position') or ''
+                    dv = golf_num(ls.get('displayValue'))
+                    if dv is not None and abs(dv) < 25:
+                        pars.append(int(round(v - dv)))
+            st = c.get('status') if isinstance(c.get('status'), dict) else {}
+            posd = st.get('position') if isinstance(st.get('position'), dict) else {}
+            pos = posd.get('displayName') or (c.get('position') if isinstance(c.get('position'), str) else '') or ''
             thru = st.get('thru') if isinstance(st.get('thru'), (int, float)) else None
-            players.append(dict(id=pid, r=rounds, tp=golf_num(c.get('score')), pos=str(pos or ''), thru=thru, ord=c.get('order') or c.get('sortOrder')))
+            sc = golf_num(c.get('score'))
+            players.append(dict(id=pid, r=rounds, sc=sc, pos=str(pos), thru=thru))
+        par = sorted(pars)[len(pars) // 2] if pars else None
+        if par is None:  # fall back: total strokes vs a to-par score
+            alt = [sum(p['r']) - p['sc'] for p in players if p['sc'] is not None and abs(p['sc']) < 40 and len(p['r']) == 4]
+            par = round(sorted(alt)[len(alt) // 2] / 4) if alt else 72
+        for p in players:  # to-par: ESPN gives either total strokes or a to-par number
+            sc = p.pop('sc')
+            p['tp'] = (sc - par * len(p['r']) if sc is not None and sc > 100 else sc) if sc is not None else (sum(p['r']) - par * len(p['r']) if p['r'] else None)
+            if p['tp'] is not None:
+                p['tp'] = int(round(p['tp']))
         if not players:
             continue
-        venue = (comp.get('venue') or {}).get('fullName') or ((e.get('courses') or [{}])[0].get('name') if e.get('courses') else '')
-        return dict(state=state, players=players, names=names, course=venue or '', name=e.get('name') or ev.get('name'),
+        vn = comp.get('venue') if isinstance(comp.get('venue'), dict) else {}
+        crs = e.get('courses') if isinstance(e.get('courses'), list) else []
+        venue = vn.get('fullName') or (crs[0].get('name') if crs and isinstance(crs[0], dict) else '')
+        return dict(state=state, par=par, players=players, names=names, course=venue or '', name=e.get('name') or ev.get('name'),
                     start=(e.get('date') or ev.get('start') or '')[:10], end=(e.get('endDate') or ev.get('end') or '')[:10])
     raise RuntimeError(f'no leaderboard for {ev["id"]}: {last}')
 
@@ -1325,7 +1344,7 @@ def build_golf(_season):
         raise RuntimeError('golf calendar empty')
     soon = (today + datetime.timedelta(days=10)).isoformat()
     want = [e for e in cal if e['start'] <= soon]
-    need = [e for e in want if cache.get(e['id'], {}).get('state') != 'post' or e['start'] >= (today - datetime.timedelta(days=6)).isoformat()]
+    need = [e for e in want if cache.get(e['id'], {}).get('state') != 'post' or 'par' not in cache.get(e['id'], {}) or e['start'] >= (today - datetime.timedelta(days=6)).isoformat()]
     byid = {e['id']: e for e in need}
     got = parallel(lambda eid: golf_event(byid[eid]), list(byid), workers=6) if need else {}
     errs, first_err = 0, None
@@ -1333,7 +1352,7 @@ def build_golf(_season):
         if isinstance(r, dict) and r.get('players'):
             cache[eid] = r
         else:
-            errs += 1; first_err = first_err or (r.get('_error') if isinstance(r, dict) else str(r))
+            errs += 1; first_err = first_err or (byid[eid]['name'] + ': ' + str(r.get('_error') if isinstance(r, dict) else r))
     save_cache('golf_events.json', cache)
     names, events = {}, []
     for e in want:
@@ -1341,9 +1360,7 @@ def build_golf(_season):
         if not x:
             continue
         names.update(x.get('names', {}))
-        # par: completed players' strokes minus their score to par
-        pars = [sum(p['r']) - p['tp'] for p in x['players'] if p.get('tp') is not None and len(p['r']) == 4]
-        par = round(sorted(pars)[len(pars) // 2] / 4) if pars else 72
+        par = x.get('par') or 72
         events.append(dict(id=e['id'], name=x.get('name') or e['name'], d=x.get('start') or e['start'], end=x.get('end') or e['end'],
                            course=x.get('course', ''), state=x['state'], par=par,
                            p=[[p['id'], p['r'], p['pos'], p['tp'], p['thru']] for p in x['players']]))
