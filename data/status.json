@@ -13,7 +13,7 @@
   "upcoming": 294
  },
  "cfb": {
-  "finals": 339,
+  "finals": 354,
   "history": [
    2023,
    2024,
@@ -21,10 +21,10 @@
   ],
   "next": "2026-10-17",
   "ok": true,
-  "rows": 678,
+  "rows": 708,
   "season": 2026,
-  "through": "2026-10-16",
-  "upcoming": 422
+  "through": "2026-10-17",
+  "upcoming": 407
  },
  "golf": {
   "finals": 90,
@@ -80,7 +80,7 @@
   "upcoming": 192
  },
  "nhl": {
-  "finals": 120,
+  "finals": 121,
   "history": [
    2023,
    2024,
@@ -88,19 +88,19 @@
   ],
   "next": "2026-10-17",
   "ok": true,
-  "rows": 240,
+  "rows": 242,
   "season": 2026,
-  "through": "2026-10-16",
-  "upcoming": 1224
+  "through": "2026-10-17",
+  "upcoming": 1223
  },
  "ufc": {
-  "finals": 4001,
+  "finals": 4002,
   "history": [],
   "next": "2026-10-17",
   "ok": true,
   "rows": 0,
   "season": 2026,
-  "through": "2026-10-10",
-  "upcoming": 75
+  "through": "2026-10-17",
+  "upcoming": 74
  }
 }
