@@ -1401,7 +1401,7 @@ def golf_odds(events, names, upcoming=()):
                 sports = get_json(f'https://api.the-odds-api.com/v4/sports?apiKey={key}&all=false')
                 golf = [x for x in sports if x.get('group') == 'Golf']
                 dbg['oddsapi_golf'] = [x.get('key') + ' · ' + x.get('title', '') for x in golf]
-                words = set(golf_norm(e['name']).split()) - {'the', 'championship', 'open', 'classic', 'tournament', 'presented', 'by', 'at'}
+                words = set(golf_norm(e['name']).split()) - {'the', 'championship', 'open', 'classic', 'tournament', 'presented', 'by', 'at', 'pga', 'tour', 'winner', 'of'}
                 pick = [x for x in golf if words & set(golf_norm(x.get('title', '') + ' ' + x.get('description', '')).split())]
                 rem = load_cache('golf_odds.json').get('_remaining')
                 if pick and (rem is None or rem >= 40):

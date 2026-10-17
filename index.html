@@ -292,6 +292,8 @@ body.noscroll { overflow: hidden }
 .gcard.lead { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset }
 .gcard b { font-family: var(--display); font-size: 20px; text-transform: uppercase; line-height: 1.1; overflow-wrap: anywhere }
 .gcard .big { font-family: var(--display); font-size: 34px; font-weight: 700; color: var(--accent) }
+.gtbl th, .gtbl td { padding-left: 7px; padding-right: 7px }
+.godds { width: 72px; text-align: right; padding: 4px 6px; font-size: 13px }
 @media (max-width: 520px) { .gtop { grid-template-columns: 1fr 1fr } .gtop .gcard:nth-child(3) { display: none } }
 
 /* tables */
@@ -1507,7 +1509,10 @@ function bootGolf(DATA) {
     set(k, v) { try { localStorage.setItem(pre + k, JSON.stringify(v)); } catch (e) {} window.Sync && Sync.changed(pre + k); },
   };
   const DEFAULTS = { recent: 2, sample: 2, sims: 5 }; // best head-to-head accuracy in testing
-  const S = { set: { ...DEFAULTS, ...store.get('settings', {}) }, tab: store.get('tab', 'event'), ev: null, a: null, b: null, q: '' };
+  const S = { set: { ...DEFAULTS, ...store.get('settings', {}) }, tab: store.get('tab', 'event'), ev: null, a: null, b: null, q: '', odds: store.get('odds', {}) };
+  const imp = (o) => o == null ? null : o < 0 ? -o / (-o + 100) : 100 / (o + 100);
+  const profit = (o) => o < 0 ? 100 / -o : o / 100;
+  const fmtOdds = (o) => o == null ? '' : (o > 0 ? '+' : '') + o;
   const pct = (p, d = 0) => p == null ? '–' : p >= 0.995 && d === 0 ? '>99%' : p > 0 && p < 0.005 && d === 0 ? '<1%' : (p * 100).toFixed(d) + '%';
   const sg = (v) => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(2);
   const sdate = (d) => d ? new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
@@ -1575,12 +1580,16 @@ function bootGolf(DATA) {
   }
 
   // ---- simulate a tournament from where it stands
-  function gauss() { let u = 0, v = 0; while (!u) u = Math.random(); v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+  // seeded random numbers so the same tournament gives the same answer every time you load it
+  let seed = 1;
+  const rand = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  function gauss() { let u = 0; while (!u) u = rand(); const v = rand(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
   function simulate(e) {
     const pre = e.state === 'post'; // finished: show the model's pre-tournament prediction
     const key = 'sim|' + e.id + '|' + S.set.recent + '|' + S.set.sample + '|' + S.set.sims;
     if (cache.has(key)) return cache.get(key);
     const R = ratings(e.d), N = simsN(S.set.sims);
+    seed = [...String(e.id)].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 7);
     // rounds already in: scores relative to each round's field average
     const avgs = [0, 1, 2, 3].map((i) => { if (pre) return null; const v = e.p.map((p) => p[1][i]).filter((x) => x != null); return v.length >= 20 ? v.reduce((s, x) => s + x, 0) / v.length : null; });
     const doneR = avgs.filter((a) => a != null).length;
@@ -1607,7 +1616,7 @@ function bootGolf(DATA) {
         alive = order.filter((j) => tot[j] <= line + 1e-9); alive.forEach((j) => { cut[j]++; });
       } else idx.forEach((j) => { cut[j]++; });
       alive.forEach((j) => { const f = live[j]; const rem = f.left - Math.max(0, 2 - (4 - f.left)); for (let r = 0; r < rem; r++) tot[j] += -f.s + SD * gauss(); });
-      const order = alive.slice().sort((a, b) => tot[a] - tot[b] || Math.random() - 0.5);
+      const order = alive.slice().sort((a, b) => tot[a] - tot[b] || a - b);
       order.forEach((j, r) => { if (r === 0) win[j]++; if (r < 5) t5[j]++; if (r < 10) t10[j]++; if (r < 20) t20[j]++; rk[j] += r + 1; });
       idx.forEach((j) => { if (!alive.includes(j)) rk[j] += order.length + 1; });
     }
@@ -1632,6 +1641,14 @@ function bootGolf(DATA) {
     const e = events.find((x) => x.id === S.ev);
     if (!e) return `<div class="empty">No tournament field posted yet. ${(DATA.schedule || []).length ? 'Next up: ' + esc(DATA.schedule[0].name) + ' (' + sdate(DATA.schedule[0].start) + ').' : ''} Check back after the next refresh.</div>`;
     const sim = simulate(e), top = sim.res.slice(0, 3);
+    // winner odds: what you typed, else the feed (best price across books)
+    const feed = (e.odds && e.odds.odds) || {};
+    const oddsOf = (id) => { const u = S.odds[e.id + '|' + id]; return u != null && u !== '' ? +u : feed[id] ? feed[id].best : null; };
+    const covered = sim.res.filter((p) => feed[p.id]).length;
+    const book = sim.res.reduce((t, p) => t + (feed[p.id] ? imp(feed[p.id].med) : 0), 0);
+    const mkt = (id) => { const o = oddsOf(id); if (o == null) return null; const u = S.odds[e.id + '|' + id];
+      return covered >= sim.res.length * 0.6 && book > 1 && (u == null || u === '') ? imp(feed[id].med) / book : imp(o); };
+    const valueOf = (p) => { const o = oddsOf(p.id); return o == null ? null : p.win * profit(o) - (1 - p.win); };
     const status = e.state === 'post' ? 'Final' : e.state === 'in' ? (sim.doneR ? `Live · after round ${sim.doneR}` : 'Live · round 1') : 'Starts ' + sdate(e.d);
     const finished = e.state === 'post';
     const q = S.q.trim().toLowerCase();
@@ -1642,12 +1659,13 @@ function bootGolf(DATA) {
       ${!live.length && (DATA.schedule || []).length ? `<p class="note">No PGA Tour event this week. Next up: <b>${esc(DATA.schedule[0].name)}</b>, ${sdate(DATA.schedule[0].start)}. Predictions appear once the field is posted, usually a few days before.</p>` : ''}
       ${finished ? `<p class="note">Final. These are the model's predictions from <b>before the tournament started</b>, next to how each player actually finished.</p>` : ''}
       <div class="gtop">${top.map((p, i) => `<div class="gcard ${i === 0 ? 'lead' : ''}"><span class="label">${i === 0 ? 'Model favorite' : '#' + (i + 1)}</span><b>${esc(name(p.id))}</b>
-        <span class="big">${pct(p.win, 1)}</span><span class="small muted">to win · top 10 ${pct(p.t10)}</span>${p.pos && p.pos !== '-' ? `${finished ? '<span class="small">Finished</span>' : ''}<span class="small">${esc(p.pos)} ${p.tp != null ? (p.tp > 0 ? '+' : '') + (p.tp === 0 ? 'E' : p.tp) : ''}${p.thru && p.thru < 18 ? ' thru ' + p.thru : ''}</span>` : ''}</div>`).join('')}</div>
-      <div class="tblwrap"><table class="gtbl"><thead><tr><th>#</th><th>Player</th>${e.state === 'in' ? '<th class="num">Now</th>' : ''}<th class="num">Rating</th><th class="num">Win</th><th class="num">Top 5</th><th class="num">Top 10</th><th class="num">Top 20</th>${sim.cutMade ? '' : '<th class="num">Make cut</th>'}<th class="num">Avg finish</th>${finished ? '<th class="num">Actual</th>' : ''}</tr></thead><tbody>
+        <span class="big">${pct(p.win, 1)}</span><span class="small muted">to win · top 10 ${pct(p.t10)}${oddsOf(p.id) != null ? ' · odds ' + fmtOdds(oddsOf(p.id)) : ''}</span>${p.pos && p.pos !== '-' ? `${finished ? '<span class="small">Finished</span>' : ''}<span class="small">${esc(p.pos)} ${p.tp != null ? (p.tp > 0 ? '+' : '') + (p.tp === 0 ? 'E' : p.tp) : ''}${p.thru && p.thru < 18 ? ' thru ' + p.thru : ''}</span>` : ''}</div>`).join('')}</div>
+      <div class="tblwrap"><table class="gtbl"><thead><tr><th>#</th><th>Player</th>${e.state === 'in' ? '<th class="num">Now</th>' : ''}<th class="num">Rating</th><th class="num">Win</th><th class="num">Top 10</th><th class="num">Top 20</th>${sim.cutMade ? '' : '<th class="num">Make cut</th>'}<th class="num">Avg</th><th class="num">Odds</th><th class="num">Market</th><th class="num">Value</th>${finished ? '<th class="num">Actual</th>' : ''}</tr></thead><tbody>
       ${rows.map((p, i) => `<tr><td class="muted">${sim.res.indexOf(p) + 1}</td><td class="pname">${esc(name(p.id))}${p.n < 12 ? ' <span class="muted small">(few rounds)</span>' : ''}</td>
         ${e.state === 'in' ? `<td class="num small">${esc(p.pos || '')} ${p.tp != null ? (p.tp > 0 ? '+' : '') + (p.tp === 0 ? 'E' : p.tp) : ''}</td>` : ''}
-        <td class="num">${sg(p.s)}</td><td class="num"><b>${pct(p.win, 1)}</b></td><td class="num">${pct(p.t5)}</td><td class="num">${pct(p.t10)}</td><td class="num">${pct(p.t20)}</td>${sim.cutMade ? '' : `<td class="num">${pct(p.cut)}</td>`}<td class="num">${p.avg.toFixed(0)}</td>${finished ? `<td class="num"><b>${esc(p.pos && p.pos !== '-' ? p.pos : (p.r.length < 4 ? 'MC' : '–'))}</b></td>` : ''}</tr>`).join('')}
+        <td class="num">${sg(p.s)}</td><td class="num"><b>${pct(p.win, 1)}</b></td><td class="num">${pct(p.t10)}</td><td class="num">${pct(p.t20)}</td>${sim.cutMade ? '' : `<td class="num">${pct(p.cut)}</td>`}<td class="num">${p.avg.toFixed(0)}</td><td class="num"><input class="godds" type="text" inputmode="numeric" data-godds="${p.id}" value="${esc(fmtOdds(oddsOf(p.id)))}" placeholder="+odds" aria-label="Odds for ${esc(name(p.id))}"></td><td class="num small">${mkt(p.id) != null ? pct(mkt(p.id), 1) : ''}</td><td class="num">${valueOf(p) != null ? `<span class="pill ${valueOf(p) > 0.05 ? 'good' : valueOf(p) < -0.05 ? 'bad' : 'flat'}">EV ${valueOf(p) >= 0 ? '+' : '−'}${Math.abs(valueOf(p) * 100).toFixed(0)}%</span>` : ''}</td>${finished ? `<td class="num"><b>${esc(p.pos && p.pos !== '-' ? p.pos : (p.r.length < 4 ? 'MC' : '–'))}</b></td>` : ''}</tr>`).join('')}
       </tbody></table></div>
+      <p class="note">${e.odds ? `Winner odds from ${esc(e.odds.src)} (best price across books${e.odds.at ? ', updated ' + esc(e.odds.at.replace('T', ' ')) + ' UTC' : ''}). ` : 'No odds feed for this tournament (the free feed only covers the four majors). '}Type your sportsbook's winner odds in the Odds column, like +2500. Market is the chance those odds imply; Value is the model's expected return per $1.</p>
       ${sim.out.length ? `<p class="small muted">Missed cut or withdrew: ${sim.out.map((p) => esc(name(p.id))).join(', ')}</p>` : ''}
       <p class="note">Rating = strokes per round better (+) or worse (−) than an average PGA Tour player. Chances come from ${sim.N.toLocaleString()} simulations of ${finished ? 'the tournament as it looked before round 1' : 'the rest of the tournament, starting from the current scores'}, ${sim.noCut ? 'with no cut (small field)' : 'with the cut at the top 65 and ties'}.</p>`;
   }
@@ -1726,6 +1744,8 @@ function bootGolf(DATA) {
     $('#view').innerHTML = v;
   }
   $('#view').addEventListener('change', (e) => {
+    if (e.target.dataset.godds) { const k = S.ev + '|' + e.target.dataset.godds, v = e.target.value.replace(/[^0-9+-]/g, ''); const n = parseInt(v, 10);
+      if (v === '' || isNaN(n) || Math.abs(n) < 100) delete S.odds[k]; else S.odds[k] = n; store.set('odds', S.odds); render(); return; }
     if (e.target.id === 'gEv') { S.ev = e.target.value; render(); }
     if (e.target.id === 'gA') { S.a = e.target.value; render(); }
     if (e.target.id === 'gB') { S.b = e.target.value; render(); }
