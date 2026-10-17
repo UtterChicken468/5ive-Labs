@@ -80,7 +80,7 @@
   "upcoming": 192
  },
  "nhl": {
-  "finals": 119,
+  "finals": 120,
   "history": [
    2023,
    2024,
@@ -88,10 +88,10 @@
   ],
   "next": "2026-10-17",
   "ok": true,
-  "rows": 238,
+  "rows": 240,
   "season": 2026,
   "through": "2026-10-16",
-  "upcoming": 1225
+  "upcoming": 1224
  },
  "ufc": {
   "finals": 4001,
