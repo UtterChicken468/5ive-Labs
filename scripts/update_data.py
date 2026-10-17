@@ -1334,6 +1334,125 @@ def golf_event(ev):
     raise RuntimeError(f'no leaderboard for {ev["id"]}: {last}')
 
 
+def golf_norm(n):
+    import re, unicodedata
+    n = unicodedata.normalize('NFKD', n or '').encode('ascii', 'ignore').decode().lower()
+    n = re.sub(r'[^a-z ]', ' ', n.replace('.', ''))
+    return ' '.join(w for w in n.split() if w not in ('jr', 'sr', 'ii', 'iii', 'iv'))
+
+
+def golf_american(it, depth=0):
+    """Find an American-odds number in an ESPN odds item, wherever it is nested."""
+    if depth > 3 or not isinstance(it, dict):
+        return None
+    for k in ('american', 'moneyLine', 'winner', 'value', 'odds', 'current', 'open'):
+        v = it.get(k)
+        if isinstance(v, dict):
+            r = golf_american(v, depth + 1)
+            if r is not None:
+                return r
+        elif v is not None:
+            try:
+                n = int(str(v).replace('+', '').strip())
+                if abs(n) >= 100:
+                    return n
+            except ValueError:
+                pass
+    return None
+
+
+def golf_odds(events, names, upcoming=()):
+    """Winner odds for this week's tournament. The Odds API (when it lists the event) plus ESPN's
+    odds feed as a fallback. Returns ({event_id: {player_id: {best, med, n}}}, debug)."""
+    cache = load_cache('golf_odds.json')
+    dbg = {}
+    today = datetime.datetime.now(ET).date()
+    live = [e for e in events if e['state'] != 'post' and 0 <= (datetime.date.fromisoformat(e['d']) - today).days <= 7 or
+            (e['state'] == 'in')]
+    if not live and upcoming:
+        live = [dict(id=upcoming[0]['id'], name=upcoming[0]['name'], d=upcoming[0]['start'], state='pre', p=[])]
+    by_name = {}
+    for pid, n in names.items():
+        by_name.setdefault(golf_norm(n), pid)
+    def match(n):
+        k = golf_norm(n)
+        if k in by_name:
+            return by_name[k]
+        parts = k.split()
+        cands = [pid for nk, pid in by_name.items() if parts and nk.split()[-1:] == parts[-1:] and nk[:1] == k[:1]]
+        return cands[0] if len(cands) == 1 else None
+    def store(eid, prices, src):
+        out = {}
+        for nm, arr in prices.items():
+            pid = match(nm)
+            if not pid or not arr:
+                continue
+            arr = sorted(arr)
+            out[pid] = dict(best=max(arr), med=arr[len(arr) // 2], n=len(arr))
+        if out:
+            cache[eid] = dict(src=src, at=datetime.datetime.now(datetime.timezone.utc).isoformat()[:16], odds=out)
+        return len(out)
+    key = os.environ.get('ODDS_API_KEY')
+    for e in live:
+        field = {p[0] for p in e['p']}
+        # 1) The Odds API: find a golf market for this tournament (the sports list is free)
+        if key:
+            try:
+                sports = get_json(f'https://api.the-odds-api.com/v4/sports?apiKey={key}&all=false')
+                golf = [x for x in sports if x.get('group') == 'Golf']
+                dbg['oddsapi_golf'] = [x.get('key') + ' · ' + x.get('title', '') for x in golf]
+                words = set(golf_norm(e['name']).split()) - {'the', 'championship', 'open', 'classic', 'tournament', 'presented', 'by', 'at'}
+                pick = [x for x in golf if words & set(golf_norm(x.get('title', '') + ' ' + x.get('description', '')).split())]
+                rem = load_cache('golf_odds.json').get('_remaining')
+                if pick and (rem is None or rem >= 40):
+                    url = (f"https://api.the-odds-api.com/v4/sports/{pick[0]['key']}/odds?apiKey={key}&regions=us"
+                           f"&markets=outrights&oddsFormat=american")
+                    req = urllib.request.Request(url, headers=UA)
+                    with urllib.request.urlopen(req, timeout=60) as r:
+                        evs = json.loads(r.read().decode('utf-8')); rr = r.headers.get('x-requests-remaining')
+                    cache['_remaining'] = int(float(rr)) if rr else None
+                    prices = {}
+                    for ev in evs:
+                        for bk in ev.get('bookmakers', []):
+                            for mk in bk.get('markets', []):
+                                for oc in mk.get('outcomes', []):
+                                    if isinstance(oc.get('price'), (int, float)):
+                                        prices.setdefault(oc['name'], []).append(int(oc['price']))
+                    dbg['oddsapi_' + e['id']] = store(e['id'], prices, 'The Odds API')
+            except Exception as ex:
+                dbg['oddsapi_err'] = str(ex)[:160]
+        if e['id'] in cache and cache[e['id']].get('src') == 'The Odds API':
+            continue
+        # 2) ESPN's odds feed for the event
+        try:
+            base = f"https://sports.core.api.espn.com/v2/sports/golf/leagues/pga/events/{e['id']}/competitions/{e['id']}/odds?limit=300"
+            data = get_json(base)
+            items = data.get('items', [])
+            dbg['espn_items'] = len(items)
+            prices = {}
+            for it in items[:400]:
+                if '$ref' in it and len(it) <= 2:
+                    try:
+                        it = get_json(it['$ref'])
+                    except Exception:
+                        continue
+                if not dbg.get('espn_sample'):
+                    dbg['espn_sample'] = json.dumps(it)[:600]
+                ath = it.get('athlete') or {}
+                nm = ath.get('displayName')
+                if not nm and ath.get('$ref'):
+                    aid = ath['$ref'].rstrip('/').split('/')[-1].split('?')[0]
+                    nm = names.get(aid)
+                v = golf_american(it)
+                if nm and v is not None:
+                    prices.setdefault(nm, []).append(v)
+            dbg['espn_' + e['id']] = store(e['id'], prices, 'ESPN')
+        except Exception as ex:
+            dbg['espn_err'] = str(ex)[:160]
+    save_cache('golf_odds.json', cache)
+    return {k: v for k, v in cache.items() if not k.startswith('_')}, dbg
+
+
 def build_golf(_season):
     today = datetime.datetime.now(ET).date()
     cache = load_cache('golf_events.json')
@@ -1368,8 +1487,15 @@ def build_golf(_season):
     events.sort(key=lambda e: e['d'])
     games = [dict(id=e['id'], d=e['d'], hs=0 if e['state'] == 'post' else None) for e in events] + \
             [dict(id=e['id'], d=e['start'], hs=None) for e in upcoming]
+    try:
+        odds, odbg = golf_odds(events, names, [e for e in cal if e['start'] > soon][:1])
+    except Exception as ex:
+        odds, odbg = {}, {'err': str(ex)[:160]}
+    for ev in events:
+        if ev['id'] in odds:
+            ev['odds'] = odds[ev['id']]
     meta = dict(sport='golf', label='Golf', family='golf', tour='PGA Tour', firstYear=GOLF_FIRST_YEAR, source='ESPN',
-                debug=dict(calendar=len(cal), fetched=len(need), errors=errs, firstError=first_err, cached=len(cache)))
+                debug=dict(calendar=len(cal), fetched=len(need), errors=errs, firstError=first_err, cached=len(cache), odds=odbg))
     return dict(meta=meta, season=today.year, events=events, names=names, schedule=upcoming, games=games, teamGames=[])
 
 
