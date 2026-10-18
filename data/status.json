@@ -64,7 +64,7 @@
   "upcoming": 146
  },
  "nfl": {
-  "finals": 80,
+  "finals": 88,
   "history": [
    2021,
    2022,
@@ -74,10 +74,10 @@
   ],
   "next": "2026-10-18",
   "ok": true,
-  "rows": 160,
+  "rows": 176,
   "season": 2026,
-  "through": "2026-10-15",
-  "upcoming": 192
+  "through": "2026-10-18",
+  "upcoming": 184
  },
  "nhl": {
   "finals": 134,
