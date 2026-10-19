@@ -202,6 +202,30 @@ details.inj > div { margin-top: 4px }
 .cmp .ec { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0 }
 .cmp .ec .logbtn { margin-top: 2px }
 .cmp > :nth-child(4n+5), .cmp > :nth-child(4n+6), .cmp > :nth-child(4n+7), .cmp > :nth-child(4n+8) { padding-top: 8px; border-top: 1px dashed var(--line) }
+.betgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-bottom: 12px }
+.betcard { background: var(--surface); border: 2px solid var(--line); border-radius: var(--r); padding: 12px 14px; display: grid; gap: 4px; min-width: 0 }
+.betcard.good { border-color: var(--accent) }
+.betcard .bc-top { display: flex; justify-content: space-between; align-items: center; gap: 8px }
+.betcard .bc-game { font-size: 13.5px; color: var(--muted); font-weight: 600 }
+.betcard .reclab { font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin-top: 4px }
+.betcard .bc-bet { font-size: 22px; font-weight: 900; line-height: 1.15; overflow-wrap: anywhere }
+.betcard .bc-why { font-size: 13.5px }
+.betcard .bc-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 6px }
+.rec { border-radius: 12px; padding: 12px 14px; background: var(--surface-2); border: 2px solid var(--line); display: grid; gap: 4px; justify-items: start }
+.rec.good { border-color: var(--accent); background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, var(--surface-2)), var(--surface-2)) }
+.rec .reclab { font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--accent) }
+.rec.none .reclab { color: var(--muted) }
+.rec .recbet { font-size: 26px; font-weight: 900; line-height: 1.1 }
+.rec.none .recbet { font-size: 19px }
+.rec .recodds { font-size: 18px; font-weight: 700; color: var(--muted) }
+.rec .recwhy { font-size: 13.5px; line-height: 1.4 }
+.rec .logbtn { margin-top: 4px }
+details.more { border-top: 1px solid var(--line); padding-top: 8px }
+details.more > summary { cursor: pointer; font-size: 13.5px; font-weight: 700; color: var(--accent); list-style: none; padding: 4px 0 }
+details.more > summary::-webkit-details-marker { display: none }
+details.more > summary::after { content: ' ▾' } details.more[open] > summary::after { content: ' ▴' }
+details.more .cmp { border-top: 0; margin-top: 6px }
+@media (max-width: 920px) { aside.builder { order: 2 } }
 .bestbet { border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); padding: 8px 10px; font-size: 13.5px }
 .bestbet.good { border-color: var(--good); }
 @media (max-width: 520px) { .cmp { grid-template-columns: 58px minmax(0, 1.1fr) minmax(0, 0.8fr) minmax(0, 1.1fr); gap: 6px 6px; font-size: 13px } .cmp .vc input { width: 62px } .cmp .rl { font-size: 13px } }
@@ -577,6 +601,7 @@ function evPill(ev) {
   return `<span class="pill ${ev > 0.03 ? 'good' : ev < -0.03 ? 'bad' : 'flat'}">EV ${ev >= 0 ? '+' : '−'}${Math.abs(ev * 100).toFixed(0)}%</span>`;
 }
 
+
 // ---------- games view ----------
 function gamesView() {
   if (seasonOver) return `<div class="empty"><b>No upcoming ${esc(META.label)} games right now.</b> ${META.note ? esc(META.note) + '.' : 'The season is over.'} The model is still here: tune it on <b>Power ratings</b> and see how it would have done on <b>Accuracy</b>.</div>`;
@@ -599,7 +624,7 @@ function gamesView() {
     <div class="f"><label class="label" for="teamQ">Team${META.sport === 'cfb' ? ' or conference' : ''}</label><input type="text" id="teamQ" placeholder="Search" value="${esc(S.teamQ)}" style="width:150px"></div>
     <label class="small" style="display:flex;gap:6px;align-items:center;padding-bottom:6px"><input type="checkbox" id="onlyEdges" ${S.onlyEdges ? 'checked' : ''}> Only games with an edge</label>
   </div>
-  <p class="note" style="margin:0 0 14px">Lines are editable: type in what your book shows and the edge updates. ${META.spreadName || 'Spread'}s use book style (favorite is negative). ${byes.length ? (byes.length > 8 ? `${byes.length} teams on bye.` : 'On bye: ' + byes.join(', ') + '.') : ''} ${played ? `${played} game${played > 1 ? 's' : ''} ${DAILY ? 'on this date' : 'this week'} already played (graded in Accuracy).` : ''}</p>
+  <p class="note" style="margin:0 0 14px">Each game shows the <b>one bet the model likes most</b>, or "No bet" when Vegas's prices are fair. Tap <b>Compare to Vegas</b> to see every bet type or type in your sportsbook's numbers. ${byes.length ? (byes.length > 8 ? `${byes.length} teams on bye.` : 'On bye: ' + byes.join(', ') + '.') : ''} ${played ? `${played} game${played > 1 ? 's' : ''} ${DAILY ? 'on this date' : 'this week'} already played (graded in Accuracy).` : ''}</p>
   <div class="games">${list.map(gameCard).join('') || `<div class="empty">No games match${S.teamQ ? ' "' + esc(S.teamQ) + '"' : ''}${S.onlyEdges ? ' with an edge of ' + S.edgeMin + '+ ' + UNIT : ''}.</div>`}</div>`;
 }
 function gameCard({ g, L, pr }) {
@@ -622,9 +647,10 @@ function gameCard({ g, L, pr }) {
   const mlGap = hasMl ? Math.abs(pr.pHome - vH) : null;
   // ---- the single best bet by value
   const cands = [];
-  if (pr.spEdge != null) cands.push({ type: 'spread', side: spSide, text: spBet, p: coverP, price: priceOf(spPrice) });
-  if (pr.totEdge != null) cands.push({ type: 'total', side: totSide, text: totSide + ' ' + L.tot, p: totP, price: priceOf(totPrice) });
-  if (hasMl) cands.push({ type: 'ml', side: mlTeam, text: mlTeam + ' to win', p: mlTeam === g.h ? pr.pHome : pr.pAway, price: mlTeam === g.h ? L.hml : L.aml });
+  if (pr.spEdge != null) cands.push({ type: 'spread', kind: spName, side: spSide, text: spBet, p: coverP, price: priceOf(spPrice) });
+  if (pr.totEdge != null) cands.push({ type: 'total', kind: 'Total ' + (UNIT === 'pts' ? 'points' : UNIT), side: totSide, text: totSide + ' ' + L.tot, p: totP, price: priceOf(totPrice) });
+  if (hasMl) cands.push({ type: 'ml', kind: 'To win the game', side: mlTeam, text: mlTeam + ' to win', p: mlTeam === g.h ? pr.pHome : pr.pAway, price: mlTeam === g.h ? L.hml : L.aml });
+  cands.forEach((c) => { c.log = `data-log="${c.type}" data-g="${g.id}" data-side="${esc(c.side)}"`; });
   cands.forEach((c) => { c.ev = E.evPerUnit(c.p, c.price); });
   const best = cands.sort((a, b) => b.ev - a.ev)[0];
   const hot = (Math.abs(pr.spEdge || 0) >= S.edgeMin || Math.abs(pr.totEdge || 0) >= S.edgeMin);
@@ -633,9 +659,11 @@ function gameCard({ g, L, pr }) {
   const sp0 = (v) => v == null ? '' : -v; // book style for the home team
   return `<article class="game ${hot ? 'hot' : ''}">
     <div class="gh"><button class="matchup mbtn" data-detail="${g.id}" title="Full breakdown">${g.a}<span class="at">@</span>${g.h}</button><div class="kick">${kickoff(g)}${g.neu ? '<br>Neutral site' : ''}${g.rd ? '<br><b style="color:var(--accent)">' + esc(g.rd) + '</b>' : ''}</div></div>
+    ${recBox(best, 'Type the Vegas lines in under "Compare to Vegas" to get a pick.')}
     <div class="score"><b>${UNIT === 'pts' ? Math.round(pr.as) + '–' + Math.round(pr.hs) : fmt(pr.as) + '–' + fmt(pr.hs)}</b><span class="small muted">model score · ${fav} by ${fmt(Math.abs(pr.margin))}</span></div>
     <div class="wp" title="Model win probability"><div class="a" style="flex:${Math.max(ap, 12)}">${g.a} ${ap}%</div><div class="h" style="flex:${Math.max(hp, 12)}">${g.h} ${hp}%</div></div>
     ${pitchersRow(g, pr)}${goalieRow(g, pr)}${weatherRow(g, pr)}${injuryRow(g, pr)}
+    <details class="more" data-keep="g${g.id}" ${OPEN.has('g' + g.id) ? 'open' : ''}><summary>Compare to Vegas · every bet type</summary>
     <div class="cmp" role="table" aria-label="Vegas vs your model">
       <span class="ch" role="columnheader"></span><span class="ch" role="columnheader">Vegas</span><span class="ch" role="columnheader">Your model</span><span class="ch" role="columnheader">Edge</span>
 
@@ -656,7 +684,8 @@ function gameCard({ g, L, pr }) {
       <span class="mc">${pr.pHome >= 0.5 ? g.h + ' ' + pct(pr.pHome) : g.a + ' ' + pct(pr.pAway)}</span>
       <span class="ec">${!hasMl ? '<span class="muted small">enter odds</span>' : `<span class="pill ${mlGap >= 0.05 ? 'acc' : 'flat'}">${Math.round(mlGap * 100)}% gap</span><span class="small">→ ${mlTeam} ${odds(mlTeam === g.h ? L.hml : L.aml)}</span><span class="small muted">model is higher on ${mlTeam}</span><button class="logbtn" data-log="ml" data-g="${g.id}" data-side="${mlTeam}">Log</button>`}</span>
     </div>
-    ${best ? `<div class="bestbet ${best.ev > 0.03 ? 'good' : ''}"><span>${best.ev > 0 ? 'Model\'s best bet' : 'No value at these prices · closest'}: <b>${esc(best.text)}</b> · ${pct(best.p)} chance · ${evPill(best.ev)}</span></div>` : ''}
+    <p class="small muted" style="margin:8px 0 0">Type in your sportsbook's numbers to update the pick. "Edge" is how far the model is from Vegas.</p>
+    </details>
     <button class="dbtn" data-detail="${g.id}">Full breakdown: stats, props, why ›</button>
   </article>`;
 }
@@ -1355,7 +1384,7 @@ async function bootEdges() {
   const saveF = () => { try { localStorage.setItem(FKEY, JSON.stringify(F)); } catch (e) {} if (window.Sync) Sync.changed(FKEY); };
   const KINDS = [['sp', 'Spread / puck / run line'], ['tot', 'Total'], ['ml', 'Moneyline']];
   const DAYS = [['all', 'Any day'], ['today', 'Today'], ['tomorrow', 'Tomorrow'], ['week', 'Next 7 days']];
-  const EVS = [[0, 'Any value'], [0.03, 'EV +3% or more'], [0.05, 'EV +5% or more'], [0.1, 'EV +10% or more']];
+  const EVS = [[0, 'Any value'], [0.03, 'Good value (+3%)'], [0.05, '+5% or more'], [0.1, 'Strong value (+10%)']];
   const SORTS = [['ev', 'Best value'], ['p', 'Most likely to hit'], ['start', 'Starting soonest']];
   const present = Object.keys(counts).filter((k) => counts[k]);
   let showAll = false;
@@ -1385,12 +1414,16 @@ async function bootEdges() {
       </div>
       <div class="small muted">${list.length} of ${rows.length} bets${active ? ' · <button type="button" class="linkbtn" id="fclear">Clear filters</button>' : ''}</div>
     </div>
-    ${list.length ? `<div class="tblwrap"><table><thead><tr><th>Sport</th><th>Game</th><th>When</th><th>Bet</th><th class="num">Model vs market</th><th class="num">Edge</th><th class="num">Value</th><th></th></tr></thead><tbody>
-    ${shown.map((r) => `<tr><td><span class="pill flat">${esc(r.label)}</span></td><td class="pname">${esc(r.g.a)} ${r.vs ? 'vs' : '@'} ${esc(r.g.h)}</td><td class="small">${when(r)}</td>
-      <td><b>${esc(r.bet)}</b> <span class="muted small">${esc(r.type)}</span></td><td class="num">${Math.round(r.p * 100)}% <span class="muted small">vs ${Math.round(r.pm * 100)}%</span></td><td class="num">${esc(r.edge)}</td>
-      <td class="num"><span class="pill ${r.ev > 0.03 ? 'good' : 'flat'}">EV ${r.ev >= 0 ? '+' : '−'}${Math.abs(r.ev * 100).toFixed(0)}%</span></td>
-      <td><button class="logbtn" data-open="${r.sport}">Open</button></td></tr>`).join('')}
-    </tbody></table></div>
+    ${list.length ? `<div class="betgrid">
+    ${shown.map((r) => `<article class="betcard ${r.ev > 0.03 ? 'good' : ''}">
+      <div class="bc-top"><span class="pill flat">${esc(r.label)}</span><span class="small muted">${when(r)}</span></div>
+      <div class="bc-game">${esc(r.g.a)} ${r.vs ? 'vs' : '@'} ${esc(r.g.h)}</div>
+      <div class="reclab">Model's bet</div>
+      <div class="bc-bet">${esc(r.bet)}</div>
+      <div class="bc-why">${esc(r.type === 'Moneyline' ? 'To win' : r.type === 'Total' ? 'Total' : r.type)} · <b>${Math.round(r.p * 100)}%</b> chance <span class="muted">(Vegas says ${Math.round(r.pm * 100)}%)</span></div>
+      <div class="bc-foot"><span class="pill ${r.ev > 0.03 ? 'good' : 'flat'}">${valueWord(r.ev)} · +${Math.round(r.ev * 100)}%</span><button class="logbtn" data-open="${r.sport}">See game ›</button></div>
+    </article>`).join('')}
+    </div>
     ${list.length > shown.length ? `<p><button class="btn ghost" id="showAll">Show all ${list.length}</button></p>` : ''}`
     : '<div class="empty">No bets match these filters.</div>'}
     <p class="note">Value uses a 50/50 blend of your model and the market's fair price, so long-shot underdogs don't flood the list just because the model is less extreme than the odds. Moneylines longer than +250 are left out. Uses real prices when the feed has them (−110 otherwise), each sport's saved sliders, and any lines you typed in.</p>`;
@@ -1620,6 +1653,23 @@ Beta.check();
 document.getElementById('view').innerHTML = '<div class="empty">Loading this week\'s data…</div>';
 const syncFirst = Sync.enabled() ? Promise.race([Sync.pull(), new Promise((r) => setTimeout(r, 4000))]) : Promise.resolve();
 // ---------- UFC: fight cards instead of games ----------
+// ---------- The model's recommendation, shown big at the top of each card ----------
+const OPEN = new Set();
+document.addEventListener('toggle', (e) => { const k = e.target.dataset && e.target.dataset.keep; if (k) e.target.open ? OPEN.add(k) : OPEN.delete(k); }, true);
+const _rp = (p) => Math.round(p * 100) + '%', _ro = (o) => o == null ? '–' : (o > 0 ? '+' + o : String(o));
+const _re = (v) => String(v ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function valueWord(ev) { return ev > 0.10 ? 'Strong value' : ev > 0.03 ? 'Good value' : 'Small value'; }
+// best: { text, kind, p, price, ev, log: 'data-… attrs' }
+function recBox(best, noneMsg) {
+  if (!best) return `<div class="rec none"><span class="reclab">Model's bet</span><div class="recbet">Waiting on Vegas odds</div><div class="recwhy">${noneMsg || 'Odds aren\'t posted yet. Check back closer to game time.'}</div></div>`;
+  if (!(best.ev > 0)) return `<div class="rec none"><span class="reclab">Model's bet</span><div class="recbet">No bet</div><div class="recwhy">Vegas's prices are fair here. The model's closest lean is <b>${_re(best.text)}</b> (${_rp(best.p)} chance), but it doesn't pay enough to be worth it.</div></div>`;
+  return `<div class="rec ${best.ev > 0.03 ? 'good' : ''}"><span class="reclab">Model's bet</span>
+    <div class="recbet">${_re(best.text)}${best.price != null && best.price !== -110 ? ` <span class="recodds">${_ro(best.price)}</span>` : ''}</div>
+    <div class="recwhy">${_re(best.kind)} · <b>${_rp(best.p)}</b> chance to hit · <b>${valueWord(best.ev)}</b> <span class="muted">(+${Math.round(best.ev * 100)}% expected return)</span></div>
+    ${best.log ? `<button class="logbtn" ${best.log}>Track this bet</button>` : ''}</div>`;
+}
+
+
 // ---------- Results: the model's saved pre-game picks, graded (data/picks/<sport>.json) ----------
 const Results = (() => {
   const cache = {};
@@ -2057,8 +2107,10 @@ function bootUfc(DATA) {
       const move = f.oml && L.aml != null && f.oml[0] !== L.aml ? `<span class="move ${(p > 0.5) === (L.aml < f.oml[0]) ? 'yes' : 'no'}">opened ${odds(f.oml[0])} / ${odds(f.oml[1])}</span>` : '';
       return `<article class="game ${best && best.ev > 0.05 ? 'hot' : ''}">
         <div class="gh"><div class="matchup" style="font-size:20px">${esc(f.an)}<span class="at">vs</span>${esc(f.bn)}</div><div class="kick">${esc(f.wc)}${f.sched === 5 ? ' · 5 rds' : ''}</div></div>
+        ${recBox(best && { text: best.name + ' to win', kind: 'To win the fight', p: best.p, price: best.ml, ev: best.ev, log: `data-ulog="${f.id}" data-side="${best.side}"` })}
         <div class="why">${esc(f.an)}: ${esc(f.ar)}${info(f.a, f.d) ? ' · ' + esc(info(f.a, f.d)) : ''}<br>${esc(f.bn)}: ${esc(f.br)}${info(f.b, f.d) ? ' · ' + esc(info(f.b, f.d)) : ''}</div>
         <div class="wp"><div class="a" style="flex:${Math.max(ap, 14)}">${esc(f.an.split(' ').slice(-1)[0])} ${ap}%</div><div class="h" style="flex:${Math.max(100 - ap, 14)}">${esc(f.bn.split(' ').slice(-1)[0])} ${100 - ap}%</div></div>
+        <details class="more" data-keep="u${f.id}" ${OPEN.has('u' + f.id) ? 'open' : ''}><summary>Compare to Vegas</summary>
         <div class="cmp" role="table" aria-label="Vegas vs your model">
           <span class="ch"></span><span class="ch">Vegas</span><span class="ch">Your model</span><span class="ch">Edge</span>
           <span class="rl">Win chance</span>
@@ -2068,10 +2120,11 @@ function bootUfc(DATA) {
           <span class="mc">${p >= 0.5 ? esc(lastA) + ' ' + pct(p) : esc(lastB) + ' ' + pct(pb)}<br><span class="small muted" style="font-weight:400">fair ${odds(fair(p >= 0.5 ? p : pb))}</span></span>
           <span class="ec">${vA == null ? '<span class="muted small">enter odds</span>' : `<span class="pill ${gap >= 0.05 ? 'acc' : 'flat'}">${Math.round(gap * 100)}% gap</span><span class="small">→ ${esc(gapSide.name)} ${odds(gapSide.ml)}</span><span class="small muted">model is higher on ${esc(gapSide.name)}</span>${evPill(gapSide.ev)}<button class="logbtn" data-ulog="${f.id}" data-side="${gapSide.side}">Log</button>`}</span>
         </div>
+        </details>
       </article>`;
     }).join('');
     return `<div class="toolbar"><div class="f"><label class="label" for="evSel">Event</label><select id="evSel">${events.slice(0, 6).map((e) => `<option value="${e.eid}" ${e.eid === S.ev ? 'selected' : ''}>${esc(e.name)} · ${sdate(e.d)}</option>`).join('')}</select></div></div>
-      <p class="note" style="margin:0 0 14px">Main event first. Vegas's win chance comes from the odds (sportsbook cut removed). "Fair" is the price that matches the model's chance; there's value when the real odds pay more than that. ${DATA.meta.oddsNote ? 'Lines: ' + esc(DATA.meta.oddsNote) + '.' : ''}</p>
+      <p class="note" style="margin:0 0 14px">Main event first. Each fight shows who the model would bet on, or "No bet" when the odds are fair. ${DATA.meta.oddsNote ? 'Lines: ' + esc(DATA.meta.oddsNote) + '.' : ''}</p>
       <div class="games">${cards}</div>`;
   }
 
