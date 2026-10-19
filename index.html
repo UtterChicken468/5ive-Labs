@@ -319,6 +319,11 @@ html.locked #gate { display: flex; position: fixed; inset: 0; z-index: 200; alig
 
 /* results */
 .restbl td { vertical-align: middle }
+.rfilters { display: flex; flex-wrap: wrap; gap: 10px 12px; margin: 0 0 14px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface) }
+.rfilters .f { display: flex; flex-direction: column; gap: 4px; min-width: 0 }
+.linkbtn { background: none; border: 0; color: var(--accent, #2dd4bf); font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline }
+.rfilters .f.grow { flex: 1 1 160px } .rfilters input { width: 100% }
+@media (max-width: 520px) { .rfilters .f { flex: 1 1 45% } .rfilters select { width: 100% } }
 
 /* tables */
 .tblwrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r) }
@@ -1162,10 +1167,11 @@ function logPropPick(pid, side) {
 }
 
 // ---------- view wiring ----------
-let RES = null, resSel = null;
+let RES = null;
 function resultsView() {
+  Results.bind(renderView);
   if (!RES) { Results.load(SPORT).then((b) => { RES = b; if (S.tab === 'results') renderView(); }); return '<div class="empty">Loading results…</div>'; }
-  return Results.html(SPORT, RES, { daily: DAILY, unit: UNIT, sel: resSel, periodLabel: (w) => periodLabel(w) });
+  return Results.html(SPORT, RES, { daily: DAILY, periodLabel: (w) => periodLabel(w) });
 }
 function renderView() {
   const v = { games: gamesView, props: propsView, rankings: rankingsView, results: resultsView, accuracy: accuracyView, log: logView }[S.tab] || gamesView;
@@ -1176,7 +1182,6 @@ function renderView() {
 $('#view').addEventListener('change', (e) => {
   const t = e.target;
   if (t.id === 'weekSel') { S.week = +t.value; renderView(); }
-  if (t.id === 'resSel') { resSel = t.value; renderView(); }
   if (t.id === 'sortSel') { S.sort = t.value; renderView(); }
   if (t.id === 'edgeMin') { S.edgeMin = +t.value; renderView(); }
   if (t.id === 'onlyEdges') { S.onlyEdges = t.checked; renderView(); }
@@ -1618,6 +1623,10 @@ const syncFirst = Sync.enabled() ? Promise.race([Sync.pull(), new Promise((r) =>
 // ---------- Results: the model's saved pre-game picks, graded (data/picks/<sport>.json) ----------
 const Results = (() => {
   const cache = {};
+  const FKEY = 'gml:results:filters';
+  const DEF = { view: 'period', src: 'all', res: 'all', conf: 0, kind: 'all', q: '', sel: null };
+  let F = { ...DEF, ...(() => { try { return JSON.parse(localStorage.getItem(FKEY)) || {}; } catch (e) { return {}; } })(), sel: null };
+  const save = () => { try { const { sel, ...rest } = F; localStorage.setItem(FKEY, JSON.stringify(rest)); } catch (e) {} };
   const esc = (v) => String(v ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const pc = (p) => Math.round(p * 100) + '%';
   const rec = (w, l) => `${w}–${l}`;
@@ -1631,56 +1640,94 @@ const Results = (() => {
   }
   function grade(x) {
     const pickHome = x.pH >= 0.5, pick = pickHome ? x.h : x.a, conf = Math.max(x.pH, 1 - x.pH);
-    let ok = null, ats = null, fav = null;
+    let ok = null, ats = null, fav = null, dog = null;
+    if (x.hml != null && x.aml != null && x.hml !== x.aml) dog = (x.hml < x.aml) !== pickHome; // model picked the Vegas underdog
     if (x.r) {
       const [as, hs] = x.r;
       if (hs !== as) ok = (hs > as) === pickHome;
       if (x.sp != null && x.m != null && x.m !== x.sp) { const c = hs - as - x.sp; if (c !== 0) ats = (x.m - x.sp > 0) === (c > 0); }
       if (x.hml != null && x.aml != null && hs !== as && x.hml !== x.aml) fav = (x.hml < x.aml) === (hs > as);
     }
-    return { pick, conf, ok, ats, fav };
+    return { pick, pickHome, conf, ok, ats, fav, dog };
   }
-  // opts: { daily, unit, periodLabel(w), sel, fight }
+  const sel = (id, label, opts, val) => `<div class="f"><label class="label" for="${id}">${label}</label><select id="${id}" data-rf="${id.slice(2)}">${opts.map(([v, n]) => `<option value="${v}" ${String(v) === String(val) ? 'selected' : ''}>${n}</option>`).join('')}</select></div>`;
+  // opts: { daily, periodLabel(w), fight }
   function html(sport, bk, opts) {
     const all = Object.entries(bk.games || {}).map(([id, x]) => ({ id, ...x, g: grade(x) }));
     if (!all.length) return `<div class="empty">No saved picks yet. From now on, the model's pick for every game is saved before it starts and graded after it ends. Check back after the next games.</div>`;
     const seasons = [...new Set(all.map((x) => x.season).filter((v) => v != null))].sort((a, b) => b - a);
-    const season = opts.season ?? seasons[0];
-    const rows = all.filter((x) => season == null || x.season == null || x.season === season);
+    const season = F.season != null && seasons.includes(+F.season) ? +F.season : seasons[0];
+    const inSeason = all.filter((x) => season == null || x.season == null || x.season === season);
     const pkey = (x) => opts.daily || x.w == null ? x.d : 'w' + x.w;
-    const periods = [...new Set(rows.map(pkey))].sort((a, b) => String(b).localeCompare(String(a), undefined, { numeric: true }));
-    const gradedPeriods = periods.filter((p) => rows.some((x) => pkey(x) === p && x.g.ok != null));
-    const sel = opts.sel && periods.includes(opts.sel) ? opts.sel : gradedPeriods[0] || periods[0];
+    // filters (everything except the period)
+    const q = F.q.trim().toLowerCase();
+    const rows = inSeason.filter((x) => {
+      const g = x.g;
+      if (F.src === 'live' && x.bf) return false; if (F.src === 'test' && !x.bf) return false;
+      if (F.res === 'w' && g.ok !== true) return false; if (F.res === 'l' && g.ok !== false) return false; if (F.res === 'p' && x.r) return false;
+      if (F.res === 'atsw' && g.ats !== true) return false; if (F.res === 'atsl' && g.ats !== false) return false;
+      if (g.conf < +F.conf) return false;
+      if (F.kind === 'fav' && g.dog !== false) return false; if (F.kind === 'dog' && g.dog !== true) return false;
+      if (F.kind === 'home' && !g.pickHome) return false; if (F.kind === 'away' && g.pickHome) return false;
+      if (q && !(x.a + ' ' + x.h).toLowerCase().includes(q)) return false;
+      return true;
+    });
+    const periods = [...new Set(inSeason.map(pkey))].sort((a, b) => String(b).localeCompare(String(a), undefined, { numeric: true }));
+    const gradedPeriods = periods.filter((p) => inSeason.some((x) => pkey(x) === p && x.g.ok != null));
+    const cur = F.sel && periods.includes(F.sel) ? F.sel : gradedPeriods[0] || periods[0];
     const graded = rows.filter((x) => x.g.ok != null), live = graded.filter((x) => !x.bf);
     const tally = (xs, k = 'ok') => { let w = 0, l = 0; xs.forEach((x) => { if (x.g[k] === true) w++; else if (x.g[k] === false) l++; }); return [w, l]; };
     const [sw, sl] = tally(graded), [lw, ll] = tally(live), [aw, al] = tally(graded, 'ats'), [fw, fl] = tally(graded, 'fav');
     const tier = (lo, hi) => tally(graded.filter((x) => x.g.conf >= lo && x.g.conf < hi));
     const tiers = [[0.5, 0.6, '50–60%'], [0.6, 0.7, '60–70%'], [0.7, 1.01, '70%+']].map(([a, b, n]) => { const [w, l] = tier(a, b); return `<span class="pill flat" title="games where the model was ${n} sure">${n} sure: ${rec(w, l)} (${pctOf(w, l)})</span>`; }).join(' ');
     const label = (p) => opts.daily || !String(p).startsWith('w') ? day(p) : (opts.periodLabel ? opts.periodLabel(+String(p).slice(1)) : 'Week ' + String(p).slice(1));
-    const list = rows.filter((x) => pkey(x) === sel).sort((a, b) => (a.d + (a.tm || '')).localeCompare(b.d + (b.tm || '')));
+    const weekAgo = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
+    const list = rows.filter((x) => F.view === 'season' ? true : F.view === 'week7' ? x.d >= weekAgo && x.r : pkey(x) === cur)
+      .sort((a, b) => F.view === 'period' ? (a.d + (a.tm || '')).localeCompare(b.d + (b.tm || '')) : (b.d + (b.tm || '')).localeCompare(a.d + (a.tm || '')));
+    const shown = list.slice(0, 400);
     const [pw, pl] = tally(list);
-    const unit = opts.unit || '';
-    return `<p class="note" style="margin:0 0 12px">The model's pick for every ${opts.fight ? 'fight' : 'game'}, saved <b>before it started</b> and graded after. This uses the Trained model, so it's the site's official record. Games marked <span class="pill flat" style="font-size:11px">test</span> were from before tracking began and come from the game-by-game test, which also only used earlier games (they may look slightly better than live picks, since the model's settings were trained on those seasons). The live record is the one to trust.</p>
+    const active = F.src !== 'all' || F.res !== 'all' || +F.conf || F.kind !== 'all' || F.q;
+    const what = opts.fight ? 'fight' : 'game';
+    return `<p class="note" style="margin:0 0 12px">The model's pick for every ${what}, saved <b>before it started</b> and graded after. This uses the Trained model, so it's the site's official record. Picks marked <span class="pill flat" style="font-size:11px">test</span> were from before tracking began and come from the game-by-game test, which also only used earlier games (they may look slightly better than live picks, since the model's settings were trained on those seasons). The live record is the one to trust.</p>
+    <div class="rfilters">
+      ${sel('r-view', 'Show', [['period', opts.daily ? 'One day' : opts.fight ? 'One event date' : 'One week'], ['week7', 'Last 7 days'], ['season', 'Whole season']], F.view)}
+      ${F.view === 'period' ? `<div class="f"><label class="label" for="r-sel">${opts.daily ? 'Date' : opts.fight ? 'Event date' : 'Week'}</label><select id="r-sel" data-rf="sel">${periods.map((p) => `<option value="${esc(p)}" ${p === cur ? 'selected' : ''}>${esc(label(p))}${(() => { const ps = inSeason.filter((x) => pkey(x) === p), open = ps.filter((x) => !x.r).length; return !open ? '' : open === ps.length ? ' · upcoming' : ' · in progress'; })()}</option>`).join('')}</select></div>` : ''}
+      ${seasons.length > 1 ? sel('r-season', 'Season', seasons.map((v) => [v, v]), season) : ''}
+      ${sel('r-src', 'Picks', [['all', 'All'], ['live', 'Live only'], ['test', 'Test only']], F.src)}
+      ${sel('r-res', 'Result', [['all', 'All'], ['w', 'Wins'], ['l', 'Losses'], ['p', 'Pending'], ...(opts.fight ? [] : [['atsw', 'Covered the spread'], ['atsl', 'Missed the spread']])], F.res)}
+      ${sel('r-conf', 'Confidence', [[0, 'Any'], [0.55, '55%+ sure'], [0.6, '60%+ sure'], [0.65, '65%+ sure'], [0.7, '70%+ sure'], [0.8, '80%+ sure']], F.conf)}
+      ${sel('r-kind', 'Pick type', [['all', 'All'], ['fav', 'Picked the Vegas favorite'], ['dog', 'Picked the underdog'], ...(opts.fight ? [] : [['home', 'Picked the home team'], ['away', 'Picked the road team']])], F.kind)}
+      <div class="f grow"><label class="label" for="r-q">${opts.fight ? 'Fighter' : 'Team'}</label><input type="search" id="r-q" data-rf="q" placeholder="Search" value="${esc(F.q)}"></div>
+      ${active ? '<button class="linkbtn" type="button" id="r-reset" style="align-self:end;padding-bottom:10px">Clear filters</button>' : ''}
+    </div>
     <div class="tiles">
-      <div class="tile"><span class="label">Season record</span><b>${rec(sw, sl)}</b><span class="sub">${pctOf(sw, sl)} picked straight up${seasons.length > 1 ? '' : ''}</span></div>
+      <div class="tile"><span class="label">${active ? 'Record (filtered)' : 'Season record'}</span><b>${rec(sw, sl)}</b><span class="sub">${pctOf(sw, sl)} picked straight up</span></div>
       <div class="tile"><span class="label">Since tracking began</span><b>${lw + ll ? rec(lw, ll) : '–'}</b><span class="sub">${lw + ll ? pctOf(lw, ll) + ' · saved before kickoff' : 'first graded picks soon'}</span></div>
       ${opts.fight ? '' : `<div class="tile"><span class="label">Against the spread</span><b>${aw + al ? rec(aw, al) : '–'}</b><span class="sub">${aw + al ? pctOf(aw, al) + ' · 52.4% breaks even' : 'needs saved lines'}</span></div>`}
-      <div class="tile"><span class="label">Vegas favorites</span><b>${fw + fl ? rec(fw, fl) : '–'}</b><span class="sub">${fw + fl ? pctOf(fw, fl) + ' on the same games' : 'needs saved odds'}</span></div>
+      <div class="tile"><span class="label">Vegas favorites</span><b>${fw + fl ? rec(fw, fl) : '–'}</b><span class="sub">${fw + fl ? pctOf(fw, fl) + ' on the same ' + what + 's' : 'needs saved odds'}</span></div>
     </div>
-    <div class="small muted" style="margin:10px 0 16px">By confidence: ${tiers}</div>
-    <div class="toolbar"><div class="f"><label class="label" for="resSel">${opts.daily ? 'Date' : opts.fight ? 'Event date' : 'Week'}</label><select id="resSel">${periods.map((p) => `<option value="${esc(p)}" ${p === sel ? 'selected' : ''}>${esc(label(p))}${(() => { const ps = rows.filter((x) => pkey(x) === p), open = ps.filter((x) => !x.r).length; return !open ? '' : open === ps.length ? ' · upcoming' : ' · in progress'; })()}</option>`).join('')}</select></div>
-      ${seasons.length > 1 ? `<div class="f"><label class="label" for="resSeason">Season</label><select id="resSeason">${seasons.map((s) => `<option ${s === season ? 'selected' : ''}>${s}</option>`).join('')}</select></div>` : ''}
-      <div class="small" style="padding-bottom:8px"><b>${pw + pl ? rec(pw, pl) : ''}</b> ${pw + pl ? 'this ' + (opts.daily ? 'day' : opts.fight ? 'date' : 'week') : ''}</div></div>
-    <div class="tblwrap"><table class="restbl"><thead><tr><th>When</th><th>${opts.fight ? 'Fight' : 'Game'}</th><th>Model's pick</th>${opts.fight ? '' : `<th class="num">Predicted</th><th class="num">Vegas</th>`}<th class="num">Final</th><th></th></tr></thead><tbody>
-    ${list.map((x) => { const g = x.g; const fin = x.r ? (opts.fight ? (x.r[0] ? x.a : x.r[1] ? x.h : 'Draw') + ' won' : `${esc(x.a)} ${x.r[0]} – ${esc(x.h)} ${x.r[1]}`) : '';
+    <div class="small muted" style="margin:10px 0 14px">By confidence: ${tiers}</div>
+    <div class="small" style="margin:0 0 8px"><b>${list.length}</b> ${what}${list.length === 1 ? '' : 's'} shown${pw + pl ? ` · <b>${rec(pw, pl)}</b> (${pctOf(pw, pl)})` : ''}${list.length > shown.length ? ` · first ${shown.length} listed` : ''}</div>
+    ${shown.length ? `<div class="tblwrap"><table class="restbl"><thead><tr><th>When</th><th>${opts.fight ? 'Fight' : 'Game'}</th><th>Model's pick</th>${opts.fight ? '' : `<th class="num">Predicted</th><th class="num">Vegas</th>`}<th class="num">Final</th><th></th></tr></thead><tbody>
+    ${shown.map((x) => { const g = x.g; const fin = x.r ? (opts.fight ? (x.r[0] ? x.a : x.r[1] ? x.h : 'Draw') + ' won' : `${esc(x.a)} ${x.r[0]} – ${esc(x.h)} ${x.r[1]}`) : '';
       return `<tr><td class="small">${day(x.d)}${x.tm ? ' · ' + tm(x.tm) : ''}</td><td class="pname">${esc(x.a)} ${opts.fight ? 'vs' : '@'} ${esc(x.h)}${x.bf ? ' <span class="pill flat" style="font-size:11px">test</span>' : ''}</td>
-        <td><b>${esc(g.pick)}</b> <span class="muted small">${pc(g.conf)}</span></td>
+        <td><b>${esc(g.pick)}</b> <span class="muted small">${pc(g.conf)}${g.dog ? ' · dog' : ''}</span></td>
         ${opts.fight ? '' : `<td class="num small">${x.ps ? `${esc(x.a)} ${Math.round(x.ps[0])}–${Math.round(x.ps[1])} ${esc(x.h)}` : x.m != null ? `${esc(x.m >= 0 ? x.h : x.a)} by ${Math.abs(x.m).toFixed(1)}` : ''}</td><td class="num small">${x.sp != null ? esc(book(x.h, x.sp)) : ''}</td>`}
         <td class="num small">${fin || '<span class="muted">' + (Date.parse(x.d + 'T23:59:00') < Date.now() ? 'pending' : 'locked in') + '</span>'}</td>
         <td>${g.ok === true ? '<span class="pill good">✓</span>' : g.ok === false ? '<span class="pill bad">✗</span>' : x.r ? '<span class="pill flat">tie</span>' : ''}${g.ats != null ? ` <span class="small muted" title="against the spread">${g.ats ? 'ATS ✓' : 'ATS ✗'}</span>` : ''}</td></tr>`; }).join('')}
-    </tbody></table></div>`;
+    </tbody></table></div>` : `<div class="empty">No ${what}s match these filters.</div>`}`;
   }
-  return { load, html };
+  // filter controls (works for whichever page is showing results)
+  let rerender = null, qt = 0;
+  function bind(fn) {
+    rerender = fn;
+    if (bind.done) return; bind.done = true;
+    const view = document.getElementById('view');
+    view.addEventListener('change', (e) => { const k = e.target.dataset && e.target.dataset.rf; if (!k || k === 'q') return; F[k] = e.target.value; if (k !== 'sel') save(); rerender && rerender(); });
+    view.addEventListener('input', (e) => { if (e.target.id !== 'r-q') return; clearTimeout(qt); qt = setTimeout(() => { F.q = e.target.value; save(); rerender && rerender(); }, 200); });
+    view.addEventListener('click', (e) => { if (e.target.id !== 'r-reset') return; F = { ...DEF, view: F.view, sel: F.sel }; save(); rerender && rerender(); });
+  }
+  return { load, html, bind };
 })();
 
 // ---------- Golf: player ratings from every round, tournament simulations ----------
@@ -2078,17 +2125,17 @@ function bootUfc(DATA) {
       <p class="note">${S.confirmClear ? `<span class="confirm">Remove all ${S.picks.length} picks? <button class="btn accent" id="uclearYes">Remove all</button><button class="btn ghost" id="uclearNo">Keep</button></span>` : '<button class="btn ghost" id="uclear">Clear log</button>'}</p>`;
   }
 
-  let RES = null, resSel = null;
+  let RES = null;
   function resultsView() {
+    Results.bind(render);
     if (!RES) { Results.load('ufc').then((b) => { RES = b; if (S.tab === 'results') render(); }); return '<div class="empty">Loading results…</div>'; }
-    return Results.html('ufc', RES, { daily: true, fight: true, sel: resSel });
+    return Results.html('ufc', RES, { daily: true, fight: true });
   }
   function render() {
     $('#view').innerHTML = ({ fights: fightsView, fighters: fightersView, results: resultsView, accuracy: accuracyView, log: logView }[S.tab] || fightsView)();
   }
   $('#view').addEventListener('change', (e) => {
     const t = e.target;
-    if (t.id === 'resSel') { resSel = t.value; render(); return; }
     if (t.id === 'evSel') { S.ev = t.value; render(); }
     if (t.id === 'wcSel') { S.wc = t.value; render(); }
     if (t.dataset.uline) { const o = S.lines[t.dataset.f] || (S.lines[t.dataset.f] = {}); o[t.dataset.uline] = t.value === '' ? null : +t.value; store.set('lines', S.lines); render(); }
