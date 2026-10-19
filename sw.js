@@ -1,6 +1,6 @@
 // Offline support. The stats file is always fetched fresh when online (falls back to the
 // last saved copy offline); the page and its code are also network-first, so updates show right away.
-const CACHE = '5ive-lab-v37';
+const CACHE = '5ive-lab-v38';
 const SHELL = ['./', 'index.html', 'engine.js', 'manifest.webmanifest', 'logo.png', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
@@ -26,7 +26,7 @@ self.addEventListener('fetch', (e) => {
 
   // The page itself and its code: network first so updates show up immediately,
   // falling back to the saved copy when offline.
-  const isShell = e.request.mode === 'navigate' || /\/(index\.html|engine\.js)?$/.test(url.pathname) || url.pathname.endsWith('.js');
+  const isShell = e.request.mode === 'navigate' || /\/(index\.html|engine\.js)?$/.test(url.pathname) || url.pathname.endsWith('.js') || url.pathname.endsWith('.json');
   if (isShell) {
     e.respondWith(fetch(e.request, { cache: 'no-cache' }).then((res) => {
       if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(e.request, copy)); }

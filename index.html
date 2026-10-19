@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>try { if (!localStorage.getItem('gml_beta')) document.documentElement.classList.add('locked'); } catch (e) { document.documentElement.classList.add('locked'); }</script>
 <meta name="theme-color" content="#0f1a22">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -296,6 +297,26 @@ body.noscroll { overflow: hidden }
 .godds { width: 72px; text-align: right; padding: 4px 6px; font-size: 13px }
 @media (max-width: 520px) { .gtop { grid-template-columns: 1fr 1fr } .gtop .gcard:nth-child(3) { display: none } }
 
+/* private beta gate + feedback */
+html.locked body > *:not(#gate) { display: none !important }
+#gate { display: none }
+html.locked #gate { display: flex; position: fixed; inset: 0; z-index: 200; align-items: center; justify-content: center; padding: 24px; background: radial-gradient(circle at 50% 30%, var(--accent-soft), var(--bg) 70%) }
+.gatebox { width: 100%; max-width: 420px; text-align: center; display: grid; gap: 14px }
+.gatebox img { width: 220px; margin: 0 auto }
+.gatebox h1 { font-family: var(--display); font-size: 30px; text-transform: uppercase; margin: 4px 0 0 }
+.gatebox input { width: 100%; font-size: 20px; text-align: center; letter-spacing: .12em; text-transform: uppercase; padding: 14px; border-radius: 12px; background: var(--surface); color: var(--ink); border: 1px solid var(--line) }
+.gatebox .btn { padding: 14px; font-size: 17px }
+.gerr { color: var(--bad); min-height: 20px; font-size: 14px }
+.fbx { position: fixed; inset: 0; z-index: 60; background: rgba(4,10,14,.72); display: flex; align-items: flex-start; justify-content: center; overflow-y: auto; padding: 28px 12px }
+.fbx form { width: 100%; max-width: 520px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 20px; display: grid; gap: 14px }
+.fbx h3 { font-family: var(--display); font-size: 24px; text-transform: uppercase; margin: 0 }
+.fbx label { display: grid; gap: 6px; font-size: 14px; font-weight: 600 }
+.fbx textarea { min-height: 84px; resize: vertical; font: inherit; color: var(--ink); background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px }
+.fbx input[type=text] { font: inherit; color: var(--ink) }
+.stars { display: flex; gap: 6px } .stars button { flex: 1; padding: 10px 0; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); font-size: 18px; cursor: pointer }
+.stars button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent) }
+.fbrow { display: flex; gap: 10px; justify-content: flex-end }
+
 /* tables */
 .tblwrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r) }
 table { border-collapse: collapse; width: 100%; font-size: 14px }
@@ -344,13 +365,22 @@ td input { width: 70px }
 </style>
 </head>
 <body>
+<div id="gate" role="dialog" aria-label="Private beta"><form class="gatebox" id="gateForm" autocomplete="off">
+  <img src="logo.png" alt="5ive Lab">
+  <h1>Private beta</h1>
+  <p class="muted" style="margin:0">5ive Lab is invite-only while it's being tested. Enter your invite code to get in.</p>
+  <label class="sr" for="gateCode">Invite code</label><input id="gateCode" placeholder="5L-XXXX-XXXX" autocapitalize="characters" spellcheck="false">
+  <button class="btn accent" type="submit">Enter</button>
+  <div class="gerr" id="gateErr"></div>
+  <p class="small muted" style="margin:0">No code? DM 5ive Lab on TikTok to request one.</p>
+</form></div>
 
 <div class="wrap">
   <header class="mast">
     <h1><img src="logo.png" width="950" height="306" alt="5ive Lab"></h1>
     <div class="stamp" id="stamp"></div>
   </header>
-  <div class="navrow"><nav class="sports" id="sports" aria-label="Sport"></nav><div class="navright"><a class="syncbtn" id="guideBtn" href="#guide">How it works</a><button class="syncbtn" id="syncBtn" type="button">Sync: off</button></div></div>
+  <div class="navrow"><nav class="sports" id="sports" aria-label="Sport"></nav><div class="navright"><a class="syncbtn" id="guideBtn" href="#guide">How it works</a><button class="syncbtn" id="fbBtn" type="button">Feedback</button><button class="syncbtn" id="syncBtn" type="button">Sync: off</button></div></div>
   <div class="welcome" id="welcome" hidden><span><b>New here?</b> Two minutes on how to read the picks and use the sliders.</span><a class="btn accent" href="#guide" id="welcomeGo">How it works</a><button class="btn ghost" id="welcomeX" type="button">Got it</button></div>
   <section class="syncpanel" id="syncPanel" hidden></section>
   <div id="detail" class="detail" hidden></div>
@@ -1495,6 +1525,76 @@ const Sync = (() => {
   return { pull, push, changed, enabled: () => !!token() };
 })();
 window.Sync = Sync;
+
+// ---------- private beta (invite codes) and feedback ----------
+const Beta = (() => {
+  const ls = { get: (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} }, del: (k) => { try { localStorage.removeItem(k); } catch (e) {} } };
+  let cfg = { enabled: false, codes: {}, salt: '', feedbackKey: '' };
+  const sha = async (t) => { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, '0')).join(''); };
+  const norm = (c) => c.toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/^5L(.{4})(.{4})$/, '5L-$1-$2');
+  const lock = () => document.documentElement.classList.add('locked');
+  const unlock = () => document.documentElement.classList.remove('locked');
+  async function check() {
+    try { cfg = await fetch('beta.json', { cache: 'no-cache' }).then((r) => r.json()); } catch (e) { return; } // offline: keep whatever state we're in
+    if (!cfg.enabled) { unlock(); return; }
+    const saved = ls.get('gml_beta');
+    if (saved && cfg.codes[await sha(cfg.salt + saved)]) { unlock(); return; }
+    if (saved) ls.del('gml_beta'); // code was turned off
+    lock(); setTimeout(() => document.getElementById('gateCode').focus(), 50);
+  }
+  document.getElementById('gateForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const code = norm(document.getElementById('gateCode').value.trim()), err = document.getElementById('gateErr');
+    if (!cfg.codes || !Object.keys(cfg.codes).length) { try { cfg = await fetch('beta.json', { cache: 'no-cache' }).then((r) => r.json()); } catch (x) { err.textContent = 'Can\'t reach the site right now. Try again.'; return; } }
+    if (cfg.codes[await sha(cfg.salt + code)]) { ls.set('gml_beta', code); unlock(); location.reload(); }
+    else err.textContent = 'That code didn\'t work. Check it and try again.';
+  });
+  const label = async () => { const c = ls.get('gml_beta'); return c && cfg.codes ? cfg.codes[await sha(cfg.salt + c)] || 'unknown' : 'none'; };
+  return { check, label, key: () => cfg.feedbackKey || '' };
+})();
+Beta.check();
+
+(function feedback() {
+  const OUT = 'gml_feedback_outbox';
+  const read = () => { try { return JSON.parse(localStorage.getItem(OUT) || '[]'); } catch (e) { return []; } };
+  const write = (v) => { try { localStorage.setItem(OUT, JSON.stringify(v)); } catch (e) {} };
+  async function send(item) {
+    const key = Beta.key(); if (!key) return false;
+    try {
+      const r = await fetch('https://api.web3forms.com/submit', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ access_key: key, subject: '5ive Lab feedback · ' + item.tester + ' · ' + item.stars + '/5', from_name: '5ive Lab beta', ...item }) });
+      return r.ok;
+    } catch (e) { return false; }
+  }
+  async function flush() { const q = read(); if (!q.length || !Beta.key()) return; const left = []; for (const it of q) if (!(await send(it))) left.push(it); write(left); }
+  setTimeout(flush, 4000);
+  function open() {
+    const w = document.createElement('div'); w.className = 'fbx'; w.id = 'fbx';
+    w.innerHTML = `<form><h3>Feedback</h3><p class="small muted" style="margin:0">Straight to the person building this. Honest is best.</p>
+      <label>How useful is 5ive Lab so far?<div class="stars">${[1, 2, 3, 4, 5].map((n) => `<button type="button" data-star="${n}" aria-pressed="false">${n}</button>`).join('')}</div></label>
+      <label for="fbLike">What do you like or use most?<textarea id="fbLike"></textarea></label>
+      <label for="fbFix">What's confusing, broken or missing?<textarea id="fbFix"></textarea></label>
+      <label for="fbPay">Would you pay for it?<select id="fbPay"><option value="">Pick one</option><option>No</option><option>Maybe</option><option>Yes, about $5/month</option><option>Yes, about $10/month</option><option>Yes, $20+/month</option></select></label>
+      <label for="fbWho">Name or how to reach you (optional)<input type="text" id="fbWho"></label>
+      <div class="fbrow"><button class="btn ghost" type="button" data-fbclose>Cancel</button><button class="btn accent" type="submit">Send</button></div></form>`;
+    document.body.appendChild(w); document.body.classList.add('noscroll');
+    let stars = 0;
+    const close = () => { w.remove(); document.body.classList.remove('noscroll'); };
+    w.addEventListener('click', (e) => {
+      if (e.target === w || e.target.closest('[data-fbclose]')) close();
+      const s = e.target.closest('[data-star]'); if (s) { stars = +s.dataset.star; w.querySelectorAll('[data-star]').forEach((b) => b.setAttribute('aria-pressed', +b.dataset.star <= stars)); }
+    });
+    w.querySelector('form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const item = { stars, like: w.querySelector('#fbLike').value.trim(), fix: w.querySelector('#fbFix').value.trim(), pay: w.querySelector('#fbPay').value,
+        contact: w.querySelector('#fbWho').value.trim(), tester: await Beta.label(), sport: location.hash.slice(1) || 'nfl', at: new Date().toISOString(), device: navigator.userAgent.slice(0, 120) };
+      if (!item.stars && !item.like && !item.fix) { w.querySelector('h3').textContent = 'Add a rating or a comment first'; return; }
+      const ok = await send(item); if (!ok) write([...read(), item]);
+      w.querySelector('form').innerHTML = `<h3>Thank you!</h3><p style="margin:0">${ok ? 'Sent. This really helps.' : 'Saved. It\'ll send automatically next time you open the site.'}</p><div class="fbrow"><button class="btn accent" type="button" data-fbclose>Close</button></div>`;
+    });
+  }
+  document.getElementById('fbBtn').addEventListener('click', open);
+})();
 
 document.getElementById('view').innerHTML = '<div class="empty">Loading this week\'s data…</div>';
 const syncFirst = Sync.enabled() ? Promise.race([Sync.pull(), new Promise((r) => setTimeout(r, 4000))]) : Promise.resolve();
