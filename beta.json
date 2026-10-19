@@ -35,5 +35,6 @@
   "ed80d6d56d7c98623af6201dd20a49d6b81d4a63c723ed18346e885303e5e47f": "tester-30"
  },
  "feedbackKey": "",
- "note": "Private beta. Only hashes of invite codes are stored here; the codes themselves are kept private. Remove a line to revoke that code."
+ "note": "Private beta. Only hashes of invite codes are stored here; the codes themselves are kept private. Remove a line to revoke that code.",
+ "goatcounter": ""
 }

@@ -317,6 +317,9 @@ html.locked #gate { display: flex; position: fixed; inset: 0; z-index: 200; alig
 .stars button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent) }
 .fbrow { display: flex; gap: 10px; justify-content: flex-end }
 
+/* results */
+.restbl td { vertical-align: middle }
+
 /* tables */
 .tblwrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r) }
 table { border-collapse: collapse; width: 100%; font-size: 14px }
@@ -535,7 +538,7 @@ document.querySelector('aside').addEventListener('click', (e) => {
 });
 
 // ---------- tabs ----------
-const TABS = [['games', 'Game picks'], ['props', 'Player props'], ['rankings', 'Power ratings'], ['accuracy', 'Accuracy'], ['log', 'Pick log']].filter(([k]) => k !== 'props' || (META.props && (DATA.players || []).length));
+const TABS = [['games', 'Game picks'], ['props', 'Player props'], ['rankings', 'Power ratings'], ['results', 'Results'], ['accuracy', 'Accuracy'], ['log', 'Pick log']].filter(([k]) => k !== 'props' || (META.props && (DATA.players || []).length));
 function renderTabs() {
   $('#tabs').innerHTML = TABS.map(([k, n]) => `<button role="tab" data-tab="${k}" aria-selected="${S.tab === k}">${n}${k === 'log' && S.picks.length ? ' · ' + S.picks.length : ''}</button>`).join('');
 }
@@ -1159,8 +1162,13 @@ function logPropPick(pid, side) {
 }
 
 // ---------- view wiring ----------
+let RES = null, resSel = null;
+function resultsView() {
+  if (!RES) { Results.load(SPORT).then((b) => { RES = b; if (S.tab === 'results') renderView(); }); return '<div class="empty">Loading results…</div>'; }
+  return Results.html(SPORT, RES, { daily: DAILY, unit: UNIT, sel: resSel, periodLabel: (w) => periodLabel(w) });
+}
 function renderView() {
-  const v = { games: gamesView, props: propsView, rankings: rankingsView, accuracy: accuracyView, log: logView }[S.tab] || gamesView;
+  const v = { games: gamesView, props: propsView, rankings: rankingsView, results: resultsView, accuracy: accuracyView, log: logView }[S.tab] || gamesView;
   const focus = document.activeElement && document.activeElement.id; const pos = focus && document.activeElement.selectionStart;
   $('#view').innerHTML = v();
   if (focus && $('#view').querySelector('#' + CSS.escape(focus))) { const el = document.getElementById(focus); el.focus(); try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) {} }
@@ -1168,6 +1176,7 @@ function renderView() {
 $('#view').addEventListener('change', (e) => {
   const t = e.target;
   if (t.id === 'weekSel') { S.week = +t.value; renderView(); }
+  if (t.id === 'resSel') { resSel = t.value; renderView(); }
   if (t.id === 'sortSel') { S.sort = t.value; renderView(); }
   if (t.id === 'edgeMin') { S.edgeMin = +t.value; renderView(); }
   if (t.id === 'onlyEdges') { S.onlyEdges = t.checked; renderView(); }
@@ -1538,7 +1547,7 @@ const Beta = (() => {
     try { cfg = await fetch('beta.json', { cache: 'no-cache' }).then((r) => r.json()); } catch (e) { return; } // offline: keep whatever state we're in
     if (!cfg.enabled) { unlock(); return; }
     const saved = ls.get('gml_beta');
-    if (saved && cfg.codes[await sha(cfg.salt + saved)]) { unlock(); return; }
+    if (saved && cfg.codes[await sha(cfg.salt + saved)]) { unlock(); ping(cfg.codes[await sha(cfg.salt + saved)]); return; }
     if (saved) ls.del('gml_beta'); // code was turned off
     lock(); setTimeout(() => document.getElementById('gateCode').focus(), 50);
   }
@@ -1549,6 +1558,13 @@ const Beta = (() => {
     if (cfg.codes[await sha(cfg.salt + code)]) { ls.set('gml_beta', code); unlock(); location.reload(); }
     else err.textContent = 'That code didn\'t work. Check it and try again.';
   });
+  // Usage: one anonymous "visit" per device per day, labeled by tester number (no names, no tracking scripts)
+  function ping(tester) {
+    const gc = cfg.goatcounter; if (!gc || tester === 'owner') return;
+    const today = new Date().toISOString().slice(0, 10); if (ls.get('gml_seen_day') === today) return; ls.set('gml_seen_day', today);
+    const sport = (location.hash.slice(1) || 'nfl').replace(/[^a-z]/g, '');
+    try { new Image().src = `https://${gc}.goatcounter.com/count?p=${encodeURIComponent('/tester/' + tester)}&t=${encodeURIComponent('Beta visit · ' + sport)}&rnd=${Math.random().toString(36).slice(2)}`; } catch (e) {}
+  }
   const label = async () => { const c = ls.get('gml_beta'); return c && cfg.codes ? cfg.codes[await sha(cfg.salt + c)] || 'unknown' : 'none'; };
   return { check, label, key: () => cfg.feedbackKey || '' };
 })();
@@ -1599,6 +1615,74 @@ Beta.check();
 document.getElementById('view').innerHTML = '<div class="empty">Loading this week\'s data…</div>';
 const syncFirst = Sync.enabled() ? Promise.race([Sync.pull(), new Promise((r) => setTimeout(r, 4000))]) : Promise.resolve();
 // ---------- UFC: fight cards instead of games ----------
+// ---------- Results: the model's saved pre-game picks, graded (data/picks/<sport>.json) ----------
+const Results = (() => {
+  const cache = {};
+  const esc = (v) => String(v ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const pc = (p) => Math.round(p * 100) + '%';
+  const rec = (w, l) => `${w}–${l}`;
+  const pctOf = (w, l) => (w + l ? Math.round(1000 * w / (w + l)) / 10 + '%' : '–');
+  const book = (t, v) => v == null ? '' : t + ' ' + (v === 0 ? 'PK' : (v > 0 ? '−' : '+') + Math.abs(v));
+  const day = (d) => d ? new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : '';
+  const tm = (t) => { if (!t) return ''; const [h, m] = t.split(':').map(Number); return ((h % 12) || 12) + ':' + String(m).padStart(2, '0') + (h >= 12 ? 'p' : 'a'); };
+  function load(sport) {
+    if (!cache[sport]) cache[sport] = fetch('data/picks/' + sport + '.json', { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : { games: {} })).catch(() => ({ games: {} }));
+    return cache[sport];
+  }
+  function grade(x) {
+    const pickHome = x.pH >= 0.5, pick = pickHome ? x.h : x.a, conf = Math.max(x.pH, 1 - x.pH);
+    let ok = null, ats = null, fav = null;
+    if (x.r) {
+      const [as, hs] = x.r;
+      if (hs !== as) ok = (hs > as) === pickHome;
+      if (x.sp != null && x.m != null && x.m !== x.sp) { const c = hs - as - x.sp; if (c !== 0) ats = (x.m - x.sp > 0) === (c > 0); }
+      if (x.hml != null && x.aml != null && hs !== as && x.hml !== x.aml) fav = (x.hml < x.aml) === (hs > as);
+    }
+    return { pick, conf, ok, ats, fav };
+  }
+  // opts: { daily, unit, periodLabel(w), sel, fight }
+  function html(sport, bk, opts) {
+    const all = Object.entries(bk.games || {}).map(([id, x]) => ({ id, ...x, g: grade(x) }));
+    if (!all.length) return `<div class="empty">No saved picks yet. From now on, the model's pick for every game is saved before it starts and graded after it ends. Check back after the next games.</div>`;
+    const seasons = [...new Set(all.map((x) => x.season).filter((v) => v != null))].sort((a, b) => b - a);
+    const season = opts.season ?? seasons[0];
+    const rows = all.filter((x) => season == null || x.season == null || x.season === season);
+    const pkey = (x) => opts.daily || x.w == null ? x.d : 'w' + x.w;
+    const periods = [...new Set(rows.map(pkey))].sort((a, b) => String(b).localeCompare(String(a), undefined, { numeric: true }));
+    const gradedPeriods = periods.filter((p) => rows.some((x) => pkey(x) === p && x.g.ok != null));
+    const sel = opts.sel && periods.includes(opts.sel) ? opts.sel : gradedPeriods[0] || periods[0];
+    const graded = rows.filter((x) => x.g.ok != null), live = graded.filter((x) => !x.bf);
+    const tally = (xs, k = 'ok') => { let w = 0, l = 0; xs.forEach((x) => { if (x.g[k] === true) w++; else if (x.g[k] === false) l++; }); return [w, l]; };
+    const [sw, sl] = tally(graded), [lw, ll] = tally(live), [aw, al] = tally(graded, 'ats'), [fw, fl] = tally(graded, 'fav');
+    const tier = (lo, hi) => tally(graded.filter((x) => x.g.conf >= lo && x.g.conf < hi));
+    const tiers = [[0.5, 0.6, '50–60%'], [0.6, 0.7, '60–70%'], [0.7, 1.01, '70%+']].map(([a, b, n]) => { const [w, l] = tier(a, b); return `<span class="pill flat" title="games where the model was ${n} sure">${n} sure: ${rec(w, l)} (${pctOf(w, l)})</span>`; }).join(' ');
+    const label = (p) => opts.daily || !String(p).startsWith('w') ? day(p) : (opts.periodLabel ? opts.periodLabel(+String(p).slice(1)) : 'Week ' + String(p).slice(1));
+    const list = rows.filter((x) => pkey(x) === sel).sort((a, b) => (a.d + (a.tm || '')).localeCompare(b.d + (b.tm || '')));
+    const [pw, pl] = tally(list);
+    const unit = opts.unit || '';
+    return `<p class="note" style="margin:0 0 12px">The model's pick for every ${opts.fight ? 'fight' : 'game'}, saved <b>before it started</b> and graded after. This uses the Trained model, so it's the site's official record. Games marked <span class="pill flat" style="font-size:11px">test</span> were from before tracking began and come from the game-by-game test, which also only used earlier games (they may look slightly better than live picks, since the model's settings were trained on those seasons). The live record is the one to trust.</p>
+    <div class="tiles">
+      <div class="tile"><span class="label">Season record</span><b>${rec(sw, sl)}</b><span class="sub">${pctOf(sw, sl)} picked straight up${seasons.length > 1 ? '' : ''}</span></div>
+      <div class="tile"><span class="label">Since tracking began</span><b>${lw + ll ? rec(lw, ll) : '–'}</b><span class="sub">${lw + ll ? pctOf(lw, ll) + ' · saved before kickoff' : 'first graded picks soon'}</span></div>
+      ${opts.fight ? '' : `<div class="tile"><span class="label">Against the spread</span><b>${aw + al ? rec(aw, al) : '–'}</b><span class="sub">${aw + al ? pctOf(aw, al) + ' · 52.4% breaks even' : 'needs saved lines'}</span></div>`}
+      <div class="tile"><span class="label">Vegas favorites</span><b>${fw + fl ? rec(fw, fl) : '–'}</b><span class="sub">${fw + fl ? pctOf(fw, fl) + ' on the same games' : 'needs saved odds'}</span></div>
+    </div>
+    <div class="small muted" style="margin:10px 0 16px">By confidence: ${tiers}</div>
+    <div class="toolbar"><div class="f"><label class="label" for="resSel">${opts.daily ? 'Date' : opts.fight ? 'Event date' : 'Week'}</label><select id="resSel">${periods.map((p) => `<option value="${esc(p)}" ${p === sel ? 'selected' : ''}>${esc(label(p))}${(() => { const ps = rows.filter((x) => pkey(x) === p), open = ps.filter((x) => !x.r).length; return !open ? '' : open === ps.length ? ' · upcoming' : ' · in progress'; })()}</option>`).join('')}</select></div>
+      ${seasons.length > 1 ? `<div class="f"><label class="label" for="resSeason">Season</label><select id="resSeason">${seasons.map((s) => `<option ${s === season ? 'selected' : ''}>${s}</option>`).join('')}</select></div>` : ''}
+      <div class="small" style="padding-bottom:8px"><b>${pw + pl ? rec(pw, pl) : ''}</b> ${pw + pl ? 'this ' + (opts.daily ? 'day' : opts.fight ? 'date' : 'week') : ''}</div></div>
+    <div class="tblwrap"><table class="restbl"><thead><tr><th>When</th><th>${opts.fight ? 'Fight' : 'Game'}</th><th>Model's pick</th>${opts.fight ? '' : `<th class="num">Predicted</th><th class="num">Vegas</th>`}<th class="num">Final</th><th></th></tr></thead><tbody>
+    ${list.map((x) => { const g = x.g; const fin = x.r ? (opts.fight ? (x.r[0] ? x.a : x.r[1] ? x.h : 'Draw') + ' won' : `${esc(x.a)} ${x.r[0]} – ${esc(x.h)} ${x.r[1]}`) : '';
+      return `<tr><td class="small">${day(x.d)}${x.tm ? ' · ' + tm(x.tm) : ''}</td><td class="pname">${esc(x.a)} ${opts.fight ? 'vs' : '@'} ${esc(x.h)}${x.bf ? ' <span class="pill flat" style="font-size:11px">test</span>' : ''}</td>
+        <td><b>${esc(g.pick)}</b> <span class="muted small">${pc(g.conf)}</span></td>
+        ${opts.fight ? '' : `<td class="num small">${x.ps ? `${esc(x.a)} ${Math.round(x.ps[0])}–${Math.round(x.ps[1])} ${esc(x.h)}` : x.m != null ? `${esc(x.m >= 0 ? x.h : x.a)} by ${Math.abs(x.m).toFixed(1)}` : ''}</td><td class="num small">${x.sp != null ? esc(book(x.h, x.sp)) : ''}</td>`}
+        <td class="num small">${fin || '<span class="muted">' + (Date.parse(x.d + 'T23:59:00') < Date.now() ? 'pending' : 'locked in') + '</span>'}</td>
+        <td>${g.ok === true ? '<span class="pill good">✓</span>' : g.ok === false ? '<span class="pill bad">✗</span>' : x.r ? '<span class="pill flat">tie</span>' : ''}${g.ats != null ? ` <span class="small muted" title="against the spread">${g.ats ? 'ATS ✓' : 'ATS ✗'}</span>` : ''}</td></tr>`; }).join('')}
+    </tbody></table></div>`;
+  }
+  return { load, html };
+})();
+
 // ---------- Golf: player ratings from every round, tournament simulations ----------
 function bootGolf(DATA) {
   const $ = (q) => document.querySelector(q);
@@ -1900,7 +1984,7 @@ function bootUfc(DATA) {
   aside.addEventListener('click', (e) => { const b = e.target.closest('[data-upreset]'); if (!b) return; S.weights = { ...PRESETS[b.dataset.upreset] }; store.set('weights2', S.weights); renderBuilder(); recompute(); render(); });
 
   // ---- tabs
-  const TABS = [['fights', 'Fight cards'], ['fighters', 'Fighter ratings'], ['accuracy', 'Accuracy'], ['log', 'Pick log']];
+  const TABS = [['fights', 'Fight cards'], ['fighters', 'Fighter ratings'], ['results', 'Results'], ['accuracy', 'Accuracy'], ['log', 'Pick log']];
   const renderTabs = () => { $('#tabs').innerHTML = TABS.map(([k, n]) => `<button role="tab" data-tab="${k}" aria-selected="${S.tab === k}">${n}${k === 'log' && S.picks.length ? ' · ' + S.picks.length : ''}</button>`).join(''); };
   $('#tabs').addEventListener('click', (e) => { const b = e.target.closest('[data-tab]'); if (!b) return; S.tab = b.dataset.tab; store.set('tab', S.tab); S.confirmClear = false; renderTabs(); render(); });
 
@@ -1994,11 +2078,17 @@ function bootUfc(DATA) {
       <p class="note">${S.confirmClear ? `<span class="confirm">Remove all ${S.picks.length} picks? <button class="btn accent" id="uclearYes">Remove all</button><button class="btn ghost" id="uclearNo">Keep</button></span>` : '<button class="btn ghost" id="uclear">Clear log</button>'}</p>`;
   }
 
+  let RES = null, resSel = null;
+  function resultsView() {
+    if (!RES) { Results.load('ufc').then((b) => { RES = b; if (S.tab === 'results') render(); }); return '<div class="empty">Loading results…</div>'; }
+    return Results.html('ufc', RES, { daily: true, fight: true, sel: resSel });
+  }
   function render() {
-    $('#view').innerHTML = ({ fights: fightsView, fighters: fightersView, accuracy: accuracyView, log: logView }[S.tab] || fightsView)();
+    $('#view').innerHTML = ({ fights: fightsView, fighters: fightersView, results: resultsView, accuracy: accuracyView, log: logView }[S.tab] || fightsView)();
   }
   $('#view').addEventListener('change', (e) => {
     const t = e.target;
+    if (t.id === 'resSel') { resSel = t.value; render(); return; }
     if (t.id === 'evSel') { S.ev = t.value; render(); }
     if (t.id === 'wcSel') { S.wc = t.value; render(); }
     if (t.dataset.uline) { const o = S.lines[t.dataset.f] || (S.lines[t.dataset.f] = {}); o[t.dataset.uline] = t.value === '' ? null : +t.value; store.set('lines', S.lines); render(); }

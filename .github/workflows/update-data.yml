@@ -44,6 +44,9 @@ jobs:
       - name: Re-train each sport's model on past seasons plus this season
         run: node scripts/train.js
 
+      - name: Save the model's pre-game picks and grade finished games
+        run: node scripts/snapshot.js
+
       - name: Save changes
         run: |
           git add data/
