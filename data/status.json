@@ -10,21 +10,19 @@
   "rows": 0,
   "season": 2027,
   "through": "",
-  "upcoming": 413
+  "upcoming": 459
  },
  "cfb": {
-  "finals": 388,
-  "history": [
-   2023,
-   2024,
-   2025
-  ],
-  "next": "2026-10-20",
-  "ok": true,
-  "rows": 776,
-  "season": 2026,
-  "through": "2026-10-17",
-  "upcoming": 373
+  "error": "RuntimeError: CFBD /ppa/games returned HTTP 502: {\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-502/\",\"title\":\"Error 502: Bad gateway\",\"status\":502,\"detail\":\"The origin web server ret",
+  "ok": false,
+  "trace": [
+   "  File \"/home/runner/work/5ive-Labs/5ive-Labs/scripts/update_data.py\", line 1100, in build_cfb",
+   "    ppa_raw = cfbd('/ppa/games', year=season, seasonType='regular', excludeGarbageTime='true')",
+   "              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+   "  File \"/home/runner/work/5ive-Labs/5ive-Labs/scripts/update_data.py\", line 1061, in cfbd",
+   "    raise RuntimeError(f'CFBD {path} returned HTTP {e.code}: {body}') from None",
+   "RuntimeError: CFBD /ppa/games returned HTTP 502: {\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-502/\",\"title\":\"Error 502: Bad gateway\",\"status\":502,\"detail\":\"The origin web server ret"
+  ]
  },
  "golf": {
   "finals": 90,
@@ -50,18 +48,18 @@
   "upcoming": 7
  },
  "nba": {
-  "finals": 1,
+  "finals": 3,
   "history": [
    2024,
    2025,
    2026
   ],
-  "next": "2026-10-20",
+  "next": "2026-10-21",
   "ok": true,
-  "rows": 2,
+  "rows": 6,
   "season": 2027,
   "through": "2026-10-20",
-  "upcoming": 159
+  "upcoming": 167
  },
  "nfl": {
   "finals": 93,
@@ -80,18 +78,18 @@
   "upcoming": 179
  },
  "nhl": {
-  "finals": 140,
+  "finals": 151,
   "history": [
    2023,
    2024,
    2025
   ],
-  "next": "2026-10-20",
+  "next": "2026-10-21",
   "ok": true,
-  "rows": 280,
+  "rows": 302,
   "season": 2026,
-  "through": "2026-10-19",
-  "upcoming": 1204
+  "through": "2026-10-20",
+  "upcoming": 1193
  },
  "ufc": {
   "finals": 4014,
