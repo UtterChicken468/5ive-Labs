@@ -461,6 +461,9 @@ const store = {
 const SPORT_DEFAULTS = sportDefaults(META);
 const TRAINED = META.trained || null;
 const isTrained = () => TRAINED && S.settings.ppw === TRAINED.settings.ppw && E.FACTORS.every((f) => (S.weights[f.key] || 0) === (TRAINED.weights[f.key] || 0));
+// "Following" the trained model: unless you've customized the sliders, every retrain is picked up automatically.
+const matchesTrained = () => isTrained() && Object.keys(TRAINED.settings).every((k) => S.settings[k] === TRAINED.settings[k]);
+const FOLLOW = !!TRAINED && store.get('mode', 'trained') !== 'custom';
 const DAILY = META.period === 'Day';
 const UNIT = META.unit || 'pts';
 const EDGE_STEPS = META.edgeSteps || [1, 1.5, 2, 3, 4];
@@ -477,8 +480,8 @@ const seasonOver = !upcomingWeeks.length;
 if (!upcomingWeeks.length) upcomingWeeks = [lastDone]; // season over: show the final week
 
 const S = {
-  weights: store.get('weights', TRAINED ? { ...TRAINED.weights } : { ...E.PRESETS.Balanced }),
-  settings: { ...SPORT_DEFAULTS, ...store.get('settings', TRAINED ? { ...TRAINED.settings } : {}) },
+  weights: FOLLOW ? { ...TRAINED.weights } : store.get('weights', TRAINED ? { ...TRAINED.weights } : { ...E.PRESETS.Balanced }),
+  settings: FOLLOW ? { ...SPORT_DEFAULTS, ...store.get('settings', {}), ...TRAINED.settings } : { ...SPORT_DEFAULTS, ...store.get('settings', TRAINED ? { ...TRAINED.settings } : {}) },
   saved: store.get('saved', []),
   lines: store.get('lines', {}),        // gameId -> {sp, tot, hml, aml} user overrides
   props: store.get('props', {}),        // playerId|key -> {line, odds}
@@ -509,7 +512,7 @@ $('#stamp').innerHTML = `${META.label} · ${META.seasonLabel || DATA.season} reg
 
 // ---------- builder ----------
 function renderBuilder() {
-  $('#presets').innerHTML = (TRAINED ? `<button class="chip trained" data-preset="__trained" aria-pressed="${isTrained()}" title="Learned from ${TRAINED.games} past games">Trained</button>` : '') + Object.keys(E.PRESETS).map((n) => {
+  $('#presets').innerHTML = (TRAINED ? `<button class="chip trained" data-preset="__trained" aria-pressed="${isTrained()}" title="Learned from ${TRAINED.games} past games. Stays up to date automatically after each retrain unless you move a slider.">Trained</button>` : '') + Object.keys(E.PRESETS).map((n) => {
     const on = !S.settings.ppw && E.FACTORS.every((f) => (E.PRESETS[n][f.key] || 0) === (S.weights[f.key] || 0));
     return `<button class="chip" data-preset="${esc(n)}" aria-pressed="${on}">${esc(n)}</button>`;
   }).join('');
@@ -540,7 +543,7 @@ function renderSaved() {
     : `<div class="small muted">Save a version to compare it on the Accuracy tab.</div>`;
 }
 let raf = 0;
-function changed() { store.set('weights', S.weights); store.set('settings', S.settings); cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { renderPresetsOnly(); renderView(); }); }
+function changed() { store.set('weights', S.weights); store.set('settings', S.settings); if (TRAINED) store.set('mode', matchesTrained() ? 'trained' : 'custom'); cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { renderPresetsOnly(); renderView(); }); }
 function renderPresetsOnly() { document.querySelectorAll('[data-preset]').forEach((b) => { const n = b.dataset.preset; b.setAttribute('aria-pressed', n === '__trained' ? !!isTrained() : !S.settings.ppw && E.FACTORS.every((f) => (E.PRESETS[n][f.key] || 0) === (S.weights[f.key] || 0))); }); }
 document.querySelector('aside').addEventListener('input', (e) => {
   const t = e.target;
@@ -1317,7 +1320,7 @@ async function bootEdges() {
     const m = data.meta;
     if (key === 'ufc') { // fighters: moneylines only
       const g2 = (k, d) => { try { const v = localStorage.getItem('gml:ufc:' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
-      const res = E.ufc.walk(data, g2('weights2', { ...E.ufc.trainedWeights(data) })), over = g2('lines', {});
+      const res = E.ufc.walk(data, g2('mode', 'trained') !== 'custom' ? { ...E.ufc.trainedWeights(data) } : g2('weights2', { ...E.ufc.trainedWeights(data) })), over = g2('lines', {});
       const fair = (mine, theirs) => { const a = E.impliedProb(mine), b = E.impliedProb(theirs); return a / (a + b); };
       res.upcoming.filter(({ f }) => f.d && f.d >= today && f.d <= plus(6)).forEach(({ f, p }) => {
         const o = over[f.id] || {}, aml = o.aml !== undefined ? o.aml : f.aml, bml = o.bml !== undefined ? o.bml : f.bml;
@@ -1335,7 +1338,9 @@ async function bootEdges() {
     const pre = key === 'nfl' ? 'gml:' : 'gml:' + key + ':';
     const get = (k, d) => { try { const v = localStorage.getItem(pre + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
     const tr = m.trained;
-    const weights = get('weights', tr ? { ...tr.weights } : { ...E.PRESETS.Balanced }), settings = { ...sportDefaults(m), ...get('settings', tr ? { ...tr.settings } : {}) }, over = get('lines', {});
+    const follow = tr && get('mode', 'trained') !== 'custom';
+    const weights = follow ? { ...tr.weights } : get('weights', tr ? { ...tr.weights } : { ...E.PRESETS.Balanced });
+    const settings = follow ? { ...sportDefaults(m), ...get('settings', {}), ...tr.settings } : { ...sportDefaults(m), ...get('settings', tr ? { ...tr.settings } : {}) }, over = get('lines', {});
     const done = data.games.filter((g) => g.hs != null), lastDone = done.length ? Math.max(...done.map((g) => g.w)) : 0;
     let upcoming = data.games.filter((g) => g.hs == null && g.d && g.d >= today);
     if (m.period === 'Day') upcoming = upcoming.filter((g) => g.d <= plus(1));
@@ -2047,7 +2052,7 @@ function bootUfc(DATA) {
   };
   const T = DATA.meta.trained;
   const PRESETS = { Trained: { ...U.trainedWeights(DATA) }, ...U.PRESETS };
-  const S = { weights: store.get('weights2', { ...PRESETS.Trained }), lines: store.get('lines', {}), picks: store.get('picks', []),
+  const S = { weights: store.get('mode', 'trained') !== 'custom' ? { ...PRESETS.Trained } : store.get('weights2', { ...PRESETS.Trained }), lines: store.get('lines', {}), picks: store.get('picks', []),
     tab: store.get('tab', 'fights'), ev: null, wc: 'all', confirmClear: false };
   const pct = (p) => Math.round(p * 100) + '%';
   const odds = (o) => o == null ? '–' : (o > 0 ? '+' + o : String(o));
@@ -2075,10 +2080,10 @@ function bootUfc(DATA) {
   }
   const aside = $('aside');
   aside.querySelector('.small.muted').textContent = 'How much each factor matters, 0 to 10. Trained sets them to what the model learned from past fights.';
-  aside.addEventListener('input', (e) => { const t = e.target; if (!t.dataset.uw) return; S.weights[t.dataset.uw] = +t.value; $('#uv-' + t.dataset.uw).textContent = t.value; store.set('weights2', S.weights); cancelAnimationFrame(rf); rf = requestAnimationFrame(() => { recompute(); renderBuilderChips(); render(); }); });
+  aside.addEventListener('input', (e) => { const t = e.target; if (!t.dataset.uw) return; S.weights[t.dataset.uw] = +t.value; $('#uv-' + t.dataset.uw).textContent = t.value; store.set('weights2', S.weights); store.set('mode', U.FACTORS.every((f) => (PRESETS.Trained[f.key] ?? 0) === (S.weights[f.key] ?? 0)) ? 'trained' : 'custom'); cancelAnimationFrame(rf); rf = requestAnimationFrame(() => { recompute(); renderBuilderChips(); render(); }); });
   let rf = 0;
   const renderBuilderChips = () => document.querySelectorAll('[data-upreset]').forEach((b) => b.setAttribute('aria-pressed', U.FACTORS.every((f) => (PRESETS[b.dataset.upreset][f.key] ?? 0) === (S.weights[f.key] ?? 0))));
-  aside.addEventListener('click', (e) => { const b = e.target.closest('[data-upreset]'); if (!b) return; S.weights = { ...PRESETS[b.dataset.upreset] }; store.set('weights2', S.weights); renderBuilder(); recompute(); render(); });
+  aside.addEventListener('click', (e) => { const b = e.target.closest('[data-upreset]'); if (!b) return; S.weights = { ...PRESETS[b.dataset.upreset] }; store.set('weights2', S.weights); store.set('mode', b.dataset.upreset === 'Trained' ? 'trained' : 'custom'); renderBuilder(); recompute(); render(); });
 
   // ---- tabs
   const TABS = [['fights', 'Fight cards'], ['fighters', 'Fighter ratings'], ['results', 'Results'], ['accuracy', 'Accuracy'], ['log', 'Pick log']];
