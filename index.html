@@ -211,6 +211,20 @@ details.inj > div { margin-top: 4px }
 .betcard .bc-bet { font-size: 22px; font-weight: 900; line-height: 1.15; overflow-wrap: anywhere }
 .betcard .bc-why { font-size: 13.5px }
 .betcard .bc-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 6px }
+.fanhead { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 10px; margin-bottom: 10px }
+.fchips { display: flex; flex-wrap: wrap; gap: 6px }
+.fantbl td { vertical-align: middle; white-space: normal } .fproj { font-size: 18px }
+.fantbl td:first-child { width: 44px } .fantbl .num { white-space: nowrap }
+@media (max-width: 560px) { .fantbl th, .fantbl td { padding-left: 6px; padding-right: 6px } .fantbl .pname .pill { display: inline-block; margin-top: 2px } }
+.sscmp { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px }
+@media (max-width: 560px) { .sscmp { grid-template-columns: 1fr } }
+.ssbox { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px }
+.fbig { font-size: 34px; font-weight: 900; margin-top: 6px }
+.sechead { font-size: 15px; margin: 6px 0 8px; letter-spacing: .02em }
+.fangrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px }
+.fancard { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--good); border-radius: 12px; padding: 10px 12px; display: grid; gap: 4px }
+.fancard.down { border-left-color: var(--bad) }
+.fcrow { display: flex; justify-content: space-between; align-items: baseline; gap: 8px }
 .rec { border-radius: 12px; padding: 12px 14px; background: var(--surface-2); border: 2px solid var(--line); display: grid; gap: 4px; justify-items: start }
 .rec.good { border-color: var(--accent); background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, var(--surface-2)), var(--surface-2)) }
 .rec .reclab { font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--accent) }
@@ -492,7 +506,7 @@ const S = {
   propKey: (E.PROPS[0] || {}).key, propPos: 'all', propQ: '', recent: 40, matchup: 60,
   btEdge: 0, confirmClear: false, battleA: 'current', battleB: '',
 };
-if (location.hash && ['games', 'props', 'rankings', 'accuracy', 'log'].includes(location.hash.slice(1))) S.tab = location.hash.slice(1);
+if (location.hash && ['games', 'fantasy', 'props', 'rankings', 'accuracy', 'log'].includes(location.hash.slice(1))) S.tab = location.hash.slice(1);
 if (S.tab === 'props' && !META.props) S.tab = 'games';
 
 const fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : v.toFixed(d);
@@ -570,7 +584,8 @@ document.querySelector('aside').addEventListener('click', (e) => {
 });
 
 // ---------- tabs ----------
-const TABS = [['games', 'Game picks'], ['props', 'Player props'], ['rankings', 'Power ratings'], ['results', 'Results'], ['accuracy', 'Accuracy'], ['log', 'Pick log']].filter(([k]) => k !== 'props' || (META.props && (DATA.players || []).length));
+const HAS_FANTASY = META.sport === 'nfl' && (DATA.players || []).length > 0;
+const TABS = [['games', 'Game picks'], ...(HAS_FANTASY ? [['fantasy', 'Fantasy']] : []), ['props', 'Player props'], ['rankings', 'Power ratings'], ['results', 'Results'], ['accuracy', 'Accuracy'], ['log', 'Pick log']].filter(([k]) => k !== 'props' || (META.props && (DATA.players || []).length));
 function renderTabs() {
   $('#tabs').innerHTML = TABS.map(([k, n]) => `<button role="tab" data-tab="${k}" aria-selected="${S.tab === k}">${n}${k === 'log' && S.picks.length ? ' · ' + S.picks.length : ''}</button>`).join('');
 }
@@ -604,6 +619,158 @@ function evPill(ev) {
   return `<span class="pill ${ev > 0.03 ? 'good' : ev < -0.03 ? 'bad' : 'flat'}">EV ${ev >= 0 ? '+' : '−'}${Math.abs(ev * 100).toFixed(0)}%</span>`;
 }
 
+
+
+// ---------- Fantasy football ----------
+const FAN = Object.assign({ scoring: 'ppr', sub: 'rank', pos: 'ALL', q: '', team: [], a: '', b: '' }, store.get('fantasy', {}));
+const saveFan = () => store.set('fantasy', FAN);
+const FWEEK = upcomingWeeks[0];
+let fanCache = null;
+function fanList() {
+  const key = FAN.scoring + '|' + JSON.stringify(S.weights) + JSON.stringify(S.settings) + JSON.stringify(S.lines);
+  if (fanCache && fanCache.key === key) return fanCache.list;
+  const P = E.teamProfiles(DATA, Math.min(FWEEK, lastDone + 1)), R = E.ratings(P, S.weights, S.settings);
+  const opp = {}, home = {}, teamPts = {}, kick = {}, gameOf = {};
+  DATA.games.filter((g) => g.w === FWEEK).forEach((g) => {
+    opp[g.h] = g.a; opp[g.a] = g.h; home[g.h] = true; home[g.a] = false; kick[g.h] = kick[g.a] = g.d + ' ' + (g.tm || ''); gameOf[g.h] = gameOf[g.a] = g;
+    const pr = E.predict(g, P, R, S.settings, linesFor(g), DATA); if (pr) { teamPts[g.h] = pr.hs; teamPts[g.a] = pr.as; }
+  });
+  const list = E.fantasy(DATA, FWEEK, { scoring: FAN.scoring, opp, home, teamPts, kick });
+  list.forEach((x) => { x.g = gameOf[x.t]; x.tp = teamPts[x.t]; });
+  fanCache = { key, list }; return list;
+}
+const GRADES = [[1.15, 'A', 'Great matchup', 'good'], [1.05, 'B', 'Good matchup', 'good'], [0.95, 'C', 'Neutral matchup', 'flat'], [0.85, 'D', 'Tough matchup', 'bad'], [0, 'F', 'Brutal matchup', 'bad']];
+const gradeOf = (mf) => GRADES.find(([t]) => (mf || 1) >= t);
+const fp = (v) => v == null ? '–' : v.toFixed(1);
+const SCN = { ppr: 'PPR', half: 'Half PPR', std: 'Standard' };
+function fanTag(x) {
+  if (x.bye) return '<span class="pill flat">BYE</span>';
+  if (x.out) return `<span class="pill bad">${esc(x.status)}</span>`;
+  if (x.played != null) return `<span class="pill flat">Final: ${fp(x.played)}</span>`;
+  return x.status ? `<span class="pill" style="background:#5a4410;color:#ffd166">${esc(x.status)}</span>` : '';
+}
+const oppText = (x) => x.bye ? 'Bye week' : (x.home ? 'vs ' : '@ ') + x.o;
+function playerOpts(list, upcomingOnly) { return list.filter((x) => !x.bye && (!upcomingOnly || x.played == null)).sort((a, b) => b.proj - a.proj).map((x) => `<option value="${esc(x.n)} (${x.p}, ${x.t})">`).join(''); }
+const findP = (list, v) => { if (!v) return null; const m = v.match(/^(.*) \((\w+), (\w+)\)$/); return list.find((x) => m ? x.n === m[1] && x.t === m[3] : x.n.toLowerCase() === v.toLowerCase()) || null; };
+function fantasyView() {
+  const list = fanList();
+  if (!list.length) return '<div class="empty">Fantasy projections start after the first week of games.</div>';
+  const subs = [['rank', 'Rankings'], ['startsit', 'Start / sit'], ['team', 'My lineup'], ['sleepers', 'Sleepers & busts']];
+  const head = `<div class="fanhead">
+    <div class="fchips">${subs.map(([k, n]) => `<button type="button" class="fchip" data-fsub="${k}" aria-pressed="${FAN.sub === k}">${n}</button>`).join('')}</div>
+    <div class="f"><label class="label" for="fanSc">Scoring</label><select id="fanSc">${Object.entries(SCN).map(([k, n]) => `<option value="${k}" ${FAN.scoring === k ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+  </div>
+  <p class="note" style="margin:0 0 14px">Week ${FWEEK} projections for every QB, RB, WR and TE, based on this season's games, the opponent's defense against that position, and how many points your model expects each team to score. Kickers and defenses aren't included yet.</p>`;
+  const body = { rank: fanRankings, startsit: fanStartSit, team: fanTeam, sleepers: fanSleepers }[FAN.sub] || fanRankings;
+  return head + body(list) + `<p class="note" style="margin-top:16px">How accurate is it? Tested on weeks 3 to 6 using only earlier games, projections missed by about 6 points per player on average, a bit better than each player's season average. Fantasy is noisy: on close start/sit calls, anyone (including experts) is right only a little more than half the time. Use it as a tiebreaker, not a guarantee.</p>`;
+}
+function fanRankings(list) {
+  const pos = FAN.pos, q = FAN.q.trim().toLowerCase();
+  let xs = list.filter((x) => !x.bye && (pos === 'ALL' || x.p === pos || (pos === 'FLEX' && ['RB', 'WR', 'TE'].includes(x.p))));
+  if (q) xs = xs.filter((x) => (x.n + ' ' + x.t).toLowerCase().includes(q));
+  xs.sort((a, b) => (b.out ? -1 : b.proj) - (a.out ? -1 : a.proj));
+  const shown = xs.slice(0, 150);
+  return `<div class="toolbar">
+    <div class="fchips">${['ALL', 'QB', 'RB', 'WR', 'TE', 'FLEX'].map((p) => `<button type="button" class="fchip" data-fpos="${p}" aria-pressed="${pos === p}">${p === 'ALL' ? 'All' : p}</button>`).join('')}</div>
+    <div class="f"><label class="label" for="fanQ">Player or team</label><input type="search" id="fanQ" placeholder="Search" value="${esc(FAN.q)}" style="width:170px"></div>
+  </div>
+  <div class="tblwrap"><table class="fantbl"><thead><tr><th>#</th><th>Player</th><th class="num">Projected</th><th>Matchup</th></tr></thead><tbody>
+  ${shown.map((x, i) => { const gr = gradeOf(x.mf); return `<tr>
+    <td class="small muted">${x.out ? '–' : x.p + (x.rank || '')}</td>
+    <td><div class="pname">${esc(x.n)} ${fanTag(x)}</div><div class="small muted">${x.p} · ${x.t} ${oppText(x)}</div></td>
+    <td class="num"><b class="fproj">${x.out ? '0.0' : fp(x.proj)}</b><div class="small muted">${x.out ? '' : fp(Math.max(0, x.proj - x.sd)) + '–' + fp(x.proj + x.sd)}</div></td>
+    <td><span class="pill ${gr[3]}" title="${gr[2]}: this defense has allowed ${Math.round(((x.mf || 1) - 1) * 100)}% ${(x.mf || 1) >= 1 ? 'more' : 'fewer'} fantasy points to ${x.p}s than average">${gr[1]}</span><div class="small muted">${gr[2].split(' ')[0]}</div></td></tr>`; }).join('')}
+  </tbody></table></div>
+  ${xs.length > shown.length ? `<p class="small muted">Showing the top ${shown.length}. Search to find anyone else.</p>` : ''}
+  <p class="small muted">Projected = expected fantasy points (${SCN[FAN.scoring]}). The smaller numbers are a typical range: a bad week to a good week. Matchup grades how many fantasy points the opponent has allowed to that position this season.</p>`;
+}
+function fanReasons(x, y) {
+  const r = [], gx = gradeOf(x.mf), gy = gradeOf(y.mf);
+  if (x.avg - y.avg > 1.5) r.push(`averaging ${fp(x.avg)} points a game vs ${fp(y.avg)}`);
+  if (gx[1] < gy[1]) r.push(`better matchup (${gx[1]} vs ${gy[1]})`);
+  if (x.tp && y.tp && x.tp - y.tp > 2.5) r.push(`${x.t} projected to score ${Math.round(x.tp)} points vs ${Math.round(y.tp)} for ${y.t}`);
+  if (y.status && !y.out) r.push(`${y.n.split(' ').slice(-1)[0]} is ${y.status.toLowerCase()}`);
+  return r;
+}
+function fanStartSit(list) {
+  const a = findP(list, FAN.a), b = findP(list, FAN.b);
+  let res = '';
+  if (a && b && a.id !== b.id) {
+    const pa = a.bye || a.out ? 0 : a.proj, pb = b.bye || b.out ? 0 : b.proj;
+    const sd = Math.sqrt((a.sd || 1) ** 2 + (b.sd || 1) ** 2);
+    const pA = (a.bye || a.out) ? 0 : (b.bye || b.out) ? 1 : E.phi((pa - pb) / sd);
+    const [w, l, pw] = pA >= 0.5 ? [a, b, pA] : [b, a, 1 - pA];
+    const why = fanReasons(w, l);
+    const conf = pw >= 0.7 ? 'Easy call' : pw >= 0.58 ? 'Lean' : 'Coin flip';
+    res = `<div class="rec ${pw >= 0.58 ? 'good' : ''}" style="margin-top:14px"><span class="reclab">The AI says start</span>
+      <div class="recbet">${esc(w.n)}</div>
+      <div class="recwhy"><b>${conf}</b> · ${Math.round(pw * 100)}% chance to outscore ${esc(l.n)}</div>
+      ${why.length ? `<div class="recwhy">Why: ${why.map(esc).join('; ')}.</div>` : ''}</div>
+      <div class="sscmp">${[a, b].map((x) => { const gr = gradeOf(x.mf); return `<div class="ssbox"><div class="pname">${esc(x.n)} ${fanTag(x)}</div><div class="small muted">${x.p} · ${x.t} ${oppText(x)}</div>
+        <div class="fbig">${x.bye || x.out ? '0.0' : fp(x.proj)}</div><div class="small muted">projected · range ${x.bye || x.out ? '–' : fp(Math.max(0, x.proj - x.sd)) + '–' + fp(x.proj + x.sd)}</div>
+        <div class="small" style="margin-top:6px">Season avg <b>${fp(x.avg)}</b> · Matchup <span class="pill ${gr[3]}">${gr[1]}</span>${x.tp ? ` · ${x.t} projected ${Math.round(x.tp)} pts` : ''}</div></div>`; }).join('')}</div>`;
+  } else if (FAN.a || FAN.b) res = '<div class="empty" style="margin-top:14px">Pick two different players from the list as you type.</div>';
+  return `<datalist id="fanPlayers">${playerOpts(list, true)}</datalist>
+  <div class="toolbar">
+    <div class="f grow"><label class="label" for="fanA">Player 1</label><input type="text" id="fanA" list="fanPlayers" placeholder="Start typing a name" value="${esc(FAN.a)}" autocomplete="off"></div>
+    <div class="f grow"><label class="label" for="fanB">Player 2</label><input type="text" id="fanB" list="fanPlayers" placeholder="Start typing a name" value="${esc(FAN.b)}" autocomplete="off"></div>
+  </div>${res}`;
+}
+function fanTeam(list) {
+  const mine = FAN.team.map((id) => list.find((x) => x.id === id)).filter(Boolean);
+  const avail = (x) => !x.bye && !x.out;
+  const pool = mine.filter(avail).sort((a, b) => b.proj - a.proj), used = new Set(), lineup = [];
+  const take = (slot, ok) => { const x = pool.find((p) => !used.has(p.id) && ok(p)); if (x) used.add(x.id); lineup.push([slot, x]); };
+  take('QB', (p) => p.p === 'QB'); take('RB', (p) => p.p === 'RB'); take('RB', (p) => p.p === 'RB'); take('WR', (p) => p.p === 'WR'); take('WR', (p) => p.p === 'WR'); take('TE', (p) => p.p === 'TE'); take('FLEX', (p) => ['RB', 'WR', 'TE'].includes(p.p));
+  const bench = mine.filter((x) => !used.has(x.id));
+  const total = lineup.reduce((t, [, x]) => t + (x ? x.proj : 0), 0);
+  const row = (slot, x) => x ? `<tr><td><span class="pill flat">${slot}</span></td><td><div class="pname">${esc(x.n)} ${fanTag(x)}</div><div class="small muted">${x.p} · ${x.t} ${oppText(x)}</div></td><td class="num"><b class="fproj">${x.bye || x.out ? '0.0' : fp(x.proj)}</b></td><td><button class="linkbtn" data-fdel="${x.id}" type="button" aria-label="Remove ${esc(x.n)}">Remove</button></td></tr>` : `<tr><td><span class="pill flat">${slot}</span></td><td class="muted small" colspan="3">Add a ${slot === 'FLEX' ? 'RB, WR or TE' : slot}</td></tr>`;
+  return `<datalist id="fanPlayers">${playerOpts(list)}</datalist>
+  <div class="toolbar"><div class="f grow"><label class="label" for="fanAdd">Add a player to your team</label><input type="text" id="fanAdd" list="fanPlayers" placeholder="Start typing a name, then pick from the list" autocomplete="off"></div></div>
+  ${mine.length ? `<div class="tiles" style="margin-bottom:12px"><div class="tile"><span class="label">Best lineup projects</span><b>${fp(total)}</b><span class="sub">points this week (${SCN[FAN.scoring]})</span></div></div>
+  <h3 class="sechead">Start these</h3><div class="tblwrap"><table class="fantbl"><tbody>${lineup.map(([s, x]) => row(s, x)).join('')}</tbody></table></div>
+  ${bench.length ? `<h3 class="sechead">Bench</h3><div class="tblwrap"><table class="fantbl"><tbody>${bench.sort((a, b) => (avail(b) ? b.proj : -1) - (avail(a) ? a.proj : -1)).map((x) => row('BN', x)).join('')}</tbody></table></div>` : ''}
+  <p class="small muted">The AI picks your highest-projected lineup (QB, 2 RB, 2 WR, TE, FLEX). Players on bye or ruled out go to the bench. Your team is saved on this device${window.Sync ? ' and syncs if you turn on Sync' : ''}.</p>`
+  : '<div class="empty">Add your players above and the AI will set your best lineup for the week.</div>'}`;
+}
+function fanSleepers(list) {
+  const lim = { QB: 24, RB: 40, WR: 50, TE: 20 };
+  const cands = [];
+  ['QB', 'RB', 'WR', 'TE'].forEach((pos) => {
+    const xs = list.filter((x) => x.p === pos && !x.bye && !x.out && x.played == null && x.gp >= 2);
+    const byAvg = [...xs].sort((a, b) => b.avg - a.avg); byAvg.forEach((x, i) => { x.avgRank = i + 1; });
+    xs.forEach((x) => { if (x.rank && (x.rank <= lim[pos] || x.avgRank <= lim[pos])) cands.push(x); });
+  });
+  const lift = (x) => x.proj - x.avg;
+  const sleepers = cands.filter((x) => lift(x) > 1 && x.rank <= { QB: 18, RB: 36, WR: 45, TE: 15 }[x.p]).sort((a, b) => lift(b) - lift(a)).slice(0, 8);
+  const busts = cands.filter((x) => lift(x) < -1 && x.avgRank <= { QB: 15, RB: 25, WR: 30, TE: 12 }[x.p]).sort((a, b) => lift(a) - lift(b)).slice(0, 8);
+  const why = (x) => { const gr = gradeOf(x.mf), r = [gr[2].toLowerCase()]; if (x.env > 1.04) r.push(`${x.t} projected to score more than usual`); if (x.env < 0.96) r.push(`${x.t} projected to score less than usual`); return r.join(' · '); };
+  const card = (x, up) => `<div class="fancard ${up ? 'up' : 'down'}"><div class="pname">${esc(x.n)} ${fanTag(x)}</div><div class="small muted">${x.p} · ${x.t} ${oppText(x)}</div>
+    <div class="fcrow"><span><b class="fproj">${fp(x.proj)}</b> <span class="small muted">projected</span></span><span class="small">vs ${fp(x.avg)} avg <b style="color:${up ? 'var(--good)' : 'var(--bad)'}">${up ? '+' : '−'}${fp(Math.abs(lift(x)))}</b></span></div>
+    <div class="small muted">${esc(why(x))}</div></div>`;
+  return `<h3 class="sechead">Sleepers: the AI expects more than usual</h3>
+  <div class="fangrid">${sleepers.map((x) => card(x, true)).join('') || '<div class="empty">No standouts this week.</div>'}</div>
+  <h3 class="sechead" style="margin-top:18px">Busts: the AI expects less than usual</h3>
+  <div class="fangrid">${busts.map((x) => card(x, false)).join('') || '<div class="empty">No standouts this week.</div>'}</div>
+  <p class="small muted">Compared with each player's own season average, based on this week's matchup and how much the model expects their team to score. Players whose game already started aren't listed.</p>`;
+}
+$('#view').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.fsub) { FAN.sub = b.dataset.fsub; saveFan(); renderView(); }
+  else if (b.dataset.fpos) { FAN.pos = b.dataset.fpos; saveFan(); renderView(); }
+  else if (b.dataset.fdel) { FAN.team = FAN.team.filter((id) => id !== b.dataset.fdel); saveFan(); renderView(); }
+});
+$('#view').addEventListener('change', (e) => {
+  const t = e.target;
+  if (t.id === 'fanSc') { FAN.scoring = t.value; saveFan(); renderView(); }
+  else if (t.id === 'fanA' || t.id === 'fanB') { FAN[t.id === 'fanA' ? 'a' : 'b'] = t.value; saveFan(); renderView(); }
+  else if (t.id === 'fanAdd') { const x = findP(fanList(), t.value); if (x && !FAN.team.includes(x.id)) { FAN.team.push(x.id); saveFan(); toast('Added ' + x.n); } renderView(); }
+});
+let fanQt = 0;
+$('#view').addEventListener('input', (e) => {
+  if (e.target.id !== 'fanQ') return;
+  clearTimeout(fanQt); fanQt = setTimeout(() => { FAN.q = e.target.value; saveFan(); renderView(); }, 200);
+});
 
 // ---------- games view ----------
 function gamesView() {
@@ -1206,7 +1373,7 @@ function resultsView() {
   return Results.html(SPORT, RES, { daily: DAILY, periodLabel: (w) => periodLabel(w) });
 }
 function renderView() {
-  const v = { games: gamesView, props: propsView, rankings: rankingsView, results: resultsView, accuracy: accuracyView, log: logView }[S.tab] || gamesView;
+  const v = { games: gamesView, fantasy: fantasyView, props: propsView, rankings: rankingsView, results: resultsView, accuracy: accuracyView, log: logView }[S.tab] || gamesView;
   const focus = document.activeElement && document.activeElement.id; const pos = focus && document.activeElement.selectionStart;
   $('#view').innerHTML = v();
   if (focus && $('#view').querySelector('#' + CSS.escape(focus))) { const el = document.getElementById(focus); el.focus(); try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) {} }

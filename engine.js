@@ -558,11 +558,91 @@
     r.ll /= r.n || 1;
     return r;
   }
+
+  // ---------- Fantasy football ----------
+  // Projects fantasy points for every QB/RB/WR/TE in a given week, using only games before that week.
+  const FSCORING = { ppr: 1, half: 0.5, std: 0 };
+  function fpts(r, sc) {
+    const ppr = FSCORING[sc] ?? 1;
+    return (r.py || 0) / 25 + 4 * (r.ptd || 0) - 2 * (r.int_ || 0) + (r.ry || 0) / 10 + 6 * (r.rtd || 0) + (r.rcy || 0) / 10 + 6 * (r.rctd || 0) + ppr * (r.rec || 0);
+  }
+  const FPOS = ['QB', 'RB', 'WR', 'TE'];
+  // opts: { scoring, teamPts: {team: projected points this week}, opp: {team: opponent}, home: {team: bool}, kick: {team: 'YYYY-MM-DD HH:MM'} }
+  function fantasy(data, week, opts = {}) {
+    const sc = opts.scoring || 'ppr';
+    const rows = (data.players || []).filter((r) => FPOS.includes(r.p));
+    const hist = rows.filter((r) => r.w < week);
+    if (!hist.length) return [];
+    const sum = (a, f) => a.reduce((t, x) => t + f(x), 0);
+    // league touchdown rates per yard (for steadying noisy TD counts)
+    const rate = (f, g) => { const y = sum(hist, g); return y ? sum(hist, f) / y : 0; };
+    const passTdPerYd = rate((r) => r.ptd, (r) => r.py);
+    const rushTdPerYd = { QB: rate((r) => r.p === 'QB' ? r.rtd : 0, (r) => r.p === 'QB' ? r.ry : 0), RB: rate((r) => r.p === 'RB' ? r.rtd : 0, (r) => r.p === 'RB' ? r.ry : 0), WR: 0.004, TE: 0.004 };
+    const recTdPerYd = rate((r) => r.rctd, (r) => r.rcy);
+    // team games played (weeks) and points scored
+    const teamWeeks = {}, teamPts = {};
+    (data.games || []).forEach((g) => {
+      if (g.hs == null || g.w >= week) return;
+      [[g.h, g.hs], [g.a, g.as_ ?? g.as]].forEach(([t, p]) => { (teamWeeks[t] || (teamWeeks[t] = new Set())).add(g.w); (teamPts[t] || (teamPts[t] = [])).push(p); });
+    });
+    // fantasy points allowed by each defense to each position, vs league average
+    const allowed = {}, lgAllowed = {};
+    hist.forEach((r) => { const k = r.o + '|' + r.p; allowed[k] = (allowed[k] || 0) + fpts(r, sc); });
+    const perDef = {};
+    Object.entries(allowed).forEach(([k, v]) => { const [t, pos] = k.split('|'); const n = teamWeeks[t] ? teamWeeks[t].size : 1; perDef[k] = v / n; (lgAllowed[pos] || (lgAllowed[pos] = [])).push(v / n); });
+    const lgPos = {}; Object.entries(lgAllowed).forEach(([pos, a]) => { lgPos[pos] = mean(a); });
+    const matchup = (opp, pos) => { const v = perDef[opp + '|' + pos], l = lgPos[pos]; if (v == null || !l) return 1; const n = teamWeeks[opp] ? teamWeeks[opp].size : 1; const shrink = n / (n + 3); return 1 + (v / l - 1) * shrink; };
+    // injuries
+    const inj = {};
+    Object.values(data.injuries || {}).forEach((list) => (list || []).forEach((i) => { inj[i.n] = i.st; }));
+    const byPlayer = {};
+    hist.forEach((r) => { (byPlayer[r.id] || (byPlayer[r.id] = [])).push(r); });
+    const thisWeek = {}; rows.filter((r) => r.w === week).forEach((r) => { thisWeek[r.id] = r; });
+    const out = [];
+    Object.values(byPlayer).forEach((gs) => {
+      gs.sort((a, b) => a.w - b.w);
+      const last = gs[gs.length - 1], team = (thisWeek[last.id] || last).t;
+      // still active for this team: played in one of the team's last 2 games
+      const tw = [...(teamWeeks[team] || [])].sort((a, b) => b - a).slice(0, 2);
+      if (last.t !== team || !tw.some((w) => gs.some((g) => g.w === w && g.t === team))) return;
+      const recent = gs.filter((g) => g.t === team);
+      const n = recent.length;
+      const m = (f) => mean(recent.map(f)), m3 = (f) => mean(recent.slice(-3).map(f));
+      const blend = (f) => 0.8 * m(f) + 0.2 * m3(f);
+      const st = { pa: blend((g) => g.pa), py: blend((g) => g.py), int_: blend((g) => g.int_), ru: blend((g) => g.ru), ry: blend((g) => g.ry), tg: blend((g) => g.tg), rec: blend((g) => g.rec), rcy: blend((g) => g.rcy) };
+      const wTd = n / (n + 4);
+      st.ptd = wTd * m((g) => g.ptd) + (1 - wTd) * st.py * passTdPerYd;
+      st.rtd = wTd * m((g) => g.rtd) + (1 - wTd) * Math.max(0, st.ry) * (rushTdPerYd[last.p] || 0.005);
+      st.rctd = wTd * m((g) => g.rctd) + (1 - wTd) * st.rcy * recTdPerYd;
+      const pos = last.p, opp = opts.opp ? opts.opp[team] : null;
+      const base = { id: last.id, n: last.n, p: pos, t: team, o: opp, gp: n, avg: m((g) => fpts(g, sc)) };
+      // weekly spread of this player's fantasy points, steadied toward a typical spread
+      const pts = recent.map((g) => fpts(g, sc)), mu = mean(pts);
+      const sdP = Math.sqrt(mean(pts.map((x) => (x - mu) ** 2)));
+      if (!opp) { out.push({ ...base, bye: true, proj: 0, sd: 0, st }); return; }
+      const mf = matchup(opp, pos);
+      const avgPts = teamPts[team] ? mean(teamPts[team]) : null, tp = opts.teamPts ? opts.teamPts[team] : null;
+      const env = avgPts && tp ? Math.min(1.25, Math.max(0.8, 1 + (tp / avgPts - 1) * 0.6)) : 1;
+      const yds = (1 + (mf - 1) * 0.4) * Math.sqrt(env), tds = (1 + (mf - 1) * 0.4) * env;
+      const P = { ...st, py: st.py * yds, ry: st.ry * yds, rcy: st.rcy * yds, rec: st.rec * Math.sqrt(yds), ptd: st.ptd * tds, rtd: st.rtd * tds, rctd: st.rctd * tds };
+      let proj = fpts(P, sc);
+      const sd = Math.sqrt((n * sdP ** 2 + 4 * (0.45 * proj + 2) ** 2) / (n + 4));
+      const status = inj[last.n] || null;
+      const out_ = status && /^(Out|Doubtful|Injured Reserve|IR|Suspended|PUP)/i.test(status);
+      if (out_) proj = 0;
+      const played = thisWeek[last.id] ? fpts(thisWeek[last.id], sc) : null;
+      out.push({ ...base, proj, sd, mf, env, status, out: !!out_, st: P, played, home: opts.home ? opts.home[team] : null, kick: opts.kick ? opts.kick[team] : null });
+    });
+    // position ranks
+    FPOS.forEach((pos) => { out.filter((x) => x.p === pos && !x.bye && !x.out).sort((a, b) => b.proj - a.proj).forEach((x, i) => { x.rank = i + 1; }); });
+    return out;
+  }
+
   const ufcTrainedWeights = (data) => (data.meta.trained && data.meta.trained.weights) || UFC_DEFAULT_WEIGHTS;
   api.ufc = { FACTORS: UFC_FACTORS, PRESETS: UFC_PRESETS, DEFAULT_COEF: UFC_DEFAULT_COEF, DEFAULT_WEIGHTS: UFC_DEFAULT_WEIGHTS, trainedWeights: ufcTrainedWeights, walk: ufcWalk, backtest: ufcBacktest, features: ufcFeatures, logit: ufcLogit, sigmoid };
 
   Object.assign(api, { configure, DEFAULT_SETTINGS, teamProfiles, ratings, predict, backtest, propOf, walk, starterRuns, priors: () => PRIORS,
-    defenseAllowed, projectProp, overProb, impliedProb, evPerUnit, profitPerUnit, phi, statOf });
+    defenseAllowed, projectProp, overProb, impliedProb, evPerUnit, profitPerUnit, phi, statOf, fantasy, fpts });
   configure({ family: 'football' });
   root.Engine = api;
 })(typeof window !== 'undefined' ? window : globalThis);
