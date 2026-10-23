@@ -629,9 +629,10 @@
       const sd = Math.sqrt((n * sdP ** 2 + 4 * (0.45 * proj + 2) ** 2) / (n + 4));
       const status = inj[last.n] || null;
       const out_ = status && /^(Out|Doubtful|Injured Reserve|IR|Suspended|PUP)/i.test(status);
+      const full = proj;
       if (out_) proj = 0;
       const played = thisWeek[last.id] ? fpts(thisWeek[last.id], sc) : null;
-      out.push({ ...base, proj, sd, mf, env, status, out: !!out_, st: P, played, home: opts.home ? opts.home[team] : null, kick: opts.kick ? opts.kick[team] : null });
+      out.push({ ...base, proj, full, sd, mf, env, status, out: !!out_, st: P, played, home: opts.home ? opts.home[team] : null, kick: opts.kick ? opts.kick[team] : null });
     });
     // position ranks
     FPOS.forEach((pos) => { out.filter((x) => x.p === pos && !x.bye && !x.out).sort((a, b) => b.proj - a.proj).forEach((x, i) => { x.rank = i + 1; }); });
