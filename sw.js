@@ -1,6 +1,6 @@
 // Offline support. The stats file is always fetched fresh when online (falls back to the
 // last saved copy offline); the page and its code are also network-first, so updates show right away.
-const CACHE = '5ive-lab-v53';
+const CACHE = '5ive-lab-v54';
 const SHELL = ['./', 'index.html', 'engine.js', 'manifest.webmanifest', 'logo.png', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
