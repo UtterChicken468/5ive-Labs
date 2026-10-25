@@ -13,16 +13,18 @@
   "upcoming": 631
  },
  "cfb": {
-  "error": "RuntimeError: CFBD /games returned HTTP 502: {\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-502/\",\"title\":\"Error 502: Bad gateway\",\"status\":502,\"detail\":\"The origin web server ret",
-  "ok": false,
-  "trace": [
-   "  File \"/home/runner/work/5ive-Labs/5ive-Labs/scripts/update_data.py\", line 1093, in build_cfb",
-   "    games_raw = cfbd('/games', year=season, seasonType='regular', classification='fbs')",
-   "                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
-   "  File \"/home/runner/work/5ive-Labs/5ive-Labs/scripts/update_data.py\", line 1061, in cfbd",
-   "    raise RuntimeError(f'CFBD {path} returned HTTP {e.code}: {body}') from None",
-   "RuntimeError: CFBD /games returned HTTP 502: {\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-502/\",\"title\":\"Error 502: Bad gateway\",\"status\":502,\"detail\":\"The origin web server ret"
-  ]
+  "finals": 444,
+  "history": [
+   2023,
+   2024,
+   2025
+  ],
+  "next": "2026-10-27",
+  "ok": true,
+  "rows": 888,
+  "season": 2026,
+  "through": "2026-10-24",
+  "upcoming": 317
  },
  "golf": {
   "finals": 90,
@@ -62,7 +64,7 @@
   "upcoming": 161
  },
  "nfl": {
-  "finals": 94,
+  "finals": 102,
   "history": [
    2021,
    2022,
@@ -72,10 +74,10 @@
   ],
   "next": "2026-10-25",
   "ok": true,
-  "rows": 188,
+  "rows": 204,
   "season": 2026,
-  "through": "2026-10-22",
-  "upcoming": 178
+  "through": "2026-10-25",
+  "upcoming": 170
  },
  "nhl": {
   "finals": 179,
