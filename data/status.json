@@ -10,21 +10,19 @@
   "rows": 0,
   "season": 2027,
   "through": "",
-  "upcoming": 597
+  "upcoming": 631
  },
  "cfb": {
-  "finals": 412,
-  "history": [
-   2023,
-   2024,
-   2025
-  ],
-  "next": "2026-10-24",
-  "ok": true,
-  "rows": 824,
-  "season": 2026,
-  "through": "2026-10-24",
-  "upcoming": 349
+  "error": "RuntimeError: CFBD /games returned HTTP 502: {\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-502/\",\"title\":\"Error 502: Bad gateway\",\"status\":502,\"detail\":\"The origin web server ret",
+  "ok": false,
+  "trace": [
+   "  File \"/home/runner/work/5ive-Labs/5ive-Labs/scripts/update_data.py\", line 1093, in build_cfb",
+   "    games_raw = cfbd('/games', year=season, seasonType='regular', classification='fbs')",
+   "                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+   "  File \"/home/runner/work/5ive-Labs/5ive-Labs/scripts/update_data.py\", line 1061, in cfbd",
+   "    raise RuntimeError(f'CFBD {path} returned HTTP {e.code}: {body}') from None",
+   "RuntimeError: CFBD /games returned HTTP 502: {\"type\":\"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-502/\",\"title\":\"Error 502: Bad gateway\",\"status\":502,\"detail\":\"The origin web server ret"
+  ]
  },
  "golf": {
   "finals": 90,
@@ -37,31 +35,31 @@
   "upcoming": 6
  },
  "mlb": {
-  "finals": 2465,
+  "finals": 2466,
   "history": [
    2024,
    2025
   ],
-  "next": "2026-10-24",
+  "next": "2026-10-26",
   "ok": true,
-  "rows": 4930,
+  "rows": 4932,
   "season": 2026,
-  "through": "2026-10-23",
-  "upcoming": 6
+  "through": "2026-10-24",
+  "upcoming": 5
  },
  "nba": {
-  "finals": 28,
+  "finals": 36,
   "history": [
    2024,
    2025,
    2026
   ],
-  "next": "2026-10-24",
+  "next": "2026-10-25",
   "ok": true,
-  "rows": 56,
+  "rows": 72,
   "season": 2027,
-  "through": "2026-10-23",
-  "upcoming": 160
+  "through": "2026-10-24",
+  "upcoming": 161
  },
  "nfl": {
   "finals": 94,
@@ -80,18 +78,18 @@
   "upcoming": 178
  },
  "nhl": {
-  "finals": 168,
+  "finals": 179,
   "history": [
    2023,
    2024,
    2025
   ],
-  "next": "2026-10-24",
+  "next": "2026-10-25",
   "ok": true,
-  "rows": 336,
+  "rows": 358,
   "season": 2026,
   "through": "2026-10-24",
-  "upcoming": 1176
+  "upcoming": 1165
  },
  "ufc": {
   "finals": 4028,
