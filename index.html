@@ -238,6 +238,23 @@ details.inj > div { margin-top: 4px }
 .askform { display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--line) } .askform input { flex: 1; font-size: 16px }
 @media (max-width: 560px) { .askpanel { right: 0; bottom: 0; width: 100vw; height: 100dvh; border-radius: 0 } }
 html.locked .askbtn, html.locked .askpanel { display: none }
+.simhead { display: flex; flex-wrap: wrap; gap: 10px 16px; justify-content: space-between; align-items: end; margin-bottom: 10px }
+.simhead > div { flex: 1 1 280px; min-width: 0 }
+.simcounter { font-size: 14px; margin: 6px 0 10px; font-variant-numeric: tabular-nums }
+.simbars { display: grid; gap: 6px }
+.simbar { display: grid; grid-template-columns: 22px 56px minmax(0, 1fr) 62px; align-items: center; gap: 8px }
+.simrank { font-weight: 800; color: var(--muted); font-variant-numeric: tabular-nums }
+.simchip { display: inline-block; min-width: 44px; text-align: center; font-weight: 800; font-size: 13px; color: #fff; border: 2px solid; border-radius: 8px; padding: 3px 6px; text-shadow: 0 1px 2px rgba(0,0,0,.6) }
+.simtrack { height: 22px; background: var(--surface-2); border-radius: 6px; overflow: hidden }
+.simfill { height: 100%; border-right: 3px solid; border-radius: 6px; transition: width .25s ease-out }
+.simpct { text-align: right; font-variant-numeric: tabular-nums }
+.simgridwrap { display: grid; gap: 8px; justify-items: center; max-width: 520px; margin: 0 auto }
+.simscore { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center } .simscore span { padding: 6px 12px; border-radius: 10px; color: #fff; font-weight: 700; text-shadow: 0 1px 3px rgba(0,0,0,.7) }
+section#view { padding-bottom: 72px }
+.simgrid { width: 100%; max-width: 520px; aspect-ratio: 1; border-radius: 10px; background: var(--surface-2) }
+.simresult { text-align: center; display: grid; gap: 6px; min-height: 40px }
+.simbig { font-size: 26px; font-weight: 900; line-height: 1.1 }
+.simreal { margin-top: 4px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2) }
 .rec { border-radius: 12px; padding: 12px 14px; background: var(--surface-2); border: 2px solid var(--line); display: grid; gap: 4px; justify-items: start }
 .rec.good { border-color: var(--accent); background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, var(--surface-2)), var(--surface-2)) }
 .rec .reclab { font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--accent) }
@@ -519,7 +536,7 @@ const S = {
   propKey: (E.PROPS[0] || {}).key, propPos: 'all', propQ: '', recent: 40, matchup: 60,
   btEdge: 0, confirmClear: false, battleA: 'current', battleB: '',
 };
-if (location.hash && ['games', 'fantasy', 'props', 'rankings', 'accuracy', 'log'].includes(location.hash.slice(1))) S.tab = location.hash.slice(1);
+if (location.hash && ['games', 'fantasy', 'sim', 'props', 'rankings', 'accuracy', 'log'].includes(location.hash.slice(1))) S.tab = location.hash.slice(1);
 if (S.tab === 'props' && !META.props) S.tab = 'games';
 
 const fmt = (v, d = 1) => (v == null || isNaN(v)) ? '–' : v.toFixed(d);
@@ -598,7 +615,7 @@ document.querySelector('aside').addEventListener('click', (e) => {
 
 // ---------- tabs ----------
 const HAS_FANTASY = META.sport === 'nfl' && (DATA.players || []).length > 0;
-const TABS = [['games', 'Game picks'], ...(HAS_FANTASY ? [['fantasy', 'Fantasy']] : []), ['props', 'Player props'], ['rankings', 'Power ratings'], ['results', 'Results'], ['accuracy', 'Accuracy'], ['log', 'Pick log']].filter(([k]) => k !== 'props' || (META.props && (DATA.players || []).length));
+const TABS = [['games', 'Game picks'], ...(HAS_FANTASY ? [['fantasy', 'Fantasy']] : []), ...(META.sport === 'nfl' ? [['sim', 'Sim Lab']] : []), ['props', 'Player props'], ['rankings', 'Power ratings'], ['results', 'Results'], ['accuracy', 'Accuracy'], ['log', 'Pick log']].filter(([k]) => k !== 'props' || (META.props && (DATA.players || []).length));
 function renderTabs() {
   $('#tabs').innerHTML = TABS.map(([k, n]) => `<button role="tab" data-tab="${k}" aria-selected="${S.tab === k}">${n}${k === 'log' && S.picks.length ? ' · ' + S.picks.length : ''}</button>`).join('');
 }
@@ -992,6 +1009,217 @@ const Ask = (() => {
   panel.addEventListener('click', (e) => { const b = e.target.closest('[data-ask]'); if (b) ask(b.dataset.ask); });
   return { answer };
 })();
+
+// ---------- Sim Lab: run your own simulations ----------
+const HAS_SIM = META.sport === 'nfl';
+const NFL_COL = { ARI: ['#97233f', '#ffb612'], ATL: ['#a71930', '#101820'], BAL: ['#241773', '#9e7c0c'], BUF: ['#00338d', '#c60c30'], CAR: ['#0085ca', '#101820'], CHI: ['#0b162a', '#c83803'], CIN: ['#fb4f14', '#101820'], CLE: ['#311d00', '#ff3c00'], DAL: ['#003594', '#869397'], DEN: ['#fb4f14', '#002244'], DET: ['#0076b6', '#b0b7bc'], GB: ['#203731', '#ffb81c'], HOU: ['#03202f', '#a71930'], IND: ['#002c5f', '#a2aaad'], JAX: ['#006778', '#d7a22a'], KC: ['#e31837', '#ffb81c'], LV: ['#1e1e1e', '#a5acaf'], LAC: ['#0080c6', '#ffc20e'], LA: ['#003594', '#ffd100'], MIA: ['#008e97', '#fc4c02'], MIN: ['#4f2683', '#ffc62f'], NE: ['#002244', '#c60c30'], NO: ['#101820', '#d3bc8d'], NYG: ['#0b2265', '#a71930'], NYJ: ['#125740', '#ffffff'], PHI: ['#004c54', '#a5acaf'], PIT: ['#101820', '#ffb612'], SF: ['#aa0000', '#b3995d'], SEA: ['#002244', '#69be28'], TB: ['#d50a0a', '#34302b'], TEN: ['#0c2340', '#4b92db'], WAS: ['#5a1414', '#ffb612'] };
+const NFL_NICK = { ARI: 'Cardinals', ATL: 'Falcons', BAL: 'Ravens', BUF: 'Bills', CAR: 'Panthers', CHI: 'Bears', CIN: 'Bengals', CLE: 'Browns', DAL: 'Cowboys', DEN: 'Broncos', DET: 'Lions', GB: 'Packers', HOU: 'Texans', IND: 'Colts', JAX: 'Jaguars', KC: 'Chiefs', LV: 'Raiders', LAC: 'Chargers', LA: 'Rams', MIA: 'Dolphins', MIN: 'Vikings', NE: 'Patriots', NO: 'Saints', NYG: 'Giants', NYJ: 'Jets', PHI: 'Eagles', PIT: 'Steelers', SF: '49ers', SEA: 'Seahawks', TB: 'Buccaneers', TEN: 'Titans', WAS: 'Commanders' };
+const NFL_DIV = { AFC: { East: ['BUF', 'MIA', 'NE', 'NYJ'], North: ['BAL', 'CIN', 'CLE', 'PIT'], South: ['HOU', 'IND', 'JAX', 'TEN'], West: ['DEN', 'KC', 'LV', 'LAC'] }, NFC: { East: ['DAL', 'NYG', 'PHI', 'WAS'], North: ['CHI', 'DET', 'GB', 'MIN'], South: ['ATL', 'CAR', 'NO', 'TB'], West: ['ARI', 'LA', 'SF', 'SEA'] } };
+const SIM = { sub: store.get('simSub', 'season'), season: null, running: false, classic: 'c283', last: null, sit: { us: 'My team', them: 'Opponent', a: 14, b: 21, min: 8, ball: 'A' }, h2h: { a: '', b: '' } };
+const sim$ = (id) => document.getElementById(id);
+const rngMaker = (seed) => { let s = seed >>> 0 || 1; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; };
+// --- a simple drive-by-drive game simulator (typical NFL drive results), used by the classics and game situations
+function driveGame(r, st) {
+  let a = st.a, b = st.b, t = st.t, pos = st.pos === 'R' ? (r() < 0.5 ? 'A' : 'B') : st.pos;
+  while (t > 0) {
+    const lead = pos === 'A' ? a - b : b - a;
+    let dur = Math.max(0.6, Math.min(5, 2.7 + (r() + r() + r() - 1.5) * 0.9));
+    if (lead > 0 && t < 10) dur += 0.6;
+    if (lead < 0 && t < 8) dur = Math.max(0.5, dur - 0.9);
+    dur = Math.min(dur, t); t -= dur;
+    let ptd = (pos === 'A' ? st.ptdA : st.ptdB) || 0.24, pfg = 0.13;
+    if (lead > 20) ptd -= 0.03;
+    if (lead < -3 && t < 6) { ptd += 0.04; pfg = 0.04; }
+    const x = r(); let pts = 0;
+    if (x < ptd) { pts = 6; const after = lead + 6; pts += (after === -2 || after === 2 || (after === -1 && t < 3)) ? (r() < 0.48 ? 2 : 0) : (r() < 0.94 ? 1 : 0); }
+    else if (x < ptd + pfg) pts = 3;
+    if (pos === 'A') a += pts; else b += pts;
+    pos = pos === 'A' ? 'B' : 'A';
+  }
+  if (a === b) return r() < 0.5 ? 'A' : 'B';
+  return a > b ? 'A' : 'B';
+}
+// --- classic what-ifs. B = what actually happened.
+const CLASSICS = [
+  { id: 'c283', name: '28–3', date: 'Feb 5, 2017', ta: 'Falcons', tb: 'Patriots', ca: '#a71930', cb: '#3a7bd5', sa: 28, sb: 3, sit: 'Super Bowl LI · 3rd quarter, 8:31 left', q: 'How often do the Patriots come back?', lb: 'Patriots comeback', real: 'They did it on the first try: Patriots 34, Falcons 28 (OT).', fn: (r) => driveGame(r, { a: 28, b: 3, t: 23.5, pos: 'B', ptdA: 0.24, ptdB: 0.26 }) },
+  { id: 'cxlix', name: 'Seattle runs it', date: 'Feb 1, 2015', ta: 'Seahawks', tb: 'Patriots', ca: '#3f8f3a', cb: '#3a7bd5', sa: 24, sb: 28, sit: 'Super Bowl XLIX · 2nd & goal at the 1, 0:26', q: 'What if Seattle just ran it?', lb: 'Patriots hold', real: 'They threw it. Intercepted. Patriots win 28–24.', fn: (r) => { const p = 0.5 + r() * 0.15, tries = r() < 0.85 ? 3 : 2; for (let i = 0; i < tries; i++) { if (r() < 0.01) return 'B'; if (r() < p) return 'A'; } return 'B'; } },
+  { id: 'ckick6', name: 'Kick Six', date: 'Nov 30, 2013', ta: 'Alabama', tb: 'Auburn', ca: '#9e1b32', cb: '#f28c28', sa: 28, sb: 28, sit: 'Iron Bowl · 0:01 left · 57-yard field goal try', q: 'How often does it get returned for a TD?', lb: 'Returned for a TD', real: 'It happened. The Kick Six: Auburn 34, Alabama 28.', fn: (r) => { const x = r(); if (x < 0.30) return 'A'; if (x < 0.34) return r() < 0.25 ? 'B' : 'A'; return (r() < 0.35 && r() < 0.035) ? 'B' : 'A'; } },
+  { id: 'cxlii', name: '19–0?', date: 'Feb 3, 2008', ta: 'Patriots', tb: 'Giants', ca: '#2a3d66', cb: '#e0434c', sa: 0, sb: 0, sit: 'Super Bowl XLII · kickoff · Patriots 18–0', q: 'Does New England finish 19–0?', lb: 'Giants upset', real: 'The Giants won 17–14. 18–1.', fn: (r) => r() < 0.85 ? 'A' : 'B' },
+  { id: 'capp', name: 'App State', date: 'Sep 1, 2007', ta: 'Michigan', tb: 'App State', ca: '#00274c', cb: '#ffcc00', sa: 0, sb: 0, sit: 'The Big House · #5 Michigan vs FCS App State', q: 'How often does App State pull it off?', lb: 'App State wins', real: 'A blocked field goal at the end: App State 34, Michigan 32.', fn: (r) => r() < 0.96 ? 'A' : 'B' },
+  { id: 'cvikes', name: 'Down 33–0', date: 'Dec 17, 2022', ta: 'Colts', tb: 'Vikings', ca: '#1f4f8f', cb: '#ffc62f', sa: 33, sb: 0, sit: 'Halftime · Colts 33, Vikings 0', q: 'How often do the Vikings come back?', lb: 'Vikings comeback', real: 'They did it: Vikings 39, Colts 36 (OT), the biggest comeback ever.', fn: (r) => driveGame(r, { a: 33, b: 0, t: 30, pos: 'R' }) },
+  { id: 'cden', name: '33 in a quarter', date: 'Oct 19, 2025', ta: 'Giants', tb: 'Broncos', ca: '#1d3f8f', cb: '#fb7a2a', sa: 19, sb: 0, sit: 'Start of the 4th · Giants 19, Broncos 0', q: 'How often do the Broncos come back?', lb: 'Broncos comeback', real: 'Denver scored 33 in the 4th quarter: Broncos 33, Giants 32.', fn: (r) => driveGame(r, { a: 19, b: 0, t: 15, pos: 'R' }) },
+  { id: 'ctuck', name: 'Tuck Rule', date: 'Jan 19, 2002', ta: 'Raiders', tb: 'Patriots', ca: '#6b6b74', cb: '#e0434c', sa: 13, sb: 10, sit: 'AFC Divisional · snow · under 2:00 left', q: 'How often do the Patriots come back?', lb: 'Patriots comeback', real: 'It took the Tuck Rule: Patriots 16, Raiders 13 (OT).', fn: (r) => { const x = r(); if (x < 0.10) return 'B'; if (x < 0.50) return r() < 0.70 ? (r() < 0.5 ? 'B' : 'A') : 'A'; return 'A'; } },
+  { id: 'cnola', name: 'The no-call', date: 'Jan 20, 2019', ta: 'Saints', tb: 'Rams', ca: '#3a342a', cb: '#ffd100', sa: 20, sb: 20, sit: 'NFC title · 3rd & 10 at the 13 · 1:48 · flag thrown', q: 'What if they called pass interference?', lb: 'Rams still win', real: 'No flag. Rams 26, Saints 23 (OT).', fn: (r) => { const x = r(); if (x < 0.02) return r() < 0.5 ? 'B' : 'A'; if (x < 0.25) return r() < 0.05 ? 'B' : 'A'; if (r() < 0.97) return 'A'; return r() < 0.5 ? 'B' : 'A'; } },
+];
+// --- animated 10,000-square grid
+function runGrid(fn, opts, done) {
+  const cv = sim$('simGrid'); if (!cv) return;
+  const W = cv.clientWidth || 400, dpr = window.devicePixelRatio || 1; cv.width = W * dpr; cv.height = W * dpr; const g = cv.getContext('2d'); g.scale(dpr, dpr);
+  const cell = W / 100; g.fillStyle = getComputedStyle(document.body).getPropertyValue('--surface-2') || '#222'; g.fillRect(0, 0, W, W);
+  const r = rngMaker((Date.now() ^ (Math.random() * 1e9)) >>> 0), N = 10000; let i = 0, nb = 0; const t0 = performance.now(), DUR = 3600;
+  SIM.running = true;
+  const step = () => {
+    const k = Math.min(1, (performance.now() - t0) / DUR), target = Math.round(N * Math.pow(k, 2));
+    for (; i < Math.max(target, i + 1) && i < N; i++) {
+      const res = fn(r); const x = (i % 100) * cell, y = Math.floor(i / 100) * cell;
+      if (res === 'B') { nb++; g.fillStyle = opts.cb; g.fillRect(x - 0.5, y - 0.5, cell + 1, cell + 1); } else { g.fillStyle = opts.ca; g.fillRect(x + 0.4, y + 0.4, cell - 0.8, cell - 0.8); }
+    }
+    const c = sim$('simCount'); if (c) c.innerHTML = `<b>${i.toLocaleString()}</b> replays · <span style="color:${opts.cb}">${opts.lb}: <b>${nb.toLocaleString()}</b></span>`;
+    if (i < N) requestAnimationFrame(step); else { SIM.running = false; g.fillStyle = 'rgba(255,255,255,.55)'; g.font = '600 11px system-ui'; g.fillText('5ive Lab sim', 6, W - 6); done(nb, N); }
+  };
+  requestAnimationFrame(step);
+}
+const pctS = (x) => x >= 0.995 && x < 1 ? '>99%' : x > 0 && x < 0.005 ? '<1%' : (Math.round(x * 1000) / 10) + '%';
+// --- season simulator (uses YOUR model settings)
+function seasonSim(N, onProgress, done) {
+  const teams = Object.values(NFL_DIV).flatMap((c) => Object.values(c).flat());
+  const done_ = DATA.games.filter((g) => g.hs != null), last = done_.length ? Math.max(...done_.map((g) => g.w)) : 0;
+  const P = E.teamProfiles(DATA, last + 1), R = E.ratings(P, S.weights, S.settings);
+  const rec = {}; teams.forEach((t) => { rec[t] = 0; });
+  const gp = {}; teams.forEach((t) => { gp[t] = 0; });
+  done_.forEach((g) => { const as = g.as_ ?? g.as; gp[g.h]++; gp[g.a]++; if (g.hs > as) rec[g.h]++; else if (as > g.hs) rec[g.a]++; else { rec[g.h] += 0.5; rec[g.a] += 0.5; } });
+  const rem = DATA.games.filter((g) => g.hs == null).map((g) => { const pr = E.predict(g, P, R, S.settings, {}, DATA); return [g.h, g.a, pr ? pr.pHome : 0.5]; });
+  const memo = {};
+  const ph = (h, a, neu) => { const k = h + a + (neu ? 'n' : ''); if (memo[k] == null) { const pr = E.predict({ id: 'sim', w: last + 1, d: todayISO, h, a, neu: !!neu }, P, R, S.settings, {}, DATA); memo[k] = pr ? pr.pHome : 0.5; } return memo[k]; };
+  const out = {}; teams.forEach((t) => { out[t] = { po: 0, div: 0, seed1: 0, conf: 0, sb: 0, wins: 0 }; });
+  const r = rngMaker((Date.now() ^ (Math.random() * 1e9)) >>> 0); let s = 0;
+  const batch = () => {
+    const end = Math.min(N, s + (s < 1000 ? 12 : s < 4000 ? 45 : 110));
+    for (; s < end; s++) {
+      const w = {}; teams.forEach((t) => { w[t] = rec[t]; });
+      for (const [h, a, p] of rem) { if (r() < p) w[h]++; else w[a]++; }
+      const tb = {}; teams.forEach((t) => { tb[t] = w[t] + r() * 0.01; out[t].wins += w[t]; });
+      const champ = {};
+      for (const conf of ['AFC', 'NFC']) {
+        const divs = Object.values(NFL_DIV[conf]);
+        const winners = divs.map((dv) => dv.slice().sort((x, y) => tb[y] - tb[x])[0]).sort((x, y) => tb[y] - tb[x]);
+        winners.forEach((t) => out[t].div++);
+        const wc = divs.flat().filter((t) => !winners.includes(t)).sort((x, y) => tb[y] - tb[x]).slice(0, 3);
+        const seeds = [...winners, ...wc]; seeds.forEach((t) => out[t].po++); out[seeds[0]].seed1++;
+        const game = (hi, lo) => r() < ph(hi, lo) ? hi : lo;
+        const alive = [seeds[0], game(seeds[1], seeds[6]), game(seeds[2], seeds[5]), game(seeds[3], seeds[4])].sort((x, y) => seeds.indexOf(x) - seeds.indexOf(y));
+        const d1 = game(alive[0], alive[3]), d2 = game(alive[1], alive[2]);
+        const [hi, lo] = seeds.indexOf(d1) < seeds.indexOf(d2) ? [d1, d2] : [d2, d1];
+        champ[conf] = game(hi, lo); out[champ[conf]].conf++;
+      }
+      const c = r() < ph(champ.AFC, champ.NFC, true) ? champ.AFC : champ.NFC; out[c].sb++;
+    }
+    onProgress(s, out);
+    if (s < N) requestAnimationFrame(batch); else done(out, rec, gp, N);
+  };
+  requestAnimationFrame(batch);
+}
+function simView() {
+  const subs = [['season', 'Season simulator'], ['classics', 'Classic what-ifs'], ['situation', 'Game situation'], ['h2h', 'Head-to-head']];
+  const head = `<div class="fchips" style="margin-bottom:12px">${subs.map(([k, n]) => `<button type="button" class="fchip" data-simsub="${k}" aria-pressed="${SIM.sub === k}">${n}</button>`).join('')}</div>`;
+  return head + ({ season: simSeasonView, classics: simClassicsView, situation: simSituationView, h2h: simH2HView }[SIM.sub] || simSeasonView)();
+}
+function teamChip(t) { const [c1, c2] = NFL_COL[t] || ['#333', '#999']; return `<span class="simchip" style="background:${c1};border-color:${c2}">${esc(t)}</span>`; }
+function seasonBody(s) {
+  let body = '';
+  if (s && s.out) {
+    const rows = Object.entries(s.out).map(([t, o]) => ({ t, ...o })).sort((a, b) => b.sb - a.sb || b.po - a.po);
+    const N = s.n || 1, top = rows.slice(0, 12), mx = Math.max(...top.map((x) => x.sb), 1);
+    body = `<div class="simbars">${top.map((x, i) => `<div class="simbar"><span class="simrank">${i + 1}</span>${teamChip(x.t)}<div class="simtrack"><div class="simfill" style="width:${(x.sb / mx * 100).toFixed(1)}%;background:${NFL_COL[x.t][0]};border-color:${NFL_COL[x.t][1]}"></div></div><b class="simpct">${pctS(x.sb / N)}</b></div>`).join('')}</div>
+      ${s.final ? `<div class="tblwrap" style="margin-top:14px"><table><thead><tr><th>Team</th><th class="num">Now</th><th class="num">Avg wins</th><th class="num">Playoffs</th><th class="num">Win div.</th><th class="num">#1 seed</th><th class="num">Super Bowl</th></tr></thead><tbody>
+      ${rows.map((x) => `<tr><td>${teamChip(x.t)} <span class="small">${NFL_NICK[x.t]}</span></td><td class="num small">${Math.round(s.rec[x.t] * 2) / 2}-${s.gp[x.t] - Math.round(s.rec[x.t] * 2) / 2}</td><td class="num">${(x.wins / N).toFixed(1)}</td><td class="num">${pctS(x.po / N)}</td><td class="num">${pctS(x.div / N)}</td><td class="num">${pctS(x.seed1 / N)}</td><td class="num"><b>${pctS(x.sb / N)}</b></td></tr>`).join('')}</tbody></table></div>` : ''}`;
+  }
+  return body || '<div class="empty">Tap <b>Run 10,000 seasons</b> to watch every team\'s Super Bowl chances race.</div>';
+}
+function simSeasonView() {
+  const s = SIM.season;
+  return `<div class="simhead"><div><h3 style="margin:0">Simulate the rest of the season</h3><p class="note" style="margin:4px 0 0">Plays every remaining game 10,000 times using <b>your</b> model settings (change the sliders and run it again), then the real playoff format: division winners, 3 wild cards per conference, a bye for the #1 seed, and a neutral-site Super Bowl.</p></div>
+    <button class="btn accent" type="button" id="simSeasonGo" ${SIM.running ? 'disabled' : ''}>${s ? 'Run it again' : 'Run 10,000 seasons'}</button></div>
+    <div class="simcounter" id="simSeasonCount">${s ? `<b>${(s.n || 0).toLocaleString()}</b> seasons simulated` : 'Ready when you are.'}</div>
+    <div id="simSeasonBody">${seasonBody(s)}</div>
+    <p class="small muted">Tiebreakers are simplified (ties broken at random). Injuries and trades after today aren't known to the model.</p>`;
+}
+function startSeason() {
+  if (SIM.running) return; SIM.running = true; SIM.season = { n: 0, out: null, final: false }; renderView();
+  seasonSim(10000, (n, out) => { SIM.season.n = n; SIM.season.out = out; if (S.tab === 'sim' && SIM.sub === 'season') { const b = sim$('simSeasonBody'), c = sim$('simSeasonCount'); if (b) b.innerHTML = seasonBody(SIM.season); if (c) c.innerHTML = `<b>${n.toLocaleString()}</b> seasons simulated`; } },
+    (out, rec, gp, N) => { SIM.running = false; SIM.season = { n: N, out, rec, gp, final: true }; if (S.tab === 'sim') renderView(); });
+}
+function gridBlock(c, extra) {
+  return `<div class="simgridwrap"><div class="simscore"><span style="background:${c.ca}">${esc(c.ta)} <b>${c.sa}</b></span><span style="background:${c.cb}">${esc(c.tb)} <b>${c.sb}</b></span></div>
+    <div class="small muted" style="text-align:center">${esc(c.sit)}</div>
+    <canvas id="simGrid" class="simgrid" aria-label="10,000 simulated results"></canvas>
+    <div class="simcounter" id="simCount">Tap Replay to run it 10,000 times.</div>
+    <div id="simResult" class="simresult">${extra || ''}</div></div>`;
+}
+function simClassicsView() {
+  const c = CLASSICS.find((x) => x.id === SIM.classic) || CLASSICS[0];
+  return `<div class="fchips" style="margin-bottom:12px">${CLASSICS.map((x) => `<button type="button" class="fchip" data-classic="${x.id}" aria-pressed="${x.id === c.id}">${esc(x.name)}</button>`).join('')}</div>
+    <div class="simhead"><div><h3 style="margin:0">${esc(c.q)}</h3><p class="note" style="margin:4px 0 0">${esc(c.date)}. Replay the moment 10,000 times and see how often what really happened happens again.</p></div>
+    <button class="btn accent" type="button" id="simClassicGo">Replay 10,000 times</button></div>
+    ${gridBlock(c)}
+    <p class="small muted">Uses a simple drive-by-drive football simulation (typical touchdown, field goal and punt rates), not the 5ive Lab team model, because these games are from past seasons. Every run is new, so your numbers will wiggle a little.</p>`;
+}
+function playClassic() {
+  const c = CLASSICS.find((x) => x.id === SIM.classic) || CLASSICS[0]; if (SIM.running) return;
+  sim$('simResult').innerHTML = '';
+  runGrid(c.fn, { ca: shade(c.ca), cb: c.cb, lb: c.lb }, (nb, N) => {
+    sim$('simResult').innerHTML = `<div class="simbig" style="color:${c.cb}">${nb.toLocaleString()} out of ${N.toLocaleString()}</div><div>${esc(c.lb)} · ${pctS(nb / N)}${nb ? ` · about 1 in ${Math.round(N / nb).toLocaleString()}` : ''}</div><div class="simreal"><b>In real life:</b> ${esc(c.real)}</div>`;
+  });
+}
+function shade(hex) { const n = parseInt(hex.slice(1), 16); const f = (v) => Math.round(v * 0.55 + 20); return `rgb(${f(n >> 16)},${f((n >> 8) & 255)},${f(n & 255)})`; }
+function simSituationView() {
+  const s = SIM.sit;
+  return `<div class="simhead"><div><h3 style="margin:0">Any game situation</h3><p class="note" style="margin:4px 0 0">Set the score, the time left and who has the ball, then play it out 10,000 times.</p></div></div>
+    <div class="toolbar" style="flex-wrap:wrap">
+      <div class="f"><label class="label" for="sitUs">Team 1</label><input type="text" id="sitUs" value="${esc(s.us)}" style="width:110px"></div>
+      <div class="f"><label class="label" for="sitA">Score</label><input type="number" id="sitA" value="${s.a}" min="0" max="99" style="width:70px"></div>
+      <div class="f"><label class="label" for="sitThem">Team 2</label><input type="text" id="sitThem" value="${esc(s.them)}" style="width:110px"></div>
+      <div class="f"><label class="label" for="sitB">Score</label><input type="number" id="sitB" value="${s.b}" min="0" max="99" style="width:70px"></div>
+      <div class="f"><label class="label" for="sitMin">Minutes left</label><input type="number" id="sitMin" value="${s.min}" min="0.5" max="60" step="0.5" style="width:80px"></div>
+      <div class="f"><label class="label" for="sitBall">Ball</label><select id="sitBall"><option value="A" ${s.ball === 'A' ? 'selected' : ''}>Team 1</option><option value="B" ${s.ball === 'B' ? 'selected' : ''}>Team 2</option></select></div>
+      <button class="btn accent" type="button" id="simSitGo" style="align-self:end">Play it 10,000 times</button>
+    </div>
+    ${gridBlock({ ta: s.us || 'Team 1', tb: s.them || 'Team 2', ca: '#5b6b8c', cb: '#2dd4bf', sa: s.a, sb: s.b, sit: `${s.min} min left · ${s.ball === 'A' ? (s.us || 'Team 1') : (s.them || 'Team 2')} ball` })}
+    <p class="small muted">Uses a simple drive-by-drive simulation with league-average teams, so it shows how big a lead really is, not who's better. Ties after regulation go to overtime as a coin flip.</p>`;
+}
+function playSituation() {
+  const s = SIM.sit; if (SIM.running) return;
+  const st = { a: +s.a || 0, b: +s.b || 0, t: Math.max(0.5, Math.min(60, +s.min || 1)), pos: s.ball };
+  sim$('simResult').innerHTML = '';
+  runGrid((r) => driveGame(r, st), { ca: '#3d4a63', cb: '#2dd4bf', lb: (s.them || 'Team 2') + ' wins' }, (nb, N) => {
+    const pa = 1 - nb / N;
+    sim$('simResult').innerHTML = `<div class="simbig">${esc(s.us || 'Team 1')} wins ${pctS(pa)}</div><div>${esc(s.them || 'Team 2')} wins ${pctS(nb / N)} (${nb.toLocaleString()} of ${N.toLocaleString()})</div>`;
+  });
+}
+function simH2HView() {
+  const teams = Object.keys(NFL_NICK).sort((a, b) => NFL_NICK[a].localeCompare(NFL_NICK[b]));
+  const h = SIM.h2h; if (!h.a) { h.a = 'BUF'; h.b = 'SF'; }
+  const opt = (v) => teams.map((t) => `<option value="${t}" ${t === v ? 'selected' : ''}>${NFL_NICK[t]}</option>`).join('');
+  return `<div class="simhead"><div><h3 style="margin:0">Head-to-head</h3><p class="note" style="margin:4px 0 0">Pick any two teams and play them 10,000 times on a neutral field, using your model's current ratings.</p></div></div>
+    <div class="toolbar"><div class="f"><label class="label" for="h2hA">Team 1</label><select id="h2hA">${opt(h.a)}</select></div><div class="f"><label class="label" for="h2hB">Team 2</label><select id="h2hB">${opt(h.b)}</select></div>
+    <button class="btn accent" type="button" id="simH2HGo" style="align-self:end">Play 10,000 games</button></div>
+    ${gridBlock({ ta: NFL_NICK[h.a], tb: NFL_NICK[h.b], ca: NFL_COL[h.a][0], cb: NFL_COL[h.b][0] === NFL_COL[h.a][0] ? NFL_COL[h.b][1] : NFL_COL[h.b][0], sa: '', sb: '', sit: 'Neutral field · 5ive Lab model' })}`;
+}
+function playH2H() {
+  const h = SIM.h2h; if (SIM.running) return; if (h.a === h.b) { sim$('simResult').innerHTML = 'Pick two different teams.'; return; }
+  const last = Math.max(0, ...DATA.games.filter((g) => g.hs != null).map((g) => g.w));
+  const P = E.teamProfiles(DATA, last + 1), R = E.ratings(P, S.weights, S.settings);
+  const pr = E.predict({ id: 'h2h', w: last + 1, d: todayISO, h: h.a, a: h.b, neu: true }, P, R, S.settings, {}, DATA);
+  if (!pr) { sim$('simResult').innerHTML = 'The model can\'t price that matchup yet.'; return; }
+  const cb = NFL_COL[h.b][0] === NFL_COL[h.a][0] ? NFL_COL[h.b][1] : NFL_COL[h.b][0];
+  sim$('simResult').innerHTML = '';
+  runGrid((r) => r() < pr.pHome ? 'A' : 'B', { ca: shade(NFL_COL[h.a][0]), cb, lb: NFL_NICK[h.b] + ' win' }, (nb, N) => {
+    const fav = pr.pHome >= 0.5 ? h.a : h.b;
+    sim$('simResult').innerHTML = `<div class="simbig">${NFL_NICK[h.a]} ${N - nb} – ${nb} ${NFL_NICK[h.b]}</div><div>The model makes it ${NFL_NICK[fav]} by ${Math.abs(pr.margin).toFixed(1)} on a neutral field. Typical score: ${NFL_NICK[h.a]} ${Math.round(pr.hs)}, ${NFL_NICK[h.b]} ${Math.round(pr.as)}.</div>`;
+  });
+}
+if (HAS_SIM) {
+  $('#view').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b || S.tab !== 'sim') return;
+    if (b.dataset.simsub) { if (SIM.running && SIM.sub === 'season') return; SIM.sub = b.dataset.simsub; store.set('simSub', SIM.sub); renderView(); }
+    else if (b.dataset.classic) { if (SIM.running) return; SIM.classic = b.dataset.classic; renderView(); }
+    else if (b.id === 'simSeasonGo') startSeason();
+    else if (b.id === 'simClassicGo') playClassic();
+    else if (b.id === 'simSitGo') { const s = SIM.sit; s.us = sim$('sitUs').value; s.them = sim$('sitThem').value; s.a = sim$('sitA').value; s.b = sim$('sitB').value; s.min = sim$('sitMin').value; s.ball = sim$('sitBall').value; renderView(); playSituation(); }
+    else if (b.id === 'simH2HGo') playH2H();
+  });
+  $('#view').addEventListener('change', (e) => { if (S.tab !== 'sim') return; if (e.target.id === 'h2hA' || e.target.id === 'h2hB') { SIM.h2h[e.target.id === 'h2hA' ? 'a' : 'b'] = e.target.value; renderView(); } });
+}
 
 // ---------- games view ----------
 function gamesView() {
@@ -1594,7 +1822,7 @@ function resultsView() {
   return Results.html(SPORT, RES, { daily: DAILY, periodLabel: (w) => periodLabel(w) });
 }
 function renderView() {
-  const v = { games: gamesView, fantasy: fantasyView, props: propsView, rankings: rankingsView, results: resultsView, accuracy: accuracyView, log: logView }[S.tab] || gamesView;
+  const v = { games: gamesView, fantasy: fantasyView, sim: simView, props: propsView, rankings: rankingsView, results: resultsView, accuracy: accuracyView, log: logView }[S.tab] || gamesView;
   const focus = document.activeElement && document.activeElement.id; const pos = focus && document.activeElement.selectionStart;
   $('#view').innerHTML = v();
   if (focus && $('#view').querySelector('#' + CSS.escape(focus))) { const el = document.getElementById(focus); el.focus(); try { if (pos != null) el.setSelectionRange(pos, pos); } catch (e) {} }
