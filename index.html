@@ -1062,7 +1062,8 @@ function runGrid(fn, opts, done) {
   SIM.running = true;
   const step = () => {
     const k = Math.min(1, (performance.now() - t0) / DUR), target = Math.round(N * Math.pow(k, 2));
-    for (; i < Math.max(target, i + 1) && i < N; i++) {
+    const lim = Math.min(N, Math.max(target, i + 1));
+    for (; i < lim; i++) {
       const res = fn(r); const x = (i % 100) * cell, y = Math.floor(i / 100) * cell;
       if (res === 'B') { nb++; g.fillStyle = opts.cb; g.fillRect(x - 0.5, y - 0.5, cell + 1, cell + 1); } else { g.fillStyle = opts.ca; g.fillRect(x + 0.4, y + 0.4, cell - 0.8, cell - 0.8); }
     }
