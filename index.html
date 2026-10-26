@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>try { if (!localStorage.getItem('gml_beta')) document.documentElement.classList.add('locked'); } catch (e) { document.documentElement.classList.add('locked'); }</script>
-<meta name="theme-color" content="#0f1a22">
+<meta name="theme-color" content="#0b0f1c">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="5ive Lab">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icons/tab.ico?v=ice" sizes="any">
-<link rel="icon" href="icons/tab-32.png?v=ice" type="image/png" sizes="32x32">
-<link rel="icon" href="icons/tab-16.png?v=ice" type="image/png" sizes="16x16">
-<link rel="icon" href="icons/tab-96.png?v=ice" type="image/png" sizes="96x96">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=ice">
+<link rel="icon" href="icons/tab.ico?v=prime" sizes="any">
+<link rel="icon" href="icons/tab-32.png?v=prime" type="image/png" sizes="32x32">
+<link rel="icon" href="icons/tab-16.png?v=prime" type="image/png" sizes="16x16">
+<link rel="icon" href="icons/tab-96.png?v=prime" type="image/png" sizes="96x96">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=prime">
 <title>5ive Lab</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,14 +23,14 @@
 /* Layout: sticky model-builder rail on the left, tabbed results on the right; stacks to one column on phones. */
 /* Ice: one committed dark look (slate + teal), the same in every viewer theme. */
 :root {
-  --bg: #0f1a22; --surface: #162631; --surface-2: #1c3040; --ink: #e6f0f2; --muted: #8fa6b0; --line: #27404e;
-  --accent: #2dd4bf; --accent-ink: #04241f; --accent-soft: #0f3b37;
+  --bg: #0b0f1c; --surface: #131a2e; --surface-2: #1b2440; --ink: #f3f6ff; --muted: #9aa6c4; --line: #2a3558;
+  --accent: #ffd166; --accent-ink: #2a1f00; --accent-soft: #3a3420;
   --good: #8ee39b; --good-soft: #163a24; --bad: #ff8577; --bad-soft: #3e2025;
-  --pos: #2dd4bf; --neg: #ff8577; --vegas: #5f7884;
+  --pos: #22c5ff; --neg: #ff8577; --vegas: #66739a;
   --display: "Saira Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
   --body: "Barlow", "Segoe UI", system-ui, sans-serif;
   --r: 10px;
-  --brand-ground: #132430; --brand-ink: #a3b9c2;
+  --brand-ground: #0e1426; --brand-ink: #a9b4d0;
   color-scheme: dark;
 }
 
@@ -389,7 +389,7 @@ html.locked #gate { display: flex; position: fixed; inset: 0; z-index: 200; alig
 .restbl td { vertical-align: middle }
 .rfilters { display: flex; flex-wrap: wrap; gap: 10px 12px; margin: 0 0 14px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface) }
 .rfilters .f { display: flex; flex-direction: column; gap: 4px; min-width: 0 }
-.linkbtn { background: none; border: 0; color: var(--accent, #2dd4bf); font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline }
+.linkbtn { background: none; border: 0; color: var(--accent, #ffd166); font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline }
 .rfilters .f.grow { flex: 1 1 160px } .rfilters input { width: 100% }
 @media (max-width: 520px) { .rfilters .f { flex: 1 1 45% } .rfilters select { width: 100% } }
 
@@ -442,7 +442,7 @@ td input { width: 70px }
 </head>
 <body>
 <div id="gate" role="dialog" aria-label="Private beta"><form class="gatebox" id="gateForm" autocomplete="off">
-  <img src="logo.png" alt="5ive Lab">
+  <img src="logo.png?v=prime" alt="5ive Lab">
   <h1>Private beta</h1>
   <p class="muted" style="margin:0">5ive Lab is invite-only while it's being tested. Enter your invite code to get in.</p>
   <label class="sr" for="gateCode">Invite code</label><input id="gateCode" placeholder="5L-XXXX-XXXX" autocapitalize="characters" spellcheck="false">
@@ -453,7 +453,7 @@ td input { width: 70px }
 
 <div class="wrap">
   <header class="mast">
-    <h1><img src="logo.png" width="950" height="306" alt="5ive Lab"></h1>
+    <h1><img src="logo.png?v=prime" width="950" height="306" alt="5ive Lab"></h1>
     <div class="stamp" id="stamp"></div>
   </header>
   <div class="navrow"><nav class="sports" id="sports" aria-label="Sport"></nav><div class="navright"><a class="syncbtn" id="guideBtn" href="#guide">How it works</a><button class="syncbtn" id="fbBtn" type="button">Feedback</button><button class="syncbtn" id="syncBtn" type="button">Sync: off</button></div></div>
@@ -1193,14 +1193,14 @@ function simSituationView() {
       <div class="f"><label class="label" for="sitBall">Ball</label><select id="sitBall"><option value="A" ${s.ball === 'A' ? 'selected' : ''}>Team 1</option><option value="B" ${s.ball === 'B' ? 'selected' : ''}>Team 2</option></select></div>
       <button class="btn accent" type="button" id="simSitGo" style="align-self:end">Play it 10,000 times</button>
     </div>
-    ${gridBlock({ ta: s.us || 'Team 1', tb: s.them || 'Team 2', ca: '#5b6b8c', cb: '#2dd4bf', sa: s.a, sb: s.b, sit: `${s.min} min left · ${s.ball === 'A' ? (s.us || 'Team 1') : (s.them || 'Team 2')} ball` })}
+    ${gridBlock({ ta: s.us || 'Team 1', tb: s.them || 'Team 2', ca: '#5b6b8c', cb: '#22c5ff', sa: s.a, sb: s.b, sit: `${s.min} min left · ${s.ball === 'A' ? (s.us || 'Team 1') : (s.them || 'Team 2')} ball` })}
     <p class="small muted">Uses a simple drive-by-drive simulation with league-average teams, so it shows how big a lead really is, not who's better. Ties after regulation go to overtime as a coin flip.</p>`;
 }
 function playSituation() {
   const s = SIM.sit; if (SIM.running) return;
   const st = { a: +s.a || 0, b: +s.b || 0, t: Math.max(0.5, Math.min(60, +s.min || 1)), pos: s.ball };
   sim$('simResult').innerHTML = '';
-  runGrid((r) => driveGame(r, st), { ca: '#3d4a63', cb: '#2dd4bf', lb: (s.them || 'Team 2') + ' wins' }, (nb, N) => {
+  runGrid((r) => driveGame(r, st), { ca: '#3d4a63', cb: '#22c5ff', lb: (s.them || 'Team 2') + ' wins' }, (nb, N) => {
     const pa = 1 - nb / N;
     sim$('simResult').innerHTML = `<div class="simbig">${esc(s.us || 'Team 1')} wins ${pctS(pa)}</div><div>${esc(s.them || 'Team 2')} wins ${pctS(nb / N)} (${nb.toLocaleString()} of ${N.toLocaleString()})</div>`;
   });
