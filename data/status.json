@@ -26,6 +26,19 @@
   "through": "2026-10-24",
   "upcoming": 317
  },
+ "epl": {
+  "finals": 80,
+  "history": [
+   2024,
+   2025
+  ],
+  "next": "2026-10-31",
+  "ok": true,
+  "rows": 160,
+  "season": 2026,
+  "through": "2026-10-25",
+  "upcoming": 20
+ },
  "golf": {
   "finals": 94,
   "history": [],
@@ -48,6 +61,19 @@
   "season": 2026,
   "through": "2026-10-24",
   "upcoming": 5
+ },
+ "mls": {
+  "finals": 467,
+  "history": [
+   2024,
+   2025
+  ],
+  "next": "2026-10-28",
+  "ok": true,
+  "rows": 934,
+  "season": 2026,
+  "through": "2026-10-25",
+  "upcoming": 44
  },
  "nba": {
   "finals": 43,
@@ -92,6 +118,19 @@
   "season": 2026,
   "through": "2026-10-25",
   "upcoming": 1160
+ },
+ "ucl": {
+  "finals": 54,
+  "history": [
+   2024,
+   2025
+  ],
+  "next": "2026-11-03",
+  "ok": true,
+  "rows": 108,
+  "season": 2026,
+  "through": "2026-10-21",
+  "upcoming": 18
  },
  "ufc": {
   "finals": 4028,
