@@ -86,6 +86,26 @@
         Scoreboard: { margin: 6, adjMargin: 8, hitting: 1, discipline: 0, rotation: 1, bullpen: 1, form: 6, sos: 1, starter: 3 },
       },
     },
+    soccer: {
+      factors: [
+        { key: 'margin', label: 'Goal difference', hint: 'Goals scored minus allowed, per game', fn: (t) => t.margin },
+        { key: 'adjMargin', label: 'Opponent-adjusted margin', hint: 'Goal difference after accounting for who they played', fn: (t) => t.adj },
+        { key: 'shotShare', label: 'Shots on target share', hint: 'Share of all shots on target in their games that were theirs', fn: (t) => div(t.S.sot, t.S.sot + t.S.o_sot) },
+        { key: 'shotEdge', label: 'Shot volume', hint: 'Shots taken minus shots allowed, per game', fn: (t) => (t.S.sh - t.S.o_sh) / t.n },
+        { key: 'finishing', label: 'Finishing', hint: 'Goals per shot on target', fn: (t) => div(t.S.pts, t.S.sot) },
+        { key: 'keeping', label: 'Goalkeeping', hint: 'Share of opponents\' shots on target that were saved', fn: (t) => 1 - div(t.S.o_pts, t.S.o_sot) },
+        { key: 'possession', label: 'Possession', hint: 'Average share of the ball', fn: (t) => t.S.poss / t.n },
+        { key: 'corners', label: 'Corners', hint: 'Corners won minus conceded, per game (pressure in the final third)', fn: (t) => (t.S.cor - t.S.o_cor) / t.n },
+        { key: 'form', label: 'Recent form', hint: 'Goal difference over the last 5 games', fn: (t) => t.form },
+        { key: 'sos', label: 'Schedule strength', hint: 'Credit for tougher past opponents', fn: (t) => t.sos },
+      ],
+      presets: {
+        Balanced: { margin: 3, adjMargin: 6, shotShare: 6, shotEdge: 3, finishing: 2, keeping: 2, possession: 2, corners: 1, form: 3, sos: 2 },
+        'Shot quality': { margin: 1, adjMargin: 3, shotShare: 10, shotEdge: 5, finishing: 1, keeping: 1, possession: 1, corners: 2, form: 1, sos: 2 },
+        Scoreboard: { margin: 6, adjMargin: 8, shotShare: 2, shotEdge: 1, finishing: 2, keeping: 2, possession: 0, corners: 0, form: 6, sos: 2 },
+        'Control the ball': { margin: 2, adjMargin: 4, shotShare: 4, shotEdge: 3, finishing: 1, keeping: 1, possession: 8, corners: 3, form: 2, sos: 2 },
+      },
+    },
   };
   function poss(S, p) { return S[p + 'fga'] - S[p + 'orb'] + S[p + 'tov'] + 0.475 * S[p + 'fta']; }
 
@@ -107,7 +127,7 @@
     LG_SV = cfg.lgSv || 0.9;
     HFA0 = cfg.hfa ?? 1.5;
     LG_PTS = cfg.lgPts ?? null;
-    CAP = cfg.marginCap || ({ football: 28, hockey: 5, basketball: 30, baseball: 8 })[FAMILY];
+    CAP = cfg.marginCap || ({ football: 28, hockey: 5, basketball: 30, baseball: 8, soccer: 4 })[FAMILY];
   }
 
   const phi = (x) => { // standard normal CDF
@@ -296,6 +316,7 @@
       total += weather;
     }
     const hs = total / 2 + margin / 2, as = total / 2 - margin / 2;
+    if (FAMILY === 'soccer') return soccerOut({ margin, total, hs, as, starter, qb, goalie, weather }, lines, h.n && a.n);
     const pHome = phi(margin / SIGMA);
     const out = { margin, total, hs, as, pHome, pAway: 1 - pHome, starter, qb, goalie, weather };
     if (lines.sp != null) {
@@ -306,6 +327,39 @@
     if (lines.tot != null && h.n && a.n) { out.totEdge = total - lines.tot; out.pOver = phi((total - lines.tot) / SIGMA_TOT); }
     if (lines.hml != null) out.evHome = evPerUnit(pHome, lines.hml);
     if (lines.aml != null) out.evAway = evPerUnit(1 - pHome, lines.aml);
+    return out;
+  }
+
+  // Soccer: each side's goals are Poisson around its expected goals, which gives real chances of
+  // a draw (three-way result), handicaps (whole lines can push) and totals.
+  function goalGrid(lh, la) {
+    const pm = (lam) => { const p = [Math.exp(-lam)]; for (let i = 1; i <= 10; i++) p.push(p[i - 1] * lam / i); return p; };
+    const ph = pm(Math.max(0.05, lh)), pa = pm(Math.max(0.05, la));
+    const diff = {}, tot = {};
+    let H = 0, D = 0, A = 0;
+    for (let i = 0; i <= 10; i++) for (let j = 0; j <= 10; j++) {
+      const p = ph[i] * pa[j];
+      diff[i - j] = (diff[i - j] || 0) + p; tot[i + j] = (tot[i + j] || 0) + p;
+      if (i > j) H += p; else if (i === j) D += p; else A += p;
+    }
+    const s = H + D + A;
+    return { H: H / s, D: D / s, A: A / s, diff, tot, s };
+  }
+  // P(x > line) with a push on exact whole numbers taken out (the stake comes back).
+  function overLine(dist, s, line) {
+    let over = 0, push = 0;
+    for (const k in dist) { const v = +k; if (v > line + 1e-9) over += dist[k]; else if (Math.abs(v - line) < 1e-9) push += dist[k]; }
+    over /= s; push /= s;
+    return push >= 1 ? 0.5 : over / (1 - push);
+  }
+  function soccerOut(o, lines, both) {
+    const G = goalGrid(o.hs, o.as);
+    const out = { ...o, pHome: G.H, pDraw: G.D, pAway: G.A };
+    if (lines.sp != null) { out.spEdge = o.margin - lines.sp; out.pHomeCover = overLine(G.diff, G.s, lines.sp); }
+    if (lines.tot != null && both) { out.totEdge = o.total - lines.tot; out.pOver = overLine(G.tot, G.s, lines.tot); }
+    if (lines.hml != null) out.evHome = evPerUnit(G.H, lines.hml);
+    if (lines.aml != null) out.evAway = evPerUnit(G.A, lines.aml);
+    if (lines.dml != null) out.evDraw = evPerUnit(G.D, lines.dml);
     return out;
   }
 
@@ -640,6 +694,7 @@
   }
 
   const ufcTrainedWeights = (data) => (data.meta.trained && data.meta.trained.weights) || UFC_DEFAULT_WEIGHTS;
+  api.goalGrid = goalGrid;
   api.ufc = { FACTORS: UFC_FACTORS, PRESETS: UFC_PRESETS, DEFAULT_COEF: UFC_DEFAULT_COEF, DEFAULT_WEIGHTS: UFC_DEFAULT_WEIGHTS, trainedWeights: ufcTrainedWeights, walk: ufcWalk, backtest: ufcBacktest, features: ufcFeatures, logit: ufcLogit, sigmoid };
 
   Object.assign(api, { configure, DEFAULT_SETTINGS, teamProfiles, ratings, predict, backtest, propOf, walk, starterRuns, priors: () => PRIORS,

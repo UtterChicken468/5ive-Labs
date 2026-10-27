@@ -246,7 +246,7 @@ def track_open(sport, season, sched, true_open=None):
     for g in sched:
         k = str(g['id'])
         if k not in cache and any(g.get(x) is not None for x in ('sp', 'tot', 'hml')):
-            cache[k] = {x: g.get(x) for x in ('sp', 'tot', 'hml', 'aml')}
+            cache[k] = {x: g.get(x) for x in ('sp', 'tot', 'hml', 'aml', 'dml') if x != 'dml' or g.get(x) is not None}
         o = (true_open(g) if true_open else None) or cache.get(k)
         if o and any(o.get(x) is not None for x in ('sp', 'tot', 'hml')):
             g['o'] = o
@@ -312,6 +312,8 @@ def odds_lines(sport_key, sched, names, cache_name):
                         ho, ao = oc.get(ev['home_team']), oc.get(ev['away_team'])
                         if ho and ao:
                             line['hml'], line['aml'] = int(ho['price']), int(ao['price'])
+                            if oc.get('Draw') and oc['Draw'].get('price') is not None:
+                                line['dml'] = int(oc['Draw']['price'])  # soccer: three-way moneyline
                     if m['key'] == 'spreads' and 'sp' not in line:
                         ho, ao = oc.get(ev['home_team']), oc.get(ev['away_team'])
                         if ho and ho.get('point') is not None:
@@ -331,7 +333,7 @@ def odds_lines(sport_key, sched, names, cache_name):
         l = cache.get(str(g['id']))
         if l:
             g['sp'], g['tot'], g['hml'], g['aml'] = l.get('sp'), l.get('tot'), l.get('hml'), l.get('aml')
-            for k in ('hspp', 'aspp', 'ovp', 'unp'):
+            for k in ('hspp', 'aspp', 'ovp', 'unp', 'dml'):
                 if l.get(k) is not None:
                     g[k] = l[k]
     return note, cache.get('_remaining')
@@ -795,6 +797,217 @@ def build_cbb(_season):
 
 def build_nba(_season):
     return build_bball('nba')
+
+
+# ---------------------------------------------------------------- Soccer (ESPN, The Odds API backup for lines)
+SOCCER = {
+    'epl': dict(path='soccer/eng.1', label='Premier League', odds='soccer_epl', cal=False, start=(7, 25), end=(6, 5),
+                hfa=0.3, btSkip=10, startsIn='August'),
+    'ucl': dict(path='soccer/uefa.champions', label='Champions League', odds='soccer_uefa_champs_league', cal=False,
+                start=(7, 1), end=(6, 10), hfa=0.35, btSkip=4, startsIn='July'),
+    'mls': dict(path='soccer/usa.1', label='MLS', odds='soccer_usa_mls', cal=True, start=(2, 1), end=(12, 15),
+                hfa=0.45, btSkip=10, startsIn='February'),
+}
+SOCCER_STATS = {'sh': 'totalShots', 'sot': 'shotsOnTarget', 'poss': 'possessionPct', 'cor': 'wonCorners',
+                'fls': 'foulsCommitted', 'sav': 'saves', 'rc': 'redCards'}
+
+
+def american(v):
+    """'+150' / '-120' / 150 / 'EVEN' -> int American odds, or None."""
+    if v is None:
+        return None
+    if isinstance(v, (int, float)):
+        return int(v)
+    t = str(v).strip().upper()
+    if t in ('EV', 'EVEN'):
+        return 100
+    try:
+        return int(float(t.replace('+', '')))
+    except ValueError:
+        return None
+
+
+def soccer_line(o):
+    """ESPN soccer odds -> {hml, aml, dml, tot, sp}. Handles both the flat and the nested ESPN formats."""
+    if not o:
+        return {}
+    line = {}
+    hto, ato, dro = o.get('homeTeamOdds') or {}, o.get('awayTeamOdds') or {}, o.get('drawOdds') or {}
+    for k, src in (('hml', hto), ('aml', ato), ('dml', dro)):
+        v = american(src.get('moneyLine'))
+        if v is not None:
+            line[k] = v
+    ml = o.get('moneyline') or {}
+    for k, side in (('hml', 'home'), ('aml', 'away'), ('dml', 'draw')):
+        if k not in line:
+            x = ml.get(side) or {}
+            v = american(((x.get('close') or {}).get('odds')) or ((x.get('open') or {}).get('odds')) or x.get('odds'))
+            if v is not None:
+                line[k] = v
+    if opt_float(o.get('overUnder')) is not None:
+        line['tot'] = float(o['overUnder'])
+    sp = opt_float(o.get('spread'))
+    if sp is not None and abs(sp) < 4:
+        sp = -sp  # ESPN: home team's handicap (negative = home favored); ours: + = home favored
+        if hto.get('favorite') and sp < 0 or ato.get('favorite') and sp > 0:
+            sp = -sp
+        line['sp'] = sp
+    return line
+
+
+def soccer_day(path, day):
+    sb = get_json(f'{ESPN}/{path}/scoreboard?dates={day.strftime("%Y%m%d")}&limit=200')
+    out = []
+    for e in sb.get('events', []):
+        c = (e.get('competitions') or [{}])[0]
+        comp = {x.get('homeAway'): x for x in c.get('competitors', [])}
+        if 'home' not in comp or 'away' not in comp:
+            continue
+        st = (c.get('status') or e.get('status') or {}).get('type', {})
+        done = bool(st.get('completed'))
+        sname = (st.get('name') or '') + ' ' + (st.get('shortDetail') or '')
+        if not done and any(x in sname.upper() for x in ('POSTPONED', 'CANCELED', 'CANCELLED', 'ABANDONED')):
+            continue
+        tm = lambda x: x.get('team') or {}
+        odds = (c.get('odds') or [None])[0]
+        out.append(dict(id=e['id'], date=e.get('date'), neu=bool(c.get('neutralSite')),
+                        h=str(tm(comp['home']).get('id')), a=str(tm(comp['away']).get('id')),
+                        hn=tm(comp['home']).get('shortDisplayName') or tm(comp['home']).get('displayName'),
+                        an=tm(comp['away']).get('shortDisplayName') or tm(comp['away']).get('displayName'),
+                        hs=opt_int(comp['home'].get('score')) if done else None,
+                        as_=opt_int(comp['away'].get('score')) if done else None,
+                        et=1 if done and any(x in sname.upper() for x in ('AET', 'PEN', 'EXTRA')) else 0,
+                        line=soccer_line(odds) if odds else {}))
+    return out
+
+
+def soccer_box(path, eid):
+    s = get_json(f'{ESPN}/{path}/summary?event={eid}')
+    teams = {}
+    for t in (s.get('boxscore') or {}).get('teams', []):
+        st = {x.get('name'): x.get('displayValue') for x in t.get('statistics', [])}
+        teams[str((t.get('team') or {}).get('id'))] = {k: num(st.get(v)) for k, v in SOCCER_STATS.items()}
+    pc = sorted(s.get('pickcenter') or s.get('odds') or [], key=lambda o: (o.get('provider') or {}).get('priority', 99))
+    return dict(teams=teams, line=soccer_line(pc[0]) if pc else {})
+
+
+def build_soccer(key):
+    cfg = SOCCER[key]
+    path = cfg['path']
+    today = datetime.datetime.now(ET).date()
+    if HIST:
+        y = YEAR
+    elif cfg['cal']:
+        y = today.year
+    else:
+        y = today.year if today.month >= 7 else today.year - 1
+    span = lambda y: (datetime.date(y, *cfg['start']), datetime.date(y if cfg['cal'] else y + 1, *cfg['end']))
+    label = lambda y: str(y) if cfg['cal'] else f'{y}-{str(y + 1)[2:]}'
+
+    def load_season(y, horizon):
+        a, b = span(y)
+        days = [a + datetime.timedelta(days=i) for i in range((b - a).days + 1)]
+        days = [d for d in days if d <= today + datetime.timedelta(days=horizon)]
+        name = f'{key}_scoreboard_{y}.json'
+        sb = load_cache(name)
+        need = [d for d in days if d.isoformat() not in sb or (d - today).days >= -3]
+        if need:
+            got = parallel(lambda d: soccer_day(path, d), need, workers=8)
+            for d, v in got.items():
+                if isinstance(v, list):
+                    sb[d.isoformat()] = v
+            save_cache(name, sb)
+        seen, out = set(), []
+        for v in sb.values():
+            for e in v:
+                if e['id'] not in seen and e.get('h') and e.get('a'):
+                    seen.add(e['id']); out.append(e)
+        return out
+
+    note = None
+    events = load_season(y, 14)
+    if not HIST and not [e for e in events if e['hs'] is not None]:  # off-season: show last season
+        y -= 1
+        note = f"{label(y)} season · the new season starts in {cfg['startsIn']}"
+        events = load_season(y, 0)
+
+    names = {}
+    for e in events:
+        names[e['h']] = e.get('hn') or e['h']; names[e['a']] = e.get('an') or e['a']
+    counts = {}
+    for n in names.values():
+        counts[n] = counts.get(n, 0) + 1
+    for k, n in list(names.items()):
+        if counts[n] > 1:
+            names[k] = f'{n} ({k})'
+
+    box_name = f'{key}_box_{y}.json'
+    box = load_cache(box_name)
+    need = [e['id'] for e in events if e['hs'] is not None and (e['id'] not in box or '_error' in box[e['id']])]
+    if need:
+        box.update(parallel(lambda eid: soccer_box(path, eid), need, workers=12))
+        save_cache(box_name, box)
+
+    sched = []
+    for e in events:
+        d, tm = et_parts(e['date'])
+        b = box.get(e['id']) or {}
+        line = dict(e.get('line') or {})
+        if e['hs'] is not None:
+            line = {**line, **{k: v for k, v in (b.get('line') or {}).items() if v is not None}}
+        g = dict(id=e['id'], d=d, tm=tm, h=names[e['h']], a=names[e['a']], hid=e['h'], aid=e['a'],
+                 hs=e['hs'], as_=e['as_'], neu=e['neu'],
+                 sp=line.get('sp'), tot=line.get('tot'), hml=line.get('hml'), aml=line.get('aml'), dml=line.get('dml'))
+        if e.get('et'):
+            g['et'] = 1
+        sched.append(g)
+    if not sched:
+        raise RuntimeError(f"No {label(y)} {cfg['label']} games found.")
+    first = day_index(sched)
+    rest_days(sched)
+    team_games = []
+    for g in sched:
+        b = box.get(g['id'])
+        if g['hs'] is None or not b or '_error' in b:
+            continue
+        tb = b.get('teams', {})
+        if g['hid'] not in tb or g['aid'] not in tb:
+            continue
+        for me, t, o, gf in ((g['hid'], g['h'], g['a'], g['hs']), (g['aid'], g['a'], g['h'], g['as_'])):
+            team_games.append(dict(w=g['w'], g=g['id'], t=t, o=o, pts=float(gf), **tb[me]))
+    for g in sched:
+        g['gk'] = g['id']
+        g.pop('hid'); g.pop('aid')
+    finalize_games_gk(team_games, sched)
+    sched.sort(key=lambda g: (g['d'], g['tm']))
+    odds_note, remaining = None, None
+    if not HIST and not note:
+        soon = [g for g in sched if g['hs'] is None and g['d'] and 0 <= (datetime.date.fromisoformat(g['d']) - today).days <= 2]
+        if soon and any(g.get('hml') is None for g in soon):  # ESPN had no line: ask The Odds API (uses monthly quota)
+            try:
+                byname = {norm_name(n): n for n in names.values()}
+                odds_note, remaining = odds_lines(cfg['odds'], [g for g in sched if g.get('hml') is None], byname, f'odds_{key}.json')
+            except Exception as ex:
+                odds_note = f'odds error: {ex}'[:120]
+    track_open(key, y, sched)
+    meta = dict(sport=key, label=cfg['label'], family='soccer', period='Day', start=first.isoformat(),
+                seasonLabel=label(y), sigma=1.7, sigmaTot=1.6, btSkip=cfg['btSkip'], formN=5, hfa=cfg['hfa'], trust=70, bye=0,
+                rest='none', props=False, unit='goals', spreadName='Handicap', edgeSteps=[0.1, 0.2, 0.3, 0.4, 0.5],
+                edgeDefault=0.25, hfaMax=1, hfaStep=0.05, byeMax=0, byeStep=0.05, marginCap=4, note=note,
+                source='ESPN' + (' · some lines from The Odds API' if remaining is not None else ''), oddsNote=odds_note)
+    return dict(meta=meta, season=y, teamGames=team_games, games=sched, players=[])
+
+
+def build_epl(_season):
+    return build_soccer('epl')
+
+
+def build_ucl(_season):
+    return build_soccer('ucl')
+
+
+def build_mls(_season):
+    return build_soccer('mls')
 
 
 # ---------------------------------------------------------------- UFC (ESPN + The Odds API)
@@ -1499,7 +1712,8 @@ def build_golf(_season):
     return dict(meta=meta, season=today.year, events=events, names=names, schedule=upcoming, games=games, teamGames=[])
 
 
-SPORTS = {'nfl': build_nfl, 'cfb': build_cfb, 'nhl': build_nhl, 'cbb': build_cbb, 'nba': build_nba, 'mlb': build_mlb, 'ufc': build_ufc, 'golf': build_golf}
+SPORTS = {'nfl': build_nfl, 'cfb': build_cfb, 'nhl': build_nhl, 'cbb': build_cbb, 'nba': build_nba, 'mlb': build_mlb, 'ufc': build_ufc, 'golf': build_golf,
+          'epl': build_epl, 'ucl': build_ucl, 'mls': build_mls}
 
 
 def main():
@@ -1541,7 +1755,8 @@ HIST_DIR = os.path.join(DATA_DIR, 'history')
 
 # How each sport carries last season into the new one: margin cap (blowouts), how far to pull
 # ratings back toward average, and how many games' worth of weight the prior starts with.
-PRIOR_CFG = {'nfl': (28, 0.5, 3), 'nhl': (5, 0.5, 10), 'mlb': (8, 0.5, 25), 'cbb': (30, 0.4, 6), 'nba': (30, 0.35, 10)}
+PRIOR_CFG = {'nfl': (28, 0.5, 3), 'nhl': (5, 0.5, 10), 'mlb': (8, 0.5, 25), 'cbb': (30, 0.4, 6), 'nba': (30, 0.35, 10),
+             'epl': (4, 0.35, 6), 'ucl': (4, 0.4, 3), 'mls': (4, 0.4, 6)}
 
 
 def final_ratings(data, cap, regress):
@@ -1565,7 +1780,7 @@ def final_ratings(data, cap, regress):
 
 
 def season_label(sport, y):
-    return f'{y - 1}-{str(y)[2:]}' if sport in ('cbb', 'nba') else f'{y}-{str(y + 1)[2:]}' if sport == 'nhl' else str(y)
+    return f'{y - 1}-{str(y)[2:]}' if sport in ('cbb', 'nba') else f'{y}-{str(y + 1)[2:]}' if sport in ('nhl', 'epl', 'ucl') else str(y)
 
 
 def add_priors(status, args):
@@ -1603,7 +1818,7 @@ def add_priors(status, args):
 
 def history_seasons(sport, cur):
     """Past seasons the trainer learns from, relative to the season currently on the site."""
-    back = {'nfl': 5, 'cfb': 3, 'nhl': 3, 'mlb': 2, 'cbb': 2, 'nba': 3}.get(sport, 0)
+    back = {'nfl': 5, 'cfb': 3, 'nhl': 3, 'mlb': 2, 'cbb': 2, 'nba': 3, 'epl': 2, 'ucl': 2, 'mls': 2}.get(sport, 0)
     return [cur - i for i in range(back, 0, -1)]
 
 

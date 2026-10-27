@@ -17,7 +17,7 @@ const E = globalThis.Engine;
 
 const DATA = path.join(__dirname, '..', 'data');
 const HIST = path.join(DATA, 'history');
-const SPORTS = ['nfl', 'cfb', 'nhl', 'mlb', 'cbb', 'nba'];
+const SPORTS = ['nfl', 'cfb', 'nhl', 'mlb', 'cbb', 'nba', 'epl', 'ucl', 'mls'];
 
 const mean = (a) => (a.length ? a.reduce((s, v) => s + v, 0) / a.length : 0);
 const sd = (a) => { const m = mean(a); return Math.sqrt(mean(a.map((v) => (v - m) ** 2))); };
@@ -58,7 +58,7 @@ function rowsFor(ds, cur) {
   const keys = E.FACTORS.filter((f) => !f.game).map((f) => f.key);
   const unit = Object.fromEntries(keys.map((k) => [k, 1]));
   const pri = E.priors();
-  const cap = ({ football: 28, hockey: 5, basketball: 30, baseball: 8 })[cur.meta.family];
+  const cap = ({ football: 28, hockey: 5, basketball: 30, baseball: 8, soccer: 4 })[cur.meta.family];
   const rows = [];
   E.walk(ds, (w, games, P) => {
     const R = E.ratings(P, unit, { trust: 100, hfa: 0 });

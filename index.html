@@ -154,6 +154,7 @@ nav.tabs button[aria-selected="true"] { background: var(--accent); color: var(--
 .gh { display: flex; justify-content: space-between; align-items: baseline; gap: 10px }
 .matchup { font-family: var(--display); font-size: 24px; font-weight: 700; line-height: 1.05; min-width: 0; overflow-wrap: anywhere }
 .sport-cfb .matchup { font-size: 21px }
+.sport-epl .matchup, .sport-ucl .matchup, .sport-mls .matchup { font-size: 18px; overflow-wrap: break-word }
 .wp div { overflow: hidden; text-overflow: ellipsis }
 .matchup .at { color: var(--muted); font-weight: 500; font-size: 18px; margin: 0 4px }
 .kick { font-size: 12.5px; color: var(--muted); text-align: right }
@@ -163,6 +164,7 @@ nav.tabs button[aria-selected="true"] { background: var(--accent); color: var(--
 .wp div { display: flex; align-items: center; padding: 0 7px; white-space: nowrap; min-width: 0 }
 .wp .a { background: var(--surface-2); color: var(--ink); border: 1px solid var(--line); border-radius: 5px 0 0 5px }
 .wp .h { background: var(--accent); color: var(--accent-ink); justify-content: flex-end; border-radius: 0 5px 5px 0 }
+.wp .d { background: var(--surface); color: var(--muted); border: 1px solid var(--line); justify-content: center }
 .mk { display: grid; grid-template-columns: 86px minmax(0,1fr) auto; gap: 6px 10px; align-items: center; font-size: 14px; padding-top: 8px; border-top: 1px solid var(--line) }
 .mk .k { font-family: var(--display); font-weight: 600; font-size: 16px; text-transform: uppercase }
 .mk .ins { display: flex; gap: 6px; flex-wrap: wrap; align-items: center }
@@ -410,8 +412,8 @@ td input { width: 70px }
 .rank { display: grid; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px }
 .rr { display: grid; grid-template-columns: 26px var(--teamcol, 46px) minmax(0,1fr) 54px; gap: 10px; align-items: center; font-size: 14px; padding: 3px 0 }
 .rr .t { font-family: var(--display); font-weight: 700; font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
-.sport-cfb { --teamcol: 150px }
-@media (max-width: 520px) { .sport-cfb { --teamcol: 104px } }
+.sport-cfb, .sport-epl, .sport-ucl, .sport-mls { --teamcol: 150px }
+@media (max-width: 520px) { .sport-cfb, .sport-epl, .sport-ucl, .sport-mls { --teamcol: 104px } }
 .bar { position: relative; height: 16px }
 .bar::before { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--line) }
 .bar span { position: absolute; top: 0; height: 100%; border-radius: 4px }
@@ -510,6 +512,7 @@ const matchesTrained = () => isTrained() && Object.keys(TRAINED.settings).every(
 const FOLLOW = !!TRAINED && store.get('mode', 'trained') !== 'custom';
 const DAILY = META.period === 'Day';
 const UNIT = META.unit || 'pts';
+const SOCCER = META.family === 'soccer'; // three-way results: home, draw, away
 const EDGE_STEPS = META.edgeSteps || [1, 1.5, 2, 3, 4];
 const dateOfW = {}; DATA.games.forEach((g) => { if (g.d && !(g.w in dateOfW)) dateOfW[g.w] = g.d; });
 const shortDate = (iso, wd) => iso ? new Date(iso + 'T12:00:00').toLocaleDateString('en-US', wd ? { weekday: 'short', month: 'short', day: 'numeric' } : { month: 'short', day: 'numeric' }) : '';
@@ -629,8 +632,40 @@ function model() {
 }
 function linesFor(g) {
   const o = S.lines[g.id] || {};
-  return { sp: o.sp !== undefined ? o.sp : g.sp, tot: o.tot !== undefined ? o.tot : g.tot, hml: o.hml !== undefined ? o.hml : g.hml, aml: o.aml !== undefined ? o.aml : g.aml, hg: o.hg, ag: o.ag,
+  return { sp: o.sp !== undefined ? o.sp : g.sp, tot: o.tot !== undefined ? o.tot : g.tot, hml: o.hml !== undefined ? o.hml : g.hml, aml: o.aml !== undefined ? o.aml : g.aml, dml: o.dml !== undefined ? o.dml : g.dml, hg: o.hg, ag: o.ag,
     hspp: o.sp !== undefined ? undefined : g.hspp, aspp: o.sp !== undefined ? undefined : g.aspp, ovp: o.tot !== undefined ? undefined : g.ovp, unp: o.tot !== undefined ? undefined : g.unp };
+}
+// Moneyline market: Vegas's chances with the bookmaker's cut removed, and the side the model likes.
+// Soccer is three-way (home, draw, away): the pick is whichever outcome has the most value.
+function winMarket(g, L, pr) {
+  if (L.hml == null || L.aml == null) return null;
+  const imp = E.impliedProb, three = SOCCER && L.dml != null && pr.pDraw != null;
+  const s = imp(L.hml) + imp(L.aml) + (three ? imp(L.dml) : 0);
+  const v = { h: imp(L.hml) / s, a: imp(L.aml) / s, d: three ? imp(L.dml) / s : null };
+  const opts = [{ type: 'ml', side: g.h, text: g.h + ' to win', p: pr.pHome, price: L.hml, gap: pr.pHome - v.h },
+    { type: 'ml', side: g.a, text: g.a + ' to win', p: pr.pAway, price: L.aml, gap: pr.pAway - v.a }];
+  if (three) opts.push({ type: 'draw', side: 'Draw', text: 'Draw', p: pr.pDraw, price: L.dml, gap: pr.pDraw - v.d });
+  opts.forEach((o) => { o.ev = E.evPerUnit(o.p, o.price); });
+  const pick = opts.slice().sort((x, y) => SOCCER ? y.ev - x.ev : y.gap - x.gap)[0];
+  return { v, opts, pick, three };
+}
+// The model's most likely result, as text ("Arsenal 52%" or "Draw 31%").
+function modelCall(g, pr) {
+  const c = [[g.h, pr.pHome], [g.a, pr.pAway]]; if (SOCCER && pr.pDraw != null) c.push(['Draw', pr.pDraw]);
+  const [t, p] = c.sort((x, y) => y[1] - x[1])[0]; return t + ' ' + pct(p);
+}
+function vegasCall(g, M) {
+  const c = [[g.h, M.v.h], [g.a, M.v.a]]; if (M.three) c.push(['Draw', M.v.d]);
+  const [t, p] = c.sort((x, y) => y[1] - x[1])[0]; return t + ' ' + pct(p);
+}
+// Win-chance bar: away | (draw) | home
+function wpBar(g, pr) {
+  if (SOCCER && pr.pDraw != null) {
+    const ap = Math.round(pr.pAway * 100), dp = Math.round(pr.pDraw * 100), hp = 100 - ap - dp;
+    return `<div class="wp" title="Model chances: away win, draw, home win"><div class="a" style="flex:${Math.max(ap, 14)}">${g.a} ${ap}%</div><div class="d" style="flex:${Math.max(dp, 12)}">Draw ${dp}%</div><div class="h" style="flex:${Math.max(hp, 14)}">${g.h} ${hp}%</div></div>`;
+  }
+  const ap = Math.round(pr.pAway * 100), hp = 100 - ap;
+  return `<div class="wp" title="Model win probability"><div class="a" style="flex:${Math.max(ap, 12)}">${g.a} ${ap}%</div><div class="h" style="flex:${Math.max(hp, 12)}">${g.h} ${hp}%</div></div>`;
 }
 function kickoff(g) {
   const d = new Date(g.d + 'T12:00:00');
@@ -906,11 +941,12 @@ const Ask = (() => {
     const c = [];
     if (pr.spEdge != null) { const home = pr.spEdge > 0; c.push({ text: home ? bookSpread(g.h, L.sp) : bookSpread(g.a, -L.sp), p: home ? pr.pHomeCover : 1 - pr.pHomeCover, price: (home ? L.hspp : L.aspp) ?? -110 }); }
     if (pr.totEdge != null) { const ov = pr.totEdge > 0; c.push({ text: (ov ? 'Over ' : 'Under ') + L.tot, p: ov ? pr.pOver : 1 - pr.pOver, price: (ov ? L.ovp : L.unp) ?? -110 }); }
-    if (L.hml != null && L.aml != null) { const vH = E.impliedProb(L.hml) / (E.impliedProb(L.hml) + E.impliedProb(L.aml)); const t = pr.pHome - vH >= 0 ? g.h : g.a; c.push({ text: t + ' to win', p: t === g.h ? pr.pHome : pr.pAway, price: t === g.h ? L.hml : L.aml }); }
+    const M = winMarket(g, L, pr); if (M) (SOCCER ? M.opts : [M.pick]).forEach((o) => c.push({ text: o.text, p: o.p, price: o.price }));
     c.forEach((x) => { x.ev = E.evPerUnit(x.p, x.price); });
     const best = c.sort((x, y) => y.ev - x.ev)[0];
     const bet = !best ? 'Vegas odds aren\'t posted yet.' : best.ev > 0 ? `Model's bet: <b>${esc(best.text)}</b> (${pct(best.p)} chance, ${valueWord(best.ev).toLowerCase()}).` : `No bet: Vegas's prices look fair (closest lean ${esc(best.text)}).`;
-    return `<b>${g.a} at ${g.h}</b> · ${kickoff(g)}<br>The AI picks <b>${win}</b> (${pct(wp)} to win). Predicted score: ${score}.<br>${bet}`;
+    const call = SOCCER ? `The AI's most likely result: <b>${modelCall(g, pr)}</b> (${g.h} ${pct(pr.pHome)} · draw ${pct(pr.pDraw)} · ${g.a} ${pct(pr.pAway)})` : `The AI picks <b>${win}</b> (${pct(wp)} to win)`;
+    return `<b>${g.a} at ${g.h}</b> · ${kickoff(g)}<br>${call}. Predicted score: ${score}.<br>${bet}`;
   }
   function powerRank(t) {
     const P = E.teamProfiles(DATA, lastDone + 1), R = E.ratings(P, S.weights, S.settings);
@@ -931,6 +967,7 @@ const Ask = (() => {
       if (pr.spEdge != null) { const h = pr.spEdge > 0; add(h ? bookSpread(g.h, L.sp) : bookSpread(g.a, -L.sp), h ? pr.pHomeCover : 1 - pr.pHomeCover, h ? L.hspp : L.aspp); }
       if (pr.totEdge != null) { const o = pr.totEdge > 0; add((o ? 'Over ' : 'Under ') + L.tot, o ? pr.pOver : 1 - pr.pOver, o ? L.ovp : L.unp); }
       if (L.hml != null && L.aml != null && L.hml > -400 && L.aml > -400) { add(g.h + ' to win', pr.pHome, L.hml); add(g.a + ' to win', pr.pAway, L.aml); }
+      if (SOCCER && L.dml != null && pr.pDraw != null) add('Draw', pr.pDraw, L.dml);
     });
     const top = rows.filter((r) => r.ev > 0.03).sort((a, b) => b.ev - a.ev).filter((r, i, a) => a.findIndex((x) => x.g.id === r.g.id) === i).slice(0, 3);
     if (!top.length) return 'The model doesn\'t see any good-value bets on the board right now.';
@@ -1279,27 +1316,24 @@ function gameCard({ g, L, pr }) {
   const totP = pr.totEdge == null ? null : (pr.totEdge > 0 ? pr.pOver : 1 - pr.pOver);
   const totPrice = pr.totEdge == null ? null : (pr.totEdge > 0 ? L.ovp : L.unp);
   // ---- win chance: Vegas's (from the moneylines, bookmaker cut removed) vs the model's
-  const hasMl = L.hml != null && L.aml != null;
-  const vH = hasMl ? E.impliedProb(L.hml) / (E.impliedProb(L.hml) + E.impliedProb(L.aml)) : null;
-  const mlTeam = hasMl ? (pr.pHome - vH >= 0 ? g.h : g.a) : null;
-  const mlGap = hasMl ? Math.abs(pr.pHome - vH) : null;
+  const M = winMarket(g, L, pr), hasMl = !!M;
+  const mlTeam = hasMl ? M.pick.side : null, mlGap = hasMl ? Math.abs(M.pick.gap) : null;
   // ---- the single best bet by value
   const cands = [];
   if (pr.spEdge != null) cands.push({ type: 'spread', kind: spName, side: spSide, text: spBet, p: coverP, price: priceOf(spPrice) });
   if (pr.totEdge != null) cands.push({ type: 'total', kind: 'Total ' + (UNIT === 'pts' ? 'points' : UNIT), side: totSide, text: totSide + ' ' + L.tot, p: totP, price: priceOf(totPrice) });
-  if (hasMl) cands.push({ type: 'ml', kind: 'To win the game', side: mlTeam, text: mlTeam + ' to win', p: mlTeam === g.h ? pr.pHome : pr.pAway, price: mlTeam === g.h ? L.hml : L.aml });
+  if (hasMl) (SOCCER ? M.opts : [M.pick]).forEach((o) => cands.push({ type: o.type, kind: o.type === 'draw' ? 'Result after 90 minutes' : SOCCER ? 'To win (90 minutes)' : 'To win the game', side: o.side, text: o.text, p: o.p, price: o.price }));
   cands.forEach((c) => { c.log = `data-log="${c.type}" data-g="${g.id}" data-side="${esc(c.side)}"`; });
   cands.forEach((c) => { c.ev = E.evPerUnit(c.p, c.price); });
   const best = cands.sort((a, b) => b.ev - a.ev)[0];
   const hot = (Math.abs(pr.spEdge || 0) >= S.edgeMin || Math.abs(pr.totEdge || 0) >= S.edgeMin);
-  const ap = Math.round(pr.pAway * 100), hp = 100 - ap;
   const gapPill = (v, unit) => v == null ? '' : `<span class="pill ${Math.abs(v) >= S.edgeMin ? 'acc' : 'flat'}">${Math.abs(v).toFixed(1)} ${unit}</span>`;
   const sp0 = (v) => v == null ? '' : -v; // book style for the home team
   return `<article class="game ${hot ? 'hot' : ''}">
     <div class="gh"><button class="matchup mbtn" data-detail="${g.id}" title="Full breakdown">${g.a}<span class="at">@</span>${g.h}</button><div class="kick">${kickoff(g)}${g.neu ? '<br>Neutral site' : ''}${g.rd ? '<br><b style="color:var(--accent)">' + esc(g.rd) + '</b>' : ''}</div></div>
     ${recBox(best, 'Type the Vegas lines in under "Compare to Vegas" to get a pick.')}
     <div class="score"><b>${UNIT === 'pts' ? Math.round(pr.as) + '–' + Math.round(pr.hs) : fmt(pr.as) + '–' + fmt(pr.hs)}</b><span class="small muted">model score · ${fav} by ${fmt(Math.abs(pr.margin))}</span></div>
-    <div class="wp" title="Model win probability"><div class="a" style="flex:${Math.max(ap, 12)}">${g.a} ${ap}%</div><div class="h" style="flex:${Math.max(hp, 12)}">${g.h} ${hp}%</div></div>
+    ${wpBar(g, pr)}
     ${pitchersRow(g, pr)}${goalieRow(g, pr)}${weatherRow(g, pr)}${injuryRow(g, pr)}
     <details class="more" data-keep="g${g.id}" ${OPEN.has('g' + g.id) ? 'open' : ''}><summary>Compare to Vegas · every bet type</summary>
     <div class="cmp" role="table" aria-label="Vegas vs your model">
@@ -1318,9 +1352,10 @@ function gameCard({ g, L, pr }) {
       <span class="rl">Win chance</span>
       <span class="vc ml"><label for="aml-${g.id}">${g.a}</label><input type="number" step="5" id="aml-${g.id}" data-line="aml" data-g="${g.id}" value="${L.aml ?? ''}" placeholder="odds">
         <label for="hml-${g.id}">${g.h}</label><input type="number" step="5" id="hml-${g.id}" data-line="hml" data-g="${g.id}" value="${L.hml ?? ''}" placeholder="odds">
-        ${hasMl ? `<span class="imp">${vH >= 0.5 ? g.h + ' ' + pct(vH) : g.a + ' ' + pct(1 - vH)}</span>` : ''}</span>
-      <span class="mc">${pr.pHome >= 0.5 ? g.h + ' ' + pct(pr.pHome) : g.a + ' ' + pct(pr.pAway)}</span>
-      <span class="ec">${!hasMl ? '<span class="muted small">enter odds</span>' : `<span class="pill ${mlGap >= 0.05 ? 'acc' : 'flat'}">${Math.round(mlGap * 100)}% gap</span><span class="small">→ ${mlTeam} ${odds(mlTeam === g.h ? L.hml : L.aml)}</span><span class="small muted">model is higher on ${mlTeam}</span><button class="logbtn" data-log="ml" data-g="${g.id}" data-side="${mlTeam}">Log</button>`}</span>
+        ${SOCCER ? `<label for="dml-${g.id}">Draw</label><input type="number" step="5" id="dml-${g.id}" data-line="dml" data-g="${g.id}" value="${L.dml ?? ''}" placeholder="odds">` : ''}
+        ${hasMl ? `<span class="imp">${vegasCall(g, M)}</span>` : ''}</span>
+      <span class="mc">${SOCCER && pr.pDraw != null ? `${esc(g.h)} ${pct(pr.pHome)}<br>Draw ${pct(pr.pDraw)}<br>${esc(g.a)} ${pct(pr.pAway)}` : modelCall(g, pr)}</span>
+      <span class="ec">${!hasMl ? '<span class="muted small">enter odds</span>' : `<span class="pill ${mlGap >= 0.05 ? 'acc' : 'flat'}">${Math.round(mlGap * 100)}% gap</span><span class="small">→ ${esc(mlTeam)} ${odds(M.pick.price)}</span><span class="small muted">model is ${M.pick.gap >= 0 ? 'higher' : 'lower'} on ${esc(mlTeam)}</span><button class="logbtn" data-log="${M.pick.type}" data-g="${g.id}" data-side="${esc(mlTeam)}">Log</button>`}</span>
     </div>
     <p class="small muted" style="margin:8px 0 0">Type in your sportsbook's numbers to update the pick. "Edge" is how far the model is from Vegas.</p>
     </details>
@@ -1382,6 +1417,18 @@ const f1 = (v) => v.toFixed(1), f0 = (v) => Math.round(v).toLocaleString(), f2 =
 const per = (p, k) => (p.S[k] || 0) / p.n;
 const ratio = (a, b) => (b ? a / b : 0);
 const STAT_ROWS = {
+  soccer: [
+    ['Goals per game', (p) => p.pf, true, f2],
+    ['Goals allowed', (p) => p.pa, false, f2],
+    ['Shots per game', (p) => per(p, 'sh'), true, f1],
+    ['Shots allowed', (p) => per(p, 'o_sh'), false, f1],
+    ['Shots on target per game', (p) => per(p, 'sot'), true, f1],
+    ['On target allowed', (p) => per(p, 'o_sot'), false, f1],
+    ['Goals per shot on target', (p) => ratio(p.S.pts, p.S.sot), true, f2],
+    ['Save %', (p) => 1 - ratio(p.S.o_pts, p.S.o_sot), true, pct1],
+    ['Possession %', (p) => per(p, 'poss') / 100, true, pct1],
+    ['Corners per game', (p) => per(p, 'cor'), true, f1],
+  ],
   football: [
     ['Points per game', (p) => p.pf, true, f1],
     ['Points allowed', (p) => p.pa, false, f1],
@@ -1474,6 +1521,7 @@ function gameDetail(gid) {
   const A = P[g.a], H = P[g.h];
   const vH = L.hml != null && L.aml != null ? E.impliedProb(L.hml) / (E.impliedProb(L.hml) + E.impliedProb(L.aml)) : null;
   const ap = Math.round(pr.pAway * 100), hp = 100 - ap;
+  const M = winMarket(g, L, pr);
   // Why: each factor's push toward one team, in points (home minus away), plus game-day adjustments
   const lbl = Object.fromEntries(E.FACTORS.map((f) => [f.key, f.label])); lbl.prior = 'Preseason rating';
   const ca = R.contrib[g.a] || {}, ch = R.contrib[g.h] || {};
@@ -1512,11 +1560,11 @@ function gameDetail(gid) {
     <div class="dtop"><button class="dback" data-dclose aria-label="Back to games">‹ Back</button><span class="dtt">${esc(g.a)} @ ${esc(g.h)}</span><button class="dx" data-dclose aria-label="Close">✕</button></div>
     <div class="dh"><div class="kick">${kickoff(g)}${g.rd ? ' · ' + esc(g.rd) : ''}${g.neu ? ' · Neutral site' : ''}</div>
       <div class="dm"><div><b>${esc(g.a)}</b><span>${teamRecord(g.a, g.d)}</span></div><div class="ds">${UNIT === 'pts' ? Math.round(pr.as) : fmt(pr.as)}<i>–</i>${UNIT === 'pts' ? Math.round(pr.hs) : fmt(pr.hs)}</div><div><b>${esc(g.h)}</b><span>${teamRecord(g.h, g.d)}</span></div></div>
-      <div class="wp"><div class="a" style="flex:${Math.max(ap, 12)}">${esc(g.a)} ${ap}%</div><div class="h" style="flex:${Math.max(hp, 12)}">${esc(g.h)} ${hp}%</div></div>
+      ${wpBar(g, pr)}
       <div class="dl">
         <div><span class="label">${esc(META.spreadName || 'Spread')}</span><b>${L.sp != null ? esc(bookSpread(g.h, L.sp)) : '–'}</b><small>model ${esc(bookSpread(g.h, half(pr.margin)))}</small></div>
         <div><span class="label">Total</span><b>${L.tot ?? '–'}</b><small>model ${fmt(pr.total)}</small></div>
-        <div><span class="label">Win chance</span><b>${vH != null ? (vH >= 0.5 ? esc(g.h) + ' ' + pct(vH) : esc(g.a) + ' ' + pct(1 - vH)) : '–'}</b><small>model ${pr.pHome >= 0.5 ? esc(g.h) + ' ' + pct(pr.pHome) : esc(g.a) + ' ' + pct(pr.pAway)}</small></div>
+        <div><span class="label">${SOCCER ? 'Most likely result' : 'Win chance'}</span><b>${M ? esc(vegasCall(g, M)) : '–'}</b><small>model ${esc(modelCall(g, pr))}</small></div>
       </div></div>
     ${pitchersRow(g, pr)}${weatherRow(g, pr)}${injuryRow(g, pr)}
     ${vegasSection(g, L, pr)}
@@ -1541,7 +1589,7 @@ function vegasSection(g, L, pr) {
   const unit = UNIT === 'pts' ? 'pts' : UNIT, rnd = (v) => UNIT === 'pts' ? Math.round(v) : fmt(v);
   const hasSp = L.sp != null, hasTot = L.tot != null, hasMl = L.hml != null && L.aml != null;
   if (!hasSp && !hasTot && !hasMl) return `<section><h4>Vegas vs your model</h4><p class="note small">No betting lines for this game yet. They usually post a few days before; you can also type your book's lines on the game card.</p></section>`;
-  const vH = hasMl ? E.impliedProb(L.hml) / (E.impliedProb(L.hml) + E.impliedProb(L.aml)) : null;
+  const M = hasMl ? winMarket(g, L, pr) : null, vH = M ? M.v.h : null;
   const price = (v) => v != null && v !== -110 ? ` <small>(${odds(v)})</small>` : '';
   const rows = [];
   // implied final score from the spread and total
@@ -1562,7 +1610,12 @@ function vegasSection(g, L, pr) {
     rows.push(['Total', `${L.tot}${L.ovp != null ? ` <small>(o ${odds(L.ovp)} / u ${odds(L.unp)})</small>` : ''}` + moveNote(g, 'tot', L, pr), fmt(pr.total),
       `<b>${Math.abs(pr.total - L.tot).toFixed(1)} ${unit}</b> → ${ov ? 'Over' : 'Under'} ${L.tot}${tp != null ? `<br><small>${pct(tp)} chance · ${evPill(E.evPerUnit(tp, pz ?? -110))}</small>` : '<br><small class="muted">chance shown after both teams play</small>'}`]);
   }
-  if (hasMl) {
+  if (hasMl && M.three) {
+    const b = M.pick;
+    rows.push(['3-way moneyline', `${esc(g.h)} ${odds(L.hml)} · Draw ${odds(L.dml)} · ${esc(g.a)} ${odds(L.aml)}`, `${esc(g.h)} ${odds(fairOdds(pr.pHome))} · Draw ${odds(fairOdds(pr.pDraw))} · ${esc(g.a)} ${odds(fairOdds(pr.pAway))} <small class="muted">fair</small>`, '<span class="muted small">Settled after 90 minutes plus stoppage time</span>']);
+    rows.push(['Chances', `${esc(g.h)} ${pct(M.v.h)} · Draw ${pct(M.v.d)} · ${esc(g.a)} ${pct(M.v.a)}`, `${esc(g.h)} ${pct(pr.pHome)} · Draw ${pct(pr.pDraw)} · ${esc(g.a)} ${pct(pr.pAway)}`,
+      `<b>${Math.round(Math.abs(b.gap) * 100)}% gap</b> → ${esc(b.text)} ${odds(b.price)}<br><small>${evPill(b.ev)}</small>`]);
+  } else if (hasMl) {
     const team = pr.pHome >= vH ? g.h : g.a, pm = team === g.h ? pr.pHome : pr.pAway, ml = team === g.h ? L.hml : L.aml;
     rows.push(['Moneyline', `${esc(g.a)} ${odds(L.aml)} · ${esc(g.h)} ${odds(L.hml)}`, `${esc(g.a)} ${odds(fairOdds(pr.pAway))} · ${esc(g.h)} ${odds(fairOdds(pr.pHome))} <small class="muted">fair</small>`, '<span class="muted small">"Fair" is the price that matches the model\'s win chance</span>']);
     rows.push(['Win chance', `${esc(g.a)} ${pct(1 - vH)} · ${esc(g.h)} ${pct(vH)}`, `${esc(g.a)} ${pct(pr.pAway)} · ${esc(g.h)} ${pct(pr.pHome)}`,
@@ -1720,7 +1773,7 @@ function accuracyView() {
 function trainedView() {
   if (!TRAINED) return '';
   const t = TRAINED.test, seasons = TRAINED.seasons;
-  const label = (y) => META.family === 'hockey' ? y + '-' + String(y + 1).slice(2) : META.family === 'basketball' ? (y - 1) + '-' + String(y).slice(2) : String(y);
+  const label = (y) => META.family === 'hockey' || (SOCCER && META.sport !== 'mls') ? y + '-' + String(y + 1).slice(2) : META.family === 'basketball' ? (y - 1) + '-' + String(y).slice(2) : String(y);
   const cal = (t.calibration || []).map(([p, w, n]) => `<span class="pill flat" title="${n} games">said ${p}% → won ${w}%</span>`).join(' ');
   return `<div class="wk"><h3 style="font-size:20px;text-transform:uppercase;margin-bottom:6px">Trained model</h3>
     <p class="note" style="margin:0 0 10px">Learned from ${TRAINED.games.toLocaleString()} games (${label(seasons[0])} to now) and re-trained after every data refresh. For a fair test, the ${label(TRAINED.testSeason)} season was held out of training and predicted game by game, the same way it predicts upcoming games. The live model then learns from everything.</p>
@@ -1787,6 +1840,9 @@ function gradePick(p) {
   if (p.type === 'spread') d = p.side === g.h ? res - p.line : -(res - p.line);
   if (p.type === 'total') d = p.side === 'Over' ? (g.hs + g.as_) - p.line : p.line - (g.hs + g.as_);
   if (p.type === 'ml') d = p.side === g.h ? res : -res;
+  if (SOCCER && g.et && (p.type === 'ml' || p.type === 'draw')) d = p.type === 'draw' ? 1 : -1; // level after 90 minutes, decided in extra time
+  else if (p.type === 'draw') d = res === 0 ? 1 : -1;
+  else if (SOCCER && p.type === 'ml' && d === 0) d = -1; // a draw loses a 3-way moneyline bet
   const note = `${g.a} ${g.as_}–${g.hs} ${g.h}`;
   if (d === 0) return { res: 'push', u: 0, note };
   return { res: d > 0 ? 'win' : 'loss', u: d > 0 ? units(p.odds) : -1, note };
@@ -1822,6 +1878,7 @@ function logGamePick(type, gid, side) {
   if (type === 'spread') { line = L.sp; desc = side === g.h ? bookSpread(g.h, L.sp) : bookSpread(g.a, -L.sp); o = (side === g.h ? L.hspp : L.aspp) ?? -110; why = `model ${bookSpread(g.h, half(pr.margin))}`; }
   if (type === 'total') { line = L.tot; desc = `${g.a}/${g.h} ${side} ${L.tot}`; o = (side === 'Over' ? L.ovp : L.unp) ?? -110; why = `model total ${fmt(pr.total)}`; }
   if (type === 'ml') { o = side === g.h ? L.hml : L.aml; desc = `${side} ML`; why = `${pct(side === g.h ? pr.pHome : pr.pAway)} to win`; }
+  if (type === 'draw') { o = L.dml; desc = 'Draw'; why = `${pct(pr.pDraw)} chance of a draw`; }
   S.picks.push({ ts: Date.now(), type, gid, side, line, odds: o, w: g.w, desc: desc + (type !== 'total' ? ` (${g.a}@${g.h})` : ''), why, model: currentModelName() });
   store.set('picks', S.picks); renderTabs(); toast('Logged ' + desc);
 }
@@ -1912,6 +1969,9 @@ const SPORTS = [
   { key: 'nba', label: 'NBA' },
   { key: 'cbb', label: 'College basketball' },
   { key: 'mlb', label: 'MLB' },
+  { key: 'epl', label: 'Premier League' },
+  { key: 'ucl', label: 'Champions League' },
+  { key: 'mls', label: 'MLS' },
   { key: 'ufc', label: 'UFC' },
   { key: 'golf', label: 'Golf' },
 ];
@@ -1978,7 +2038,8 @@ async function bootEdges() {
     const settings = follow ? { ...sportDefaults(m), ...get('settings', {}), ...tr.settings } : { ...sportDefaults(m), ...get('settings', tr ? { ...tr.settings } : {}) }, over = get('lines', {});
     const done = data.games.filter((g) => g.hs != null), lastDone = done.length ? Math.max(...done.map((g) => g.w)) : 0;
     let upcoming = data.games.filter((g) => g.hs == null && g.d && g.d >= today);
-    if (m.period === 'Day') upcoming = upcoming.filter((g) => g.d <= plus(1));
+    if (m.period === 'Day' && m.family !== 'soccer') upcoming = upcoming.filter((g) => g.d <= plus(1));
+    else if (m.family === 'soccer') upcoming = upcoming.filter((g) => g.d <= plus(4)); // matchdays are a few days apart
     else { const w = Math.min(...upcoming.map((g) => g.w)); upcoming = upcoming.filter((g) => g.w === w && g.d <= plus(6)); }
     if (!upcoming.length) continue;
     const P = E.teamProfiles(data, lastDone + 1), R = E.ratings(P, weights, settings);
@@ -1987,16 +2048,18 @@ async function bootEdges() {
     counts[key] = 0;
     upcoming.forEach((g) => {
       const o = over[g.id] || {}; const L = {};
-      ['sp', 'tot', 'hml', 'aml', 'hg', 'ag'].forEach((k) => { L[k] = o[k] !== undefined ? o[k] : g[k]; });
+      ['sp', 'tot', 'hml', 'aml', 'dml', 'hg', 'ag'].forEach((k) => { L[k] = o[k] !== undefined ? o[k] : g[k]; });
       const pr = E.predict(g, P, R, settings, L, data); if (!pr) return;
       const base = { sport: key, label: m.label, g, when: g.d + ' ' + (g.tm || '') };
       // Market chance with the bookmaker's cut removed, from both sides' prices.
       const fair = (mine, theirs) => { const a = E.impliedProb(mine ?? -110), b = E.impliedProb(theirs ?? -110); return a / (a + b); };
-      const fixedLine = m.family === 'hockey' || m.family === 'baseball'; // puck/run lines are never priced at -110
+      const fixedLine = m.family === 'hockey' || m.family === 'baseball' || m.family === 'soccer'; // these lines are never priced at -110
+      const three = m.family === 'soccer' && L.hml != null && L.aml != null && L.dml != null && pr.pDraw != null;
+      const fair3 = (mine) => E.impliedProb(mine) / (E.impliedProb(L.hml) + E.impliedProb(L.aml) + E.impliedProb(L.dml));
       const add = (type, bet, p, price, other, edge) => {
-        if (type === 'Moneyline' && price > 250) return;      // skip long shots
+        if (type === 'Moneyline' && price > (three ? 400 : 250)) return;      // skip long shots
         if (fixedLine && type !== 'Moneyline' && price == null) return;
-        const pm = fair(price, other), pb = (p + pm) / 2; // 50/50 blend of your model and the market
+        const pm = three && type === 'Moneyline' ? fair3(price) : fair(price, other), pb = (p + pm) / 2; // 50/50 blend of your model and the market
         const ev = E.evPerUnit(pb, price ?? -110);
         if (ev > 0.015) rows.push({ ...base, type, bet: bet + (price != null && price !== -110 ? ' (' + (price > 0 ? '+' + price : price) + ')' : ''), p, pm, ev, edge });
       };
@@ -2012,6 +2075,7 @@ async function bootEdges() {
       if (L.hml != null && L.aml != null) {
         add('Moneyline', g.h, pr.pHome, L.hml, L.aml, Math.round(pr.pHome * 100) + '% to win');
         add('Moneyline', g.a, pr.pAway, L.aml, L.hml, Math.round(pr.pAway * 100) + '% to win');
+        if (three) add('Moneyline', 'Draw', pr.pDraw, L.dml, null, Math.round(pr.pDraw * 100) + '% draw');
       }
     });
     counts[key] = rows.filter((r) => r.sport === key).length;
@@ -2329,6 +2393,14 @@ const Results = (() => {
     return cache[sport];
   }
   function grade(x) {
+    if (x.pD != null) { // soccer: the model's most likely of home win, draw, away win
+      const pA = Math.max(0, 1 - x.pH - x.pD), best = Math.max(x.pH, x.pD, pA);
+      const pick = best === x.pD ? 'Draw' : best === x.pH ? x.h : x.a, pickHome = pick === x.h;
+      let ok = null, ats = null;
+      if (x.r) { const [as, hs] = x.r; ok = pick === 'Draw' ? hs === as : hs !== as && (hs > as) === pickHome;
+        if (x.sp != null && x.m != null && x.m !== x.sp) { const c = hs - as - x.sp; if (c !== 0) ats = (x.m - x.sp > 0) === (c > 0); } }
+      return { pick, pickHome, conf: best, ok, ats, fav: null, dog: null };
+    }
     const pickHome = x.pH >= 0.5, pick = pickHome ? x.h : x.a, conf = Math.max(x.pH, 1 - x.pH);
     let ok = null, ats = null, fav = null, dog = null;
     if (x.hml != null && x.aml != null && x.hml !== x.aml) dog = (x.hml < x.aml) !== pickHome; // model picked the Vegas underdog
@@ -2865,7 +2937,7 @@ function bootGuide() {
   </nav>
 
   <section id="g-what"><h3>What this is</h3>
-    <p>5ive Lab predicts games in eight sports (NFL, college football, NBA, college basketball, NHL, MLB, UFC and golf) using team stats, and compares its predictions to the betting lines. You decide what the model cares about by sliding factors up or down, or you can use the <b>Trained</b> model, which learned its settings from past seasons.</p>
+    <p>5ive Lab predicts games in eleven competitions (NFL, college football, NBA, college basketball, NHL, MLB, the Premier League, Champions League, MLS, UFC and golf) using team stats, and compares its predictions to the betting lines. You decide what the model cares about by sliding factors up or down, or you can use the <b>Trained</b> model, which learned its settings from past seasons.</p>
     <p>Pick a sport from the buttons at the top. Everything you change (sliders, lines you type in, picks you log) is saved in your browser.</p>
   </section>
 

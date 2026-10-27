@@ -29,7 +29,7 @@ function kickoff(d, tm) {
 }
 const defaults = (m) => ({ hfa: m.hfa ?? 1.5, trust: m.trust ?? 60, bye: m.bye ?? 1, prior: m.priorGames ?? 0, weather: m.weather ? 5 : 0, qbOut: m.qbOut ? 5 : 0, goalie: m.goalie ? 5 : 0 });
 
-for (const sport of ['nfl', 'cfb', 'nhl', 'mlb', 'cbb', 'nba']) {
+for (const sport of ['nfl', 'cfb', 'nhl', 'mlb', 'cbb', 'nba', 'epl', 'ucl', 'mls']) {
   const f = path.join(DATA, sport + '.json'); if (!fs.existsSync(f)) continue;
   const data = load(f), m = data.meta, tr = m.trained;
   const outF = path.join(OUT, sport + '.json');
@@ -48,6 +48,10 @@ for (const sport of ['nfl', 'cfb', 'nhl', 'mlb', 'cbb', 'nba']) {
       const g = byId[p.id]; if (!g || book.games[g.id]) return;
       book.games[g.id] = { season: data.season, w: g.w, d: g.d, tm: g.tm, a: g.a, h: g.h, m: r1(p.m), pH: r3(E.phi(p.m / sig)), sp: g.sp ?? null, tot: g.tot ?? null,
         hml: g.hml ?? null, aml: g.aml ?? null, bf: 1, at: nowIso };
+      if (m.family === 'soccer') { // backfill: rebuild the three-way chances from the predicted margin around a typical total
+        const lg = 2.7, G = E.goalGrid(Math.max(0.1, (lg + p.m) / 2), Math.max(0.1, (lg - p.m) / 2));
+        Object.assign(book.games[g.id], { pH: r3(G.H), pD: r3(G.D), dml: g.dml ?? null });
+      }
       back++;
     });
   }
@@ -59,10 +63,11 @@ for (const sport of ['nfl', 'cfb', 'nhl', 'mlb', 'cbb', 'nba']) {
     if (ko - now > 8 * 864e5) return; // only the next week or so
     const before = Math.min(g.w, lastDone + 1);
     const PR = byW[before] || (byW[before] = (() => { const P = E.teamProfiles(data, before); return { P, R: E.ratings(P, weights, settings) }; })());
-    const L = { sp: g.sp, tot: g.tot, hml: g.hml, aml: g.aml, hspp: g.hspp, aspp: g.aspp, ovp: g.ovp, unp: g.unp };
+    const L = { sp: g.sp, tot: g.tot, hml: g.hml, aml: g.aml, dml: g.dml, hspp: g.hspp, aspp: g.aspp, ovp: g.ovp, unp: g.unp };
     const pr = E.predict(g, PR.P, PR.R, settings, L, data); if (!pr) return;
     book.games[g.id] = { season: data.season, w: g.w, d: g.d, tm: g.tm, a: g.a, h: g.h, m: r1(pr.margin), pH: r3(pr.pHome), ps: [r1(pr.as), r1(pr.hs)], t: r1(pr.total),
       sp: g.sp ?? null, tot: g.tot ?? null, hml: g.hml ?? null, aml: g.aml ?? null, at: nowIso };
+    if (pr.pDraw != null) { book.games[g.id].pD = r3(pr.pDraw); book.games[g.id].dml = g.dml ?? null; }
     added++;
   });
   // Grade finished games
