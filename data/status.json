@@ -40,14 +40,14 @@
   "upcoming": 20
  },
  "golf": {
-  "finals": 94,
+  "finals": 92,
   "history": [],
-  "next": "2026-11-12",
+  "next": "2026-10-29",
   "ok": true,
   "rows": 0,
   "season": 2026,
   "through": "2026-10-22",
-  "upcoming": 3
+  "upcoming": 5
  },
  "mlb": {
   "finals": 2467,
@@ -140,6 +140,6 @@
   "rows": 0,
   "season": 2026,
   "through": "2026-10-24",
-  "upcoming": 54
+  "upcoming": 52
  }
 }
