@@ -869,6 +869,8 @@ def soccer_day(path, day):
         if not done and any(x in sname.upper() for x in ('POSTPONED', 'CANCELED', 'CANCELLED', 'ABANDONED')):
             continue
         tm = lambda x: x.get('team') or {}
+        if any('all-star' in (tm(comp[s]).get('displayName') or '').lower() or 'liga mx' == (tm(comp[s]).get('displayName') or '').lower() for s in ('home', 'away')):
+            continue  # exhibitions (MLS All-Star game) don't count
         odds = (c.get('odds') or [None])[0]
         out.append(dict(id=e['id'], date=e.get('date'), neu=bool(c.get('neutralSite')),
                         h=str(tm(comp['home']).get('id')), a=str(tm(comp['away']).get('id')),
