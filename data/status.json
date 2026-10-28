@@ -13,18 +13,16 @@
   "upcoming": 761
  },
  "cfb": {
-  "finals": 446,
-  "history": [
-   2023,
-   2024,
-   2025
-  ],
-  "next": "2026-10-28",
-  "ok": true,
-  "rows": 892,
-  "season": 2026,
-  "through": "2026-10-27",
-  "upcoming": 315
+  "error": "IncompleteRead: IncompleteRead(64864 bytes read, 615568 more expected)",
+  "ok": false,
+  "trace": [
+   "  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/http/client.py\", line 510, in read",
+   "    s = self._safe_read(self.length)",
+   "        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+   "  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/http/client.py\", line 671, in _safe_read",
+   "    raise IncompleteRead(data, amt - len(data))",
+   "http.client.IncompleteRead: IncompleteRead(64864 bytes read, 615568 more expected)"
+  ]
  },
  "epl": {
   "finals": 80,
