@@ -10,19 +10,21 @@
   "rows": 0,
   "season": 2027,
   "through": "",
-  "upcoming": 761
+  "upcoming": 786
  },
  "cfb": {
-  "error": "IncompleteRead: IncompleteRead(64864 bytes read, 615568 more expected)",
-  "ok": false,
-  "trace": [
-   "  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/http/client.py\", line 510, in read",
-   "    s = self._safe_read(self.length)",
-   "        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
-   "  File \"/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/http/client.py\", line 671, in _safe_read",
-   "    raise IncompleteRead(data, amt - len(data))",
-   "http.client.IncompleteRead: IncompleteRead(64864 bytes read, 615568 more expected)"
-  ]
+  "finals": 448,
+  "history": [
+   2023,
+   2024,
+   2025
+  ],
+  "next": "2026-10-29",
+  "ok": true,
+  "rows": 896,
+  "season": 2026,
+  "through": "2026-10-28",
+  "upcoming": 313
  },
  "epl": {
   "finals": 80,
@@ -48,44 +50,44 @@
   "upcoming": 5
  },
  "mlb": {
-  "finals": 2468,
+  "finals": 2469,
   "history": [
    2024,
    2025
   ],
-  "next": "2026-10-28",
+  "next": null,
   "ok": true,
-  "rows": 4936,
+  "rows": 4938,
   "season": 2026,
-  "through": "2026-10-27",
-  "upcoming": 3
+  "through": "2026-10-28",
+  "upcoming": 0
  },
  "mls": {
-  "finals": 466,
+  "finals": 480,
   "history": [
    2024,
    2025
   ],
-  "next": "2026-10-28",
+  "next": "2026-10-31",
   "ok": true,
-  "rows": 932,
+  "rows": 960,
   "season": 2026,
-  "through": "2026-10-25",
-  "upcoming": 44
+  "through": "2026-10-28",
+  "upcoming": 30
  },
  "nba": {
-  "finals": 56,
+  "finals": 68,
   "history": [
    2024,
    2025,
    2026
   ],
-  "next": "2026-10-28",
+  "next": "2026-10-29",
   "ok": true,
-  "rows": 112,
+  "rows": 136,
   "season": 2027,
-  "through": "2026-10-27",
-  "upcoming": 166
+  "through": "2026-10-28",
+  "upcoming": 158
  },
  "nfl": {
   "finals": 107,
@@ -104,18 +106,18 @@
   "upcoming": 165
  },
  "nhl": {
-  "finals": 198,
+  "finals": 202,
   "history": [
    2023,
    2024,
    2025
   ],
-  "next": "2026-10-28",
+  "next": "2026-10-29",
   "ok": true,
-  "rows": 396,
+  "rows": 404,
   "season": 2026,
-  "through": "2026-10-27",
-  "upcoming": 1146
+  "through": "2026-10-28",
+  "upcoming": 1142
  },
  "ucl": {
   "finals": 54,
