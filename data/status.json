@@ -10,21 +10,21 @@
   "rows": 0,
   "season": 2027,
   "through": "",
-  "upcoming": 835
+  "upcoming": 882
  },
  "cfb": {
-  "finals": 450,
+  "finals": 453,
   "history": [
    2023,
    2024,
    2025
   ],
-  "next": "2026-10-30",
+  "next": "2026-10-31",
   "ok": true,
-  "rows": 900,
+  "rows": 906,
   "season": 2026,
-  "through": "2026-10-29",
-  "upcoming": 311
+  "through": "2026-10-30",
+  "upcoming": 308
  },
  "epl": {
   "finals": 80,
@@ -76,18 +76,18 @@
   "upcoming": 30
  },
  "nba": {
-  "finals": 71,
+  "finals": 81,
   "history": [
    2024,
    2025,
    2026
   ],
-  "next": "2026-10-30",
+  "next": "2026-10-31",
   "ok": true,
-  "rows": 142,
+  "rows": 162,
   "season": 2027,
-  "through": "2026-10-29",
-  "upcoming": 164
+  "through": "2026-10-30",
+  "upcoming": 160
  },
  "nfl": {
   "finals": 108,
@@ -106,18 +106,18 @@
   "upcoming": 164
  },
  "nhl": {
-  "finals": 213,
+  "finals": 216,
   "history": [
    2023,
    2024,
    2025
   ],
-  "next": "2026-10-30",
+  "next": "2026-10-31",
   "ok": true,
-  "rows": 426,
+  "rows": 432,
   "season": 2026,
-  "through": "2026-10-29",
-  "upcoming": 1131
+  "through": "2026-10-30",
+  "upcoming": 1128
  },
  "ucl": {
   "finals": 54,
