@@ -1,16 +1,16 @@
 {
  "cbb": {
-  "finals": 4,
+  "finals": 6,
   "history": [
    2025,
    2026
   ],
   "next": "2026-11-02",
   "ok": true,
-  "rows": 8,
+  "rows": 12,
   "season": 2027,
   "through": "2026-11-02",
-  "upcoming": 941
+  "upcoming": 939
  },
  "cfb": {
   "finals": 500,
