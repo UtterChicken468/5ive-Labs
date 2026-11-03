@@ -40,14 +40,14 @@
   "upcoming": 10
  },
  "golf": {
-  "finals": 95,
+  "finals": 93,
   "history": [],
-  "next": "2026-11-19",
+  "next": "2026-11-05",
   "ok": true,
   "rows": 0,
   "season": 2026,
   "through": "2026-10-29",
-  "upcoming": 3
+  "upcoming": 5
  },
  "mlb": {
   "finals": 2469,
@@ -120,17 +120,17 @@
   "upcoming": 1109
  },
  "ucl": {
-  "finals": 54,
+  "finals": 59,
   "history": [
    2024,
    2025
   ],
   "next": "2026-11-03",
   "ok": true,
-  "rows": 108,
+  "rows": 118,
   "season": 2026,
-  "through": "2026-10-21",
-  "upcoming": 18
+  "through": "2026-11-03",
+  "upcoming": 13
  },
  "ufc": {
   "finals": 4040,
