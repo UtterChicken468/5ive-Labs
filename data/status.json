@@ -120,17 +120,17 @@
   "upcoming": 1098
  },
  "ucl": {
-  "finals": 63,
+  "finals": 71,
   "history": [
    2024,
    2025
   ],
   "next": "2026-11-04",
   "ok": true,
-  "rows": 126,
+  "rows": 142,
   "season": 2026,
-  "through": "2026-11-03",
-  "upcoming": 9
+  "through": "2026-11-04",
+  "upcoming": 1
  },
  "ufc": {
   "finals": 4040,
