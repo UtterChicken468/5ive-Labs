@@ -1,30 +1,30 @@
 {
  "cbb": {
-  "finals": 92,
+  "finals": 300,
   "history": [
    2025,
    2026
   ],
-  "next": "2026-11-07",
+  "next": "2026-11-08",
   "ok": true,
-  "rows": 184,
+  "rows": 600,
   "season": 2027,
   "through": "2026-11-07",
-  "upcoming": 296
+  "upcoming": 940
  },
  "cfb": {
-  "finals": 525,
+  "finals": 562,
   "history": [
    2023,
    2024,
    2025
   ],
-  "next": "2026-11-07",
+  "next": "2026-11-10",
   "ok": true,
-  "rows": 1050,
+  "rows": 1124,
   "season": 2026,
   "through": "2026-11-07",
-  "upcoming": 236
+  "upcoming": 199
  },
  "epl": {
   "finals": 95,
@@ -37,7 +37,7 @@
   "rows": 190,
   "season": 2026,
   "through": "2026-11-07",
-  "upcoming": 12
+  "upcoming": 14
  },
  "golf": {
   "finals": 93,
@@ -63,31 +63,31 @@
   "upcoming": 0
  },
  "mls": {
-  "finals": 495,
+  "finals": 510,
   "history": [
    2024,
    2025
   ],
-  "next": "2026-11-07",
+  "next": null,
   "ok": true,
-  "rows": 990,
+  "rows": 1020,
   "season": 2026,
-  "through": "2026-11-01",
-  "upcoming": 15
+  "through": "2026-11-07",
+  "upcoming": 0
  },
  "nba": {
-  "finals": 132,
+  "finals": 139,
   "history": [
    2024,
    2025,
    2026
   ],
-  "next": "2026-11-07",
+  "next": "2026-11-08",
   "ok": true,
-  "rows": 264,
+  "rows": 278,
   "season": 2027,
-  "through": "2026-11-06",
-  "upcoming": 154
+  "through": "2026-11-07",
+  "upcoming": 157
  },
  "nfl": {
   "finals": 122,
@@ -106,18 +106,18 @@
   "upcoming": 150
  },
  "nhl": {
-  "finals": 266,
+  "finals": 276,
   "history": [
    2023,
    2024,
    2025
   ],
-  "next": "2026-11-07",
+  "next": "2026-11-08",
   "ok": true,
-  "rows": 532,
+  "rows": 552,
   "season": 2026,
   "through": "2026-11-07",
-  "upcoming": 1078
+  "upcoming": 1068
  },
  "ucl": {
   "finals": 72,
@@ -133,13 +133,13 @@
   "upcoming": 0
  },
  "ufc": {
-  "finals": 4040,
+  "finals": 4054,
   "history": [],
-  "next": "2026-11-07",
+  "next": "2026-11-14",
   "ok": true,
   "rows": 0,
   "season": 2026,
-  "through": "2026-10-31",
-  "upcoming": 42
+  "through": "2026-11-07",
+  "upcoming": 40
  }
 }
