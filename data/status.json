@@ -106,7 +106,7 @@
   "upcoming": 136
  },
  "nhl": {
-  "finals": 298,
+  "finals": 299,
   "history": [
    2023,
    2024,
@@ -114,10 +114,10 @@
   ],
   "next": "2026-11-12",
   "ok": true,
-  "rows": 596,
+  "rows": 598,
   "season": 2026,
-  "through": "2026-11-11",
-  "upcoming": 1046
+  "through": "2026-11-12",
+  "upcoming": 1045
  },
  "ucl": {
   "finals": 72,
