@@ -1,30 +1,30 @@
 {
  "cbb": {
-  "finals": 467,
+  "finals": 491,
   "history": [
    2025,
    2026
   ],
-  "next": "2026-11-12",
+  "next": "2026-11-13",
   "ok": true,
-  "rows": 934,
+  "rows": 982,
   "season": 2027,
-  "through": "2026-11-11",
-  "upcoming": 923
+  "through": "2026-11-12",
+  "upcoming": 918
  },
  "cfb": {
-  "finals": 568,
+  "finals": 570,
   "history": [
    2023,
    2024,
    2025
   ],
-  "next": "2026-11-12",
+  "next": "2026-11-13",
   "ok": true,
-  "rows": 1136,
+  "rows": 1140,
   "season": 2026,
-  "through": "2026-11-11",
-  "upcoming": 193
+  "through": "2026-11-12",
+  "upcoming": 191
  },
  "epl": {
   "finals": 100,
@@ -37,12 +37,12 @@
   "rows": 200,
   "season": 2026,
   "through": "2026-11-08",
-  "upcoming": 10
+  "upcoming": 11
  },
  "golf": {
   "finals": 94,
   "history": [],
-  "next": "2026-11-12",
+  "next": "2026-12-03",
   "ok": true,
   "rows": 0,
   "season": 2026,
@@ -73,24 +73,24 @@
   "rows": 1020,
   "season": 2026,
   "through": "2026-11-07",
-  "upcoming": 10
+  "upcoming": 12
  },
  "nba": {
-  "finals": 170,
+  "finals": 174,
   "history": [
    2024,
    2025,
    2026
   ],
-  "next": "2026-11-12",
+  "next": "2026-11-13",
   "ok": true,
-  "rows": 340,
+  "rows": 348,
   "season": 2027,
-  "through": "2026-11-11",
-  "upcoming": 155
+  "through": "2026-11-12",
+  "upcoming": 151
  },
  "nfl": {
-  "finals": 136,
+  "finals": 137,
   "history": [
    2021,
    2022,
@@ -98,26 +98,26 @@
    2024,
    2025
   ],
-  "next": "2026-11-12",
+  "next": "2026-11-15",
   "ok": true,
-  "rows": 272,
+  "rows": 274,
   "season": 2026,
-  "through": "2026-11-09",
-  "upcoming": 136
+  "through": "2026-11-12",
+  "upcoming": 135
  },
  "nhl": {
-  "finals": 299,
+  "finals": 309,
   "history": [
    2023,
    2024,
    2025
   ],
-  "next": "2026-11-12",
+  "next": "2026-11-13",
   "ok": true,
-  "rows": 598,
+  "rows": 618,
   "season": 2026,
   "through": "2026-11-12",
-  "upcoming": 1045
+  "upcoming": 1035
  },
  "ucl": {
   "finals": 72,
